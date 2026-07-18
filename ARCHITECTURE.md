@@ -2,7 +2,7 @@
 
 ## Product boundary
 
-Version 0.1 is a local-first single-user web application. IndexedDB is authoritative for product data. UI language and theme are settings, while authored task titles, categories, notes, and rewards remain independent of the selected interface language.
+Milestone 1, Daily Canvas v0.1 Foundation, is a completed local-first single-user web application baseline. IndexedDB is authoritative for product data. UI language and theme are settings, while authored task titles, categories, notes, and rewards remain independent of the selected interface language.
 
 ## Domain model
 
@@ -43,4 +43,6 @@ Statistics are derived from scheduled dates and dated check-ins. Skipped days ar
 
 ## Privacy boundary
 
-No application data leaves the browser in version 0.1. Export is initiated by the user and produces a local JSON file. Background images are read locally into IndexedDB. The application makes no runtime requests to analytics, advertising, font, account, or sync services.
+No application data leaves the browser in Milestone 1. Export is initiated by the user and produces a local JSON file. Background images are read locally into IndexedDB. The application makes no runtime requests to analytics, advertising, font, account, or sync services.
+
+Future architectural work is sequenced in [ROADMAP.md](ROADMAP.md). Each later milestone must preserve the local-first mode unless its scope explicitly introduces an opt-in alternative.

@@ -4,7 +4,15 @@ Daily Canvas is a private, local-first task and habit tracker built around a viv
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
-## Version 0.1 features
+## Milestone status
+
+**Milestone 1: Daily Canvas v0.1 Foundation — Completed**
+
+The foundation milestone established the local-first domain model, core daily workflow, calendar tracking, privacy boundary, bilingual interface structure, validation baseline, and reliable Windows startup path.
+
+See [ROADMAP.md](ROADMAP.md) for the planned Milestone 2 through Milestone 7 development path.
+
+## Milestone 1 delivered
 
 - Create, edit, archive, restore, star, categorize, and delete tasks.
 - Track one-time tasks, positive habits, and habits to avoid with distinct language and outcomes.
@@ -59,7 +67,7 @@ pnpm build
 
 The application uses React, TypeScript, Vite, Dexie/IndexedDB, i18next, date-fns, and dnd kit. A task definition is separate from its dated check-ins; recurring tasks are calculated from schedules rather than duplicated into an unlimited list of daily records.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundaries.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundaries, and [ROADMAP.md](ROADMAP.md) for milestone sequencing and completion criteria.
 
 ## Status semantics
 
@@ -70,4 +78,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.1 does not include accounts, cross-device sync, system notifications, a native mobile wrapper, collaboration, or a points store. These can be added later without replacing the current task/check-in model.
+Milestone 1 does not include accounts, cross-device sync, system notifications, a native mobile wrapper, collaboration, or a points store. Later milestones introduce capabilities only after their supporting reliability and privacy foundations are complete.

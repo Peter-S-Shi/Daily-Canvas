@@ -1,11 +1,13 @@
 # Development log
 
-## 2026-07-17 — Windows launcher
+## Milestone 1: Daily Canvas v0.1 Foundation — Completed
+
+### 2026-07-17 — Windows launcher stabilization
 
 - Added a double-click Windows launcher that finds the bundled Codex Node.js and pnpm runtimes when they are not on the system PATH.
 - Documented that the Vite source `index.html` must be served rather than opened directly.
 
-## 2026-07-17 — v0.1 foundation
+### 2026-07-17 — Foundation delivery
 
 - Created the React and TypeScript application with a responsive, bilingual interface.
 - Added task, recurrence, check-in, daily order, journal, reward, and settings entities in IndexedDB.
