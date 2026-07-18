@@ -1,0 +1,46 @@
+# Dependencies and build outputs
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local databases and private exports
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+*.local.json
+daily-canvas-backup-*.json
+exports/
+backups/
+screenshots/private/
+
+# Python and local tooling
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Logs, caches, and editor metadata
+*.log
+.cache/
+.vite/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
