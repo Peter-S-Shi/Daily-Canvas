@@ -36,6 +36,12 @@ Requirements:
 - Node.js 20.19 or newer
 - pnpm
 
+### Windows quick start
+
+Double-click `start-daily-canvas.cmd`. It locates either a normal Node.js installation or the bundled Codex runtime, installs dependencies when needed, starts the local server, and opens Daily Canvas in the default browser.
+
+Opening `index.html` directly is not supported because this is a Vite application; use the launcher or development command instead.
+
 ```bash
 pnpm install
 pnpm dev

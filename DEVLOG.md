@@ -1,5 +1,10 @@
 # Development log
 
+## 2026-07-17 — Windows launcher
+
+- Added a double-click Windows launcher that finds the bundled Codex Node.js and pnpm runtimes when they are not on the system PATH.
+- Documented that the Vite source `index.html` must be served rather than opened directly.
+
 ## 2026-07-17 — v0.1 foundation
 
 - Created the React and TypeScript application with a responsive, bilingual interface.
