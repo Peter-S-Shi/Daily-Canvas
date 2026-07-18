@@ -34,7 +34,7 @@ export async function initializeDb(): Promise<void> {
   if (!settings) {
     await db.settings.put({
       id: "app",
-      language: "zh-CN",
+      language: "en",
       theme: "system",
       weekStartsOn: 1,
       reduceMotion: false,
@@ -48,9 +48,9 @@ export async function initializeDb(): Promise<void> {
     await db.tasks.bulkAdd([
       {
         id: makeId(),
-        title: "阅读 20 分钟 / Read for 20 minutes",
+        title: "Read for 20 minutes",
         kind: "habit",
-        category: "成长 / Growth",
+        category: "Growth",
         color: "#f4a261",
         starred: true,
         archived: false,
@@ -63,9 +63,9 @@ export async function initializeDb(): Promise<void> {
       },
       {
         id: makeId(),
-        title: "睡前不吃零食 / No late-night snacks",
+        title: "No late-night snacks",
         kind: "avoidance",
-        category: "健康 / Health",
+        category: "Health",
         color: "#2a9d8f",
         starred: false,
         archived: false,

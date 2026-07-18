@@ -17,6 +17,7 @@ Daily Canvas is a private, local-first task and habit tracker built around a viv
 - Write one local daily note of up to 500 characters.
 - Plan rewards for dates or streak milestones.
 - Switch between Chinese and English, light and dark themes, and reduced motion.
+- Start in English by default while retaining the complete Chinese interface.
 - Use a private local background image.
 - Export and restore a JSON backup.
 

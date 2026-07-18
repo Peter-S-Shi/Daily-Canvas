@@ -10,3 +10,4 @@
 - Added date- and streak-based rewards.
 - Added Chinese/English switching, themes, reduced motion, local background images, and JSON backup/restore.
 - Added recurrence and streak tests, privacy-oriented ignore rules, bilingual documentation, and architecture notes.
+- Made English the first-run default while retaining the complete Chinese interface.
