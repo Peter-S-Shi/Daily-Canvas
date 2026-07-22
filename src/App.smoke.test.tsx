@@ -91,7 +91,7 @@ describe("Milestone 4 critical browser flow", () => {
     await click(document.querySelector('.quota-card .round-check') as HTMLButtonElement);
 
     const backup = await createBackup();
-    expect(backup).toMatchObject({ version: 4 });
+    expect(backup).toMatchObject({ version: 5 });
     expect(backup.areas).toHaveLength(1);
     const task = (await db.tasks.toArray()).find((item) => item.title === "Smoke-test habit");
     await db.tasks.update(task!.id, { title: "Temporary change" });

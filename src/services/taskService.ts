@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { todayKey } from "../lib/dates";
 import type { Language, Task } from "../types";
+import { ensureTaskLifecycle } from "./lifecycleService";
 
 const makeId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 export const taskTemplates = (language: Language): Array<Omit<Task, "id" | "createdAt" | "updatedAt">> => {
@@ -15,13 +16,14 @@ export const taskTemplates = (language: Language): Array<Omit<Task, "id" | "crea
 export async function saveTask(input: Omit<Task, "id" | "createdAt" | "updatedAt">, existing?: Task): Promise<Task> {
   const now = new Date().toISOString();
   const task: Task = { ...input, id: existing?.id ?? makeId(), createdAt: existing?.createdAt ?? now, updatedAt: now };
-  await db.tasks.put(task); return task;
+  await db.tasks.put(task); await ensureTaskLifecycle(task); return task;
 }
 export async function createTasksFromTemplates(language: Language, indexes: number[]): Promise<void> { for (const template of taskTemplates(language).filter((_, index) => indexes.includes(index))) await saveTask(template); }
 export async function updateTask(id: string, changes: Partial<Task>): Promise<void> { await db.tasks.update(id, { ...changes, updatedAt: new Date().toISOString() }); }
 export async function deleteTask(id: string): Promise<void> {
-  await db.transaction("rw", db.tasks, db.checkIns, db.dailyOrders, async () => {
+  await db.transaction("rw", [db.tasks, db.checkIns, db.dailyOrders, db.taskLifecycles, db.pausePeriods, db.milestoneEvents], async () => {
     await db.tasks.delete(id); await db.checkIns.where("taskId").equals(id).delete();
+    await db.taskLifecycles.delete(id); await db.pausePeriods.where("taskId").equals(id).delete(); await db.milestoneEvents.where("taskId").equals(id).delete();
     const orders = await db.dailyOrders.toArray();
     await db.dailyOrders.bulkPut(orders.map((order) => ({ ...order, taskIds: order.taskIds.filter((taskId) => taskId !== id) })));
   });

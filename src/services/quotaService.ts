@@ -1,5 +1,6 @@
 import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
-import type { CheckIn, QuotaSchedule, Task } from "../types";
+import type { CheckIn, PausePeriod, QuotaSchedule, Task } from "../types";
+import { effectivePauseStart } from "./pauseService";
 
 export interface QuotaPeriod { start: string; end: string; period: "week" | "month" }
 export interface QuotaProgress { count: number; target: number; achieved: boolean; provisional: boolean; outcome: "achieved" | "partial" | "not-achieved" }
@@ -21,12 +22,14 @@ export function getQuotaProgress(task: Task, period: QuotaPeriod, checkIns: Chec
   return { count, target: task.schedule.targetCount, achieved, provisional, outcome: achieved ? "achieved" : provisional ? "partial" : "not-achieved" };
 }
 
-export function getQuotaStreak(task: Task, checkIns: CheckIn[], through: Date, weekStartsOn: 0 | 1): number {
+export function getQuotaStreak(task: Task, checkIns: CheckIn[], through: Date, weekStartsOn: 0 | 1, pauses: PausePeriod[] = []): number {
   if (task.schedule.mode !== "quota") return 0;
   let cursor = through;
   let streak = 0;
   for (let guard = 0; guard < 600; guard += 1) {
     const period = getQuotaPeriod(task.schedule, cursor, weekStartsOn);
+    const frozen = pauses.some((pause) => effectivePauseStart(pause) <= period.end && (!pause.endDate || pause.endDate >= period.start));
+    if (frozen) { cursor = new Date(`${period.start}T12:00:00`); cursor.setDate(cursor.getDate() - 1); continue; }
     const progress = getQuotaProgress(task, period, checkIns, through);
     if (progress.provisional && !progress.achieved) {
       cursor = new Date(`${period.start}T12:00:00`); cursor.setDate(cursor.getDate() - 1); continue;

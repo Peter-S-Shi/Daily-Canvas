@@ -66,11 +66,11 @@ Do not store a conclusion when it can be reproduced from durable facts, unless a
 
 ## 3. Target Domain Model
 
-### Current implementation through v0.5
+### Current implementation through v0.6
 
 Milestones 3 and 4 implement the current persistent model: first-class `Area` records, the fixed/floating/quota `Schedule` union, Daily Reflections, Emotion Definitions, Experience Logs, and local Appearance Assets. Dexie schema and backup format version 4 preserve and migrate every supported record from earlier releases.
 
-Milestone 5 adds no persistent tables. Its arbitrary-range review facts, eligibility rules, bilingual sentences, and Calendar evidence states are deterministically derived from the version 4 source records.
+Milestone 5 adds no persistent tables; its reviews remain derived. Milestone 6 advances Dexie and backup format to version 5 with `TaskLifecycle`, `PausePeriod`, and append-only `MilestoneEvent` records. Existing Task and CheckIn identities remain unchanged.
 
 ```text
 Area
@@ -592,7 +592,7 @@ A future optional AI language layer may only rewrite approved structured facts. 
 
 ## 15. Database Evolution
 
-The Dexie database is currently at version 4. It contains the Milestone 3 planning tables plus Daily Reflections, Emotion Definitions, Experience Logs, Appearance Assets, background slot preferences, and persisted reflection-prompt rotation state.
+The Dexie database is currently at version 5. It contains the Milestone 3–4 planning and reflection tables plus lifecycle profiles, pause periods, and milestone events. Review output remains derived.
 
 Expected entity groups:
 
@@ -622,7 +622,7 @@ A safe conceptual sequence is:
 7. move the current background into Appearance Assets and slot preferences;
 8. update backup format and restoration validation after each schema change.
 
-Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration, plus backup format version 4.
+Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration. Milestone 6 adds the v4-to-v5 lifecycle migration and backup format version 5.
 
 The exact Dexie version numbers belong to implementation, but every version must have:
 

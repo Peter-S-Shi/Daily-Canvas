@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { afterEach, describe, expect, it } from "vitest";
-import { storesV2, storesV3, storesV4, upgradeDataToV3, upgradeDataToV4, upgradeSettingsToV2 } from "./db";
+import { storesV2, storesV3, storesV4, storesV5, upgradeDataToV3, upgradeDataToV4, upgradeDataToV5, upgradeSettingsToV2 } from "./db";
 
 const databaseName = "DailyCanvasMigrationTest";
 afterEach(async () => { await Dexie.delete(databaseName); });
@@ -37,5 +37,15 @@ describe("Dexie schema migration", () => {
     expect(await newDb.table("appearanceAssets").get("migrated-app-background")).toMatchObject({ kind: "background", dataUrl: "data:image/png;base64,c3ludGhldGlj" });
     expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 4, reflectionPromptsEnabled: true, backgroundPreferences: expect.arrayContaining([expect.objectContaining({ slot: "app", assetId: "migrated-app-background" })]) });
     expect(await newDb.table("emotionDefinitions").count()).toBe(12); newDb.close();
+  });
+
+  it("migrates v4 habits into v5 lifecycle records without changing history", async () => {
+    const oldDb = new Dexie(databaseName); oldDb.version(4).stores(storesV4);
+    await oldDb.table("tasks").put({ id: "habit", title: "Walk", kind: "habit", starred: false, archived: false, startDate: "2026-07-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, targetDays: 3, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
+    await oldDb.table("checkIns").bulkPut(["01","02"].map((day) => ({ id: `habit:2026-07-${day}`, taskId: "habit", date: `2026-07-${day}`, status: "done", updatedAt: "" })));
+    await oldDb.table("settings").put({ id: "app", dataVersion: 4, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }); oldDb.close();
+    const newDb = new Dexie(databaseName); newDb.version(4).stores(storesV4); newDb.version(5).stores(storesV5).upgrade(upgradeDataToV5); await newDb.open();
+    expect(await newDb.table("taskLifecycles").get("habit")).toMatchObject({ state: "building", personalBest: 2, milestoneSequence: 1 });
+    expect(await newDb.table("checkIns").count()).toBe(2); expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 5 }); newDb.close();
   });
 });

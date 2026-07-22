@@ -1,5 +1,17 @@
 # Development log
 
+## Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed
+
+### 2026-07-22 — Milestones, neutral pauses, and compassionate recovery
+
+- Added persistent lifecycle profiles, pause periods, and immutable milestone events through Dexie and backup format v5.
+- Added milestone evaluation for fixed habits and Quota Goals, followed by a restrained celebration and explicit user choice.
+- Added planned-break, vacation, and retroactive pause semantics; planned pauses freeze streaks while retroactive pauses cannot repair earlier misses.
+- Preserved personal bests monotonically and kept total completions and milestone history visible after interruptions.
+- Added factual interruption recovery with Continue original plan, Adjust plan, and Pause options without “total reset” language.
+- Added a bilingual Lifecycle surface, milestone timeline, automatic ended-pause recovery, Calendar pause evidence, and reward claiming beside milestone celebrations.
+- Added focused migration, pause, personal-best, lifecycle-decision, and backup tests.
+
 ## Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed
 
 ### 2026-07-22 — Local, traceable period reviews

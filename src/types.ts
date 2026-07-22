@@ -38,6 +38,7 @@ export interface Task {
   endDate?: string;
   schedule: Schedule;
   targetDays?: number;
+  targetPeriods?: number;
   stopReminderAtTarget: boolean;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +51,12 @@ export interface LegacyTask extends Omit<Task, "schedule" | "areaId" | "colorOve
 }
 
 export interface CheckIn { id: string; taskId: string; date: string; status: CheckInStatus; note?: string; updatedAt: string }
+export type LifecycleState = "starting" | "building" | "milestone-reached" | "maintenance" | "paused" | "completed" | "archived";
+export type PauseType = "planned-break" | "vacation" | "retroactive";
+export interface TaskLifecycle { taskId: string; state: LifecycleState; resumeState?: Exclude<LifecycleState, "paused" | "archived" | "completed">; milestoneSequence: number; personalBest: number; celebrationPending: boolean; createdAt: string; updatedAt: string }
+export interface PausePeriod { id: string; taskId: string; startDate: string; endDate?: string; type: PauseType; note?: string; createdAt: string; updatedAt: string }
+export type MilestoneEventType = "target-reached" | "continued" | "maintenance" | "extended" | "completed" | "archived" | "paused" | "resumed" | "recovery-continued" | "plan-adjusted" | "reward-claimed";
+export interface MilestoneEvent { id: string; taskId: string; date: string; type: MilestoneEventType; sequence: number; targetValue?: number; note?: string; createdAt: string }
 export interface DailyOrder { date: string; taskIds: string[] }
 export interface JournalEntry { date: string; content: string; updatedAt: string }
 export interface DailyReflection { date: string; emotionIds: string[]; intensity?: number; note: string; promptId?: string; createdAt: string; updatedAt: string }
@@ -64,7 +71,7 @@ export interface Reward { id: string; title: string; taskId?: string; trigger: R
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 4;
+  dataVersion: 5;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
@@ -89,12 +96,13 @@ type LegacySettings = Omit<AppSettings, "dataVersion" | "reflectionPromptsEnable
 export interface BackupPayloadV1 extends BackupBase<LegacyTask, Omit<LegacySettings, "onboardingComplete">> { version: 1 }
 export interface BackupPayloadV2 extends BackupBase<LegacyTask, LegacySettings & { dataVersion: 2 }> { version: 2 }
 export interface BackupPayloadV3 extends BackupBase<Task, LegacySettings & { dataVersion: 3 }> { version: 3; areas: Area[] }
-export interface BackupPayload { format: "daily-canvas-backup"; version: 4; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: AppSettings[] }
+export interface BackupPayloadV4 { format: "daily-canvas-backup"; version: 4; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 4 }> }
+export interface BackupPayload { format: "daily-canvas-backup"; version: 5; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; taskLifecycles: TaskLifecycle[]; pausePeriods: PausePeriod[]; milestoneEvents: MilestoneEvent[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: AppSettings[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2 | 3 | 4;
+  sourceVersion: 1 | 2 | 3 | 4 | 5;
   migrated: boolean;
   warnings: string[];
-  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; dailyOrders: number; dailyReflections: number; emotions: number; rewards: number; appearanceAssets: number };
+  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; emotions: number; rewards: number; appearanceAssets: number };
 }

@@ -22,7 +22,7 @@ export function TaskEditor({ task, onClose }: TaskEditorProps) {
       scheduleMode: schedule?.mode ?? ("fixed" as Task["schedule"]["mode"]), startDate: task?.startDate ?? todayKey(), endDate: task?.endDate ?? "",
       recurrenceType: schedule?.mode === "fixed" ? schedule.recurrence.type : ("daily" as RecurrenceType), weekdays: schedule?.mode === "fixed" ? schedule.recurrence.weekdays ?? [1,2,3,4,5] : [1,2,3,4,5], intervalDays: schedule?.mode === "fixed" ? schedule.recurrence.intervalDays ?? 2 : 2,
       deadline: schedule?.mode === "floating" ? schedule.optionalDeadline ?? "" : "", quotaPeriod: schedule?.mode === "quota" ? schedule.period : ("week" as const), quotaTarget: schedule?.mode === "quota" ? schedule.targetCount : 1,
-      targetDays: task?.targetDays ?? 21, stopReminderAtTarget: task?.stopReminderAtTarget ?? true,
+      targetDays: task?.targetDays ?? 21, targetPeriods: task?.targetPeriods ?? 4,
     };
   }, [task]);
   const [form, setForm] = useState(defaults);
@@ -37,7 +37,7 @@ export function TaskEditor({ task, onClose }: TaskEditorProps) {
         : form.scheduleMode === "quota"
           ? { mode: "quota", period: form.quotaPeriod, targetCount: Math.max(1, form.quotaTarget), availableFrom: form.startDate, optionalEndDate: form.endDate || undefined }
           : { mode: "fixed", recurrence: { type: form.kind === "task" ? "once" : form.recurrenceType, weekdays: form.recurrenceType === "weekdays" ? form.weekdays : undefined, intervalDays: form.recurrenceType === "interval" ? Math.max(1, form.intervalDays) : undefined } };
-      await saveTask({ title: form.title.trim(), kind: form.kind, areaId: form.areaId || undefined, colorOverride: form.colorOverride || undefined, starred: form.starred, archived: task?.archived ?? false, startDate: form.startDate, endDate: form.scheduleMode === "fixed" && form.endDate ? form.endDate : undefined, schedule, targetDays: form.scheduleMode === "fixed" && form.kind !== "task" ? Math.max(1, form.targetDays) : undefined, stopReminderAtTarget: form.scheduleMode === "fixed" && form.kind !== "task" ? form.stopReminderAtTarget : false }, task);
+      await saveTask({ title: form.title.trim(), kind: form.kind, areaId: form.areaId || undefined, colorOverride: form.colorOverride || undefined, starred: form.starred, archived: task?.archived ?? false, startDate: form.startDate, endDate: form.scheduleMode === "fixed" && form.endDate ? form.endDate : undefined, schedule, targetDays: form.scheduleMode === "fixed" && form.kind !== "task" ? Math.max(1, form.targetDays) : undefined, targetPeriods: form.scheduleMode === "quota" ? Math.max(1, form.targetPeriods) : undefined, stopReminderAtTarget: false }, task);
       onClose();
     } catch { setState("error"); }
   };
@@ -60,9 +60,9 @@ export function TaskEditor({ task, onClose }: TaskEditorProps) {
           <label className="field"><span>{t("area")}</span><select value={form.areaId} onChange={(event) => setForm({ ...form, areaId: event.target.value })}><option value="">{t("noArea")}</option>{areas.filter((area) => !area.archived || area.id === form.areaId).map((area) => <option key={area.id} value={area.id}>{area.icon ? `${area.icon} ` : ""}{area.name}</option>)}</select></label>
           {form.scheduleMode === "floating" ? <label className="field"><span>{t("deadline")}</span><input type="date" min={form.startDate} value={form.deadline} onChange={(event) => setForm({ ...form, deadline: event.target.value })} /></label> : <label className="field"><span>{t("endDate")}</span><input type="date" min={form.startDate} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></label>}
           {form.scheduleMode === "fixed" && form.kind !== "task" && <label className="field"><span>{t("targetDays")}</span><input type="number" min="1" max="999" value={form.targetDays} onChange={(event) => setForm({ ...form, targetDays: Number(event.target.value) })} /></label>}
+          {form.scheduleMode === "quota" && <label className="field"><span>{t("targetPeriods")}</span><input type="number" min="1" max="99" value={form.targetPeriods} onChange={(event) => setForm({ ...form, targetPeriods: Number(event.target.value) })} /></label>}
           <div className="field"><span>{t("taskColorOverride")}</span><div className="color-picker"><button type="button" className={`inherit-color ${!form.colorOverride ? "selected" : ""}`} onClick={() => setForm({ ...form, colorOverride: "" })}>∅</button>{colors.map((color) => <button key={color} type="button" aria-label={color} className={form.colorOverride === color ? "selected" : ""} style={{ background: color }} onClick={() => setForm({ ...form, colorOverride: color })} />)}</div></div>
           <label className="toggle-row field-wide"><input type="checkbox" checked={form.starred} onChange={(event) => setForm({ ...form, starred: event.target.checked })} /><span>{t("starred")}</span></label>
-          {form.scheduleMode === "fixed" && form.kind !== "task" && <label className="toggle-row field-wide"><input type="checkbox" checked={form.stopReminderAtTarget} onChange={(event) => setForm({ ...form, stopReminderAtTarget: event.target.checked })} /><span>{t("stopAtTarget")}</span></label>}
           {state === "error" && <p className="error-message field-wide" role="alert">{t("saveError")}</p>}
         </>}
         <div className="form-actions field-wide"><button type="button" className="button secondary" onClick={step === 2 ? () => setStep(1) : onClose}>{step === 2 ? t("back") : t("cancel")}</button><button disabled={state === "saving"} type="submit" className="button primary">{step === 1 ? t("continue") : state === "saving" ? t("saving") : t("save")}</button></div>

@@ -243,11 +243,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards
+## Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed
 
 **Goal:** Support the full lifecycle of starting, building, maintaining, pausing, recovering, and completing a habit.
 
-**Planned scope:**
+**Delivered scope:**
 
 - Model lifecycle states such as starting, building, milestone reached, maintenance, paused, completed, and archived.
 - Replace silent disappearance after a target with a milestone-completion decision.
@@ -267,6 +267,8 @@ Every milestone must preserve the following principles:
 - Rewards support motivation without becoming a separate points economy.
 
 **Not included:** Competitive leaderboards, punitive streak mechanics, public social comparison, or gambling-like reward systems.
+
+**Completion evidence:** Dexie and backup format v5 add one lifecycle profile per supported task, neutral pause periods, and append-only milestone events while preserving v1–v4 data. Reaching fixed-habit or Quota milestones opens a restrained bilingual celebration followed by continue, maintenance, extend, complete, or archive choices. Planned breaks and vacations freeze streak calculations; retroactive pauses take effect no earlier than their creation date and cannot repair earlier misses. Personal best is monotonic, interruption recovery retains cumulative facts and history, Calendar shows pause evidence, and eligible task rewards appear beside milestone choices.
 
 ---
 

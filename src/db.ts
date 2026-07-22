@@ -1,11 +1,15 @@
 import Dexie, { type EntityTable, type Transaction } from "dexie";
-import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, Reward, Task } from "./types";
+import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, MilestoneEvent, PausePeriod, Reward, Task, TaskLifecycle } from "./types";
+import { calculateTaskStats } from "./services/statisticsService";
 
 export const db = new Dexie("DailyCanvas") as Dexie & {
   areas: EntityTable<Area, "id">;
   tasks: EntityTable<Task, "id">;
   checkIns: EntityTable<CheckIn, "id">;
   experienceLogs: EntityTable<ExperienceLog, "id">;
+  taskLifecycles: EntityTable<TaskLifecycle, "taskId">;
+  pausePeriods: EntityTable<PausePeriod, "id">;
+  milestoneEvents: EntityTable<MilestoneEvent, "id">;
   dailyOrders: EntityTable<DailyOrder, "date">;
   dailyReflections: EntityTable<DailyReflection, "date">;
   emotionDefinitions: EntityTable<EmotionDefinition, "id">;
@@ -39,6 +43,9 @@ export const storesV4 = {
   rewards: "id, taskId, trigger, rewardDate, claimedAt",
   appearanceAssets: "id, kind, createdAt", settings: "id",
 };
+export const storesV5 = { ...storesV4, taskLifecycles: "taskId, state, celebrationPending, updatedAt", pausePeriods: "id, taskId, startDate, endDate, type, createdAt", milestoneEvents: "id, taskId, date, type, sequence, createdAt" };
+const lifecycleTask = (task: Task) => task.kind !== "task" && task.schedule.mode !== "floating";
+const migratedLifecycle = (task: Task, personalBest = 0, at = new Date().toISOString()): TaskLifecycle => ({ taskId: task.id, state: "building", milestoneSequence: 1, personalBest, celebrationPending: false, createdAt: at, updatedAt: at });
 
 db.version(1).stores(storesV2);
 
@@ -104,19 +111,28 @@ export async function upgradeDataToV4(transaction: Transaction): Promise<void> {
       backgroundPreferences[0].assetId = assetId;
     }
     const { backgroundDataUrl: _removed, ...rest } = current;
-    await settingsTable.put({ ...rest, dataVersion: 4, reflectionPromptsEnabled: true, backgroundPreferences });
+    await settingsTable.put({ ...rest, dataVersion: 4, reflectionPromptsEnabled: true, backgroundPreferences } as unknown as AppSettings);
   }
 }
 
 db.version(4).stores(storesV4).upgrade(upgradeDataToV4);
 
+export async function upgradeDataToV5(transaction: Transaction): Promise<void> {
+  const now = new Date().toISOString(); const tasks = await transaction.table<Task>("tasks").toArray(); const checkIns = await transaction.table<CheckIn>("checkIns").toArray();
+  const lifecycles = tasks.filter(lifecycleTask).map((task) => migratedLifecycle(task, calculateTaskStats(task, checkIns.filter((item) => item.taskId === task.id)).personalBest, now));
+  if (lifecycles.length) await transaction.table<TaskLifecycle>("taskLifecycles").bulkPut(lifecycles);
+  const settings = await transaction.table<AppSettings>("settings").get("app"); if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 5 });
+}
+db.version(5).stores(storesV5).upgrade(upgradeDataToV5);
+
 export const defaultBackgroundPreferences = (): AppSettings["backgroundPreferences"] => (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
-export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 4, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
+export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 5, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
 
 export async function initializeDb(): Promise<void> {
   await db.open();
   const settings = await db.settings.get("app");
   if (!settings) await db.settings.put(defaultSettings());
+  const tasks = await db.tasks.toArray(); for (const task of tasks.filter(lifecycleTask)) if (!(await db.taskLifecycles.get(task.id))) await db.taskLifecycles.put(migratedLifecycle(task));
   if (await db.emotionDefinitions.where("isSystem").equals(1).count() === 0) {
     const now = new Date().toISOString();
     await db.emotionDefinitions.bulkPut(SYSTEM_EMOTIONS.map(([systemKey, label]) => ({ id: `system-${systemKey}`, label, normalizedLabel: label.toLocaleLowerCase(), systemKey, isSystem: true, archived: false, createdAt: now, updatedAt: now })));

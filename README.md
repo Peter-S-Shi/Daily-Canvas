@@ -6,11 +6,21 @@ Daily Canvas is a private, local-first personal planning, habit, and reflection 
 
 ## Milestone status
 
-**Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed**
+**Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed**
 
-Milestone 5 adds arbitrary inclusive date-range reviews, factual bilingual summaries, inspectable completion evidence, distinct fixed/Floating/Quota facts, and a filterable Calendar evidence surface. Reviews are derived locally from existing records; database and backup format v4 remain unchanged.
+Milestone 6 adds persistent habit lifecycles, milestone decisions, neutral pause/vacation semantics, compassionate interruption recovery, permanent personal bests, restrained celebrations, nearby rewards, and a milestone timeline. Dexie and backup format v5 migrate all prior data.
 
-See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 6 through Milestone 8 path.
+See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 7 through Milestone 8 path.
+
+## Milestone 6 delivered
+
+- Celebrate a reached milestone first, then choose to continue, enter maintenance, extend the target, complete, or archive.
+- Pause with a planned break, vacation, or retroactive record; paused dates count as neither completed nor failed.
+- Freeze current streaks across planned pauses while permanently retaining total completions, personal bests, and milestone history.
+- Prevent retroactive pauses from repairing misses that occurred before the pause was created.
+- Handle interruptions factually without “total reset” language and offer Continue original plan, Adjust plan, or Pause.
+- Track starting/building, milestone reached, maintenance, paused, completed, and archived lifecycle states for habits and Quota Goals.
+- Show a local milestone timeline and claim eligible task rewards directly from the restrained celebration surface.
 
 ## Milestone 5 delivered
 
@@ -107,4 +117,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.5 does not include recommendations, causal or predictive claims, diagnosis, coaching, notifications, habit lifecycle flows, accounts, cloud sync, remote AI, recursive subtasks, or team project management.
+Version 0.6 does not include competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management.
