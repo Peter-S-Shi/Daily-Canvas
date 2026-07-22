@@ -1,5 +1,17 @@
 # Development log
 
+## Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed
+
+### 2026-07-22 — Local, traceable period reviews
+
+- Added reusable arbitrary-range review facts for fixed completions, Floating Tasks, Quota credits and completed periods, Areas, active days, reflections, emotions, experience records, and reward events.
+- Added Monday/Sunday-aware weekly shortcuts, month and year-boundary presets, inclusive custom ranges, validation, and reusable Area/task-kind/schedule filters.
+- Added deterministic bilingual review sentences with sample-size suppression and no causal, predictive, diagnostic, or prescriptive language.
+- Added a dedicated Review surface with source-date drill-down, repeated-completion aggregation, readable breakdowns, optional context, and local copy output.
+- Rebuilt Calendar as an evidence surface with aggregate, single-task, and single-Area modes; record filters; a color-independent legend; keyboard date navigation; and inspectable check-in, reflection, emotion, and experience details.
+- Kept all review results derived, leaving Dexie and backup format at version 4 while advancing the application to v0.5.0.
+- Added Milestone 5 range, schedule-semantic, quota, traceability, sparse-data, optional-context, bilingual, and language-guardrail tests.
+
 ## Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed
 
 ### 2026-07-21 — Private reflection and appearance delivery

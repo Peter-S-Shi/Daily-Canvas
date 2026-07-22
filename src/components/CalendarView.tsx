@@ -1,141 +1,66 @@
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isAfter,
-  isSameMonth,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-  subDays,
-} from "date-fns";
+import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isAfter, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
+import { toDateKey, todayKey } from "../lib/dates";
 import { resolveTaskColor } from "../services/areaService";
 import { setCheckIn } from "../services/checkInService";
-import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
-import { toDateKey, todayKey } from "../lib/dates";
-import { isQuotaAvailableOn, isTaskScheduledOn, scheduledTasks } from "../services/scheduleService";
-import { calculateTaskStats } from "../services/statisticsService";
+import { getQuotaPeriod, getQuotaProgress } from "../services/quotaService";
+import { isFixedOccurrenceOn, isQuotaAvailableOn } from "../services/scheduleService";
+import type { Task } from "../types";
 
-export function CalendarView({ weekStartsOn, onOpenReflection }: { weekStartsOn: 0 | 1; onOpenReflection: (date: string) => void }) {
-  const { t, i18n } = useTranslation();
-  const [month, setMonth] = useState(startOfMonth(new Date()));
-  const [selectedDate, setSelectedDate] = useState(todayKey());
-  const [focusTaskId, setFocusTaskId] = useState("");
-  const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
-  const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
-  const areas = useLiveQuery(() => db.areas.toArray(), []) ?? [];
-  const activeTasks = tasks.filter((task) => !task.archived);
-  const focusTask = activeTasks.find((task) => task.id === focusTaskId) ?? activeTasks.find((task) => task.schedule.mode !== "floating" && task.kind !== "task") ?? activeTasks.find((task) => task.schedule.mode !== "floating");
-  const first = startOfWeek(startOfMonth(month), { weekStartsOn });
-  const last = endOfWeek(endOfMonth(month), { weekStartsOn });
-  const monthDays = eachDayOfInterval({ start: first, end: last });
-  const recordsByKey = useMemo(() => new Map(checkIns.map((item) => [`${item.taskId}:${item.date}`, item])), [checkIns]);
-  const dateTasks = [...scheduledTasks(activeTasks, parseISO(selectedDate)), ...activeTasks.filter((task) => isQuotaAvailableOn(task, parseISO(selectedDate)))];
-  const selectedIsFuture = selectedDate > todayKey();
-  const stats = focusTask ? calculateTaskStats(focusTask, checkIns.filter((item) => item.taskId === focusTask.id)) : null;
-  const heatDays = eachDayOfInterval({ start: subDays(new Date(), 111), end: new Date() });
+type CalendarMode = "aggregate" | "task" | "area";
+type RecordFilter = "all" | "check-in" | "reflection" | "experience" | "quota";
+
+export function CalendarView({ weekStartsOn, initialDate = todayKey(), onOpenReflection }: { weekStartsOn: 0 | 1; initialDate?: string; onOpenReflection: (date: string) => void }) {
+  const { t, i18n } = useTranslation(); const initial = parseISO(initialDate);
+  const [month, setMonth] = useState(startOfMonth(initial)); const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [mode, setMode] = useState<CalendarMode>("aggregate"); const [taskId, setTaskId] = useState(""); const [areaId, setAreaId] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<"" | Task["schedule"]["mode"]>(""); const [taskKind, setTaskKind] = useState<"" | Task["kind"]>(""); const [recordType, setRecordType] = useState<RecordFilter>("all");
+  const data = useLiveQuery(async () => ({ tasks: await db.tasks.toArray(), areas: await db.areas.toArray(), checkIns: await db.checkIns.toArray(), reflections: await db.dailyReflections.toArray(), emotions: await db.emotionDefinitions.toArray(), experiences: await db.experienceLogs.toArray() }), []) ?? { tasks: [], areas: [], checkIns: [], reflections: [], emotions: [], experiences: [] };
+  const activeTasks = useMemo(() => data.tasks.filter((task) => !task.archived && (!scheduleMode || task.schedule.mode === scheduleMode) && (!taskKind || task.kind === taskKind) && (mode !== "task" || !taskId || task.id === taskId) && (mode !== "area" || !areaId || task.areaId === areaId)), [data.tasks, scheduleMode, taskKind, mode, taskId, areaId]);
+  const taskById = useMemo(() => new Map(data.tasks.map((task) => [task.id, task])), [data.tasks]);
+  const recordsByKey = useMemo(() => new Map(data.checkIns.map((item) => [`${item.taskId}:${item.date}`, item])), [data.checkIns]);
+  const reflectionsByDate = useMemo(() => new Map(data.reflections.map((item) => [item.date, item])), [data.reflections]);
+  const emotionById = useMemo(() => new Map(data.emotions.map((item) => [item.id, item])), [data.emotions]);
+  const first = startOfWeek(startOfMonth(month), { weekStartsOn }); const last = endOfWeek(endOfMonth(month), { weekStartsOn }); const monthDays = eachDayOfInterval({ start: first, end: last });
   const weekdays = weekStartsOn === 1 ? ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] : ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-
+  const selectedReflection = reflectionsByDate.get(selectedDate); const selectedExperiences = data.experiences.filter((item) => item.date === selectedDate && activeTasks.some((task) => task.id === item.taskId));
+  const selectedRecords = data.checkIns.filter((item) => item.date === selectedDate && activeTasks.some((task) => task.id === item.taskId));
+  const selectedTasks = activeTasks.filter((task) => task.schedule.mode === "fixed" ? isFixedOccurrenceOn(task, parseISO(selectedDate)) : selectedRecords.some((record) => record.taskId === task.id) || (task.schedule.mode === "quota" && isQuotaAvailableOn(task, parseISO(selectedDate))));
+  const selectDate = (date: Date) => { const dateKey = toDateKey(date); setSelectedDate(dateKey); setMonth(startOfMonth(date)); };
+  const keyboardMove = (event: React.KeyboardEvent, date: Date) => { const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }; const offset = offsets[event.key]; if (offset) { event.preventDefault(); selectDate(addDays(date, offset)); } };
   const cellState = (date: Date) => {
-    const dateKey = toDateKey(date);
-    const due = scheduledTasks(activeTasks, date);
-    const success = due.filter((task) => recordsByKey.get(`${task.id}:${dateKey}`)?.status === "done").length;
-    const lapses = due.filter((task) => recordsByKey.get(`${task.id}:${dateKey}`)?.status === "lapse").length;
-    const ratio = due.length ? success / due.length : 0;
-    const quotaCompletions = activeTasks.filter((task) => task.schedule.mode === "quota" && recordsByKey.get(`${task.id}:${dateKey}`)?.status === "done").length;
-    return { due: due.length, success, lapses, ratio, quotaCompletions };
+    const dateKey = toDateKey(date); const past = dateKey < todayKey();
+    const due = activeTasks.filter((task) => task.schedule.mode === "fixed" && isFixedOccurrenceOn(task, date));
+    const records = data.checkIns.filter((item) => item.date === dateKey && activeTasks.some((task) => task.id === item.taskId));
+    const done = records.filter((item) => item.status === "done"); const lapse = records.filter((item) => item.status === "lapse").length; const skipped = records.filter((item) => item.status === "skipped").length;
+    const floating = done.filter((item) => taskById.get(item.taskId)?.schedule.mode === "floating").length; const quota = done.filter((item) => taskById.get(item.taskId)?.schedule.mode === "quota").length;
+    const fixedDone = done.filter((item) => taskById.get(item.taskId)?.schedule.mode === "fixed").length; const missed = past ? Math.max(0, due.length - fixedDone - skipped - lapse) : 0;
+    return { due: due.length, fixedDone, floating, quota, lapse, skipped, missed, reflection: reflectionsByDate.has(dateKey), experience: data.experiences.some((item) => item.date === dateKey && activeTasks.some((task) => task.id === item.taskId)) };
   };
-
-  return (
-    <div className="view-stack">
-      <section className="panel calendar-panel">
-        <div className="section-heading">
-          <div><span className="eyebrow">{t("calendar")}</span><h1>{new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(month)}</h1><p>{t("calendarHint")}</p></div>
-          <div className="month-controls">
-            <button type="button" className="icon-button" onClick={() => setMonth(addMonths(month, -1))} aria-label={t("monthPrevious")}>‹</button>
-            <button type="button" className="icon-button" onClick={() => setMonth(addMonths(month, 1))} aria-label={t("monthNext")}>›</button>
-          </div>
-        </div>
-        <div className="calendar-grid weekday-row">
-          {weekdays.map((key) => <span key={key}>{t(key)}</span>)}
-        </div>
-        <div className="calendar-grid month-grid">
-          {monthDays.map((date) => {
-            const key = toDateKey(date);
-            const state = cellState(date);
-            const intensity = state.ratio === 0 ? 0 : Math.max(0.2, state.ratio);
-            return (
-              <button
-                type="button"
-                key={key}
-                className={`calendar-cell ${!isSameMonth(date, month) ? "outside" : ""} ${key === selectedDate ? "selected" : ""} ${key === todayKey() ? "today-cell" : ""}`}
-                onClick={() => setSelectedDate(key)}
-                style={{ "--cell-intensity": intensity } as React.CSSProperties}
-              >
-                <span>{format(date, "d")}</span>
-                {state.due > 0 && <div className="cell-color"><i />{state.lapses > 0 && <b />}</div>}
-                {state.quotaCompletions > 0 && <span className="quota-dot" title={t("quotaCompletion")}>◆</span>}
-                <small>{state.due ? `${state.success}/${state.due}` : ""}</small>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="panel history-editor">
-        <div className="section-heading compact-heading">
-          <div><h2>{t("selectedDate", { date: new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(parseISO(selectedDate)) })}</h2><p>{isAfter(parseISO(selectedDate), new Date()) ? "" : t("calendarHint")}</p></div>{!selectedIsFuture && <button type="button" className="button secondary" onClick={() => onOpenReflection(selectedDate)}>{t("openReflection")}</button>}
-        </div>
-        {dateTasks.length === 0 ? <div className="empty-state small"><p>{t("noTasksOnDate")}</p></div> : (
-          <div className="history-list">
-            {dateTasks.map((task) => {
-              const record = recordsByKey.get(`${task.id}:${selectedDate}`);
-              return (
-                <div className="history-row" key={task.id}>
-                  <span className="task-color" style={{ background: resolveTaskColor(task, areas) }} />
-                  <div><strong>{task.title}</strong><span>{task.schedule.mode === "quota" ? `${t("quotaGoal")} · ${record?.status === "done" ? t("done") : t("noQuotaCredit")}` : record?.status ? t(record.status === "done" && task.kind === "avoidance" ? "safe" : record.status === "done" ? "done" : record.status === "lapse" ? "lapse" : "skipped") : t("unrecorded")}</span></div>
-                  <div className="history-actions">
-                    <button disabled={selectedIsFuture} type="button" className={record?.status === "done" ? "active" : ""} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "done" ? undefined : "done")}>{task.kind === "avoidance" ? t("safe") : t("done")}</button>
-                    {task.schedule.mode === "fixed" && task.kind === "avoidance" && <button disabled={selectedIsFuture} type="button" className={record?.status === "lapse" ? "danger active" : "danger"} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "lapse" ? undefined : "lapse")}>{t("lapse")}</button>}
-                    {task.schedule.mode === "fixed" && <button disabled={selectedIsFuture} type="button" className={record?.status === "skipped" ? "active" : ""} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "skipped" ? undefined : "skipped")}>{t("skip")}</button>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="panel heatmap-panel">
-        <div className="section-heading compact-heading">
-          <div><h2>{focusTask?.title ?? t("tasks")}</h2><p>{t("completionRate")}</p></div>
-          <select value={focusTask?.id ?? ""} onChange={(event) => setFocusTaskId(event.target.value)}>
-            {activeTasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
-          </select>
-        </div>
-        {focusTask && stats ? (
-          <>
-            <div className="stats-strip">
-              {focusTask.schedule.mode === "quota" ? (() => { const period = getQuotaPeriod(focusTask.schedule, new Date(), weekStartsOn); const progress = getQuotaProgress(focusTask, period, checkIns); return <><div><strong>{progress.count}/{progress.target}</strong><span>{t(focusTask.schedule.period === "week" ? "thisWeek" : "thisMonth")}</span></div><div><strong>{getQuotaStreak(focusTask, checkIns, new Date(), weekStartsOn)}</strong><span>{t("periodStreak")}</span></div><div><strong>{progress.achieved ? "✓" : "…"}</strong><span>{t(progress.achieved ? "quotaAchieved" : "inProgress")}</span></div></>; })() : <><div><strong>{stats.currentStreak}</strong><span>{t("currentStreak")}</span></div><div><strong>{stats.longestStreak}</strong><span>{t("longestStreak")}</span></div><div><strong>{stats.completionRate}%</strong><span>{t("completionRate")}</span></div></>}
-            </div>
-            <div className="heatmap" aria-label={focusTask.title}>
-              {heatDays.map((date) => {
-                const key = toDateKey(date);
-                const scheduled = isTaskScheduledOn(focusTask, date);
-                const status = recordsByKey.get(`${focusTask.id}:${key}`)?.status;
-                const className = focusTask.schedule.mode === "quota" ? status === "done" ? "heat-done" : "not-due" : !scheduled ? "not-due" : status === "done" ? "heat-done" : status === "lapse" ? "heat-lapse" : status === "skipped" ? "heat-skip" : isAfter(date, new Date()) ? "not-due" : "heat-missed";
-                return <button type="button" key={key} className={`heat-cell ${className}`} style={{ "--task-color": resolveTaskColor(focusTask, areas) } as React.CSSProperties} title={`${key}: ${status ?? t(focusTask.schedule.mode === "quota" ? "noQuotaCredit" : "unrecorded")}`} onClick={() => { setSelectedDate(key); setMonth(startOfMonth(date)); }} />;
-              })}
-            </div>
-          </>
-        ) : <div className="empty-state small"><p>{t("noTasksOnDate")}</p></div>}
-      </section>
-    </div>
-  );
+  return <div className="view-stack">
+    <section className="panel calendar-panel">
+      <div className="section-heading"><div><span className="eyebrow">{t("calendarEvidence")}</span><h1>{new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(month)}</h1><p>{t("calendarReviewHint")}</p></div><div className="month-controls"><button type="button" className="icon-button" onClick={() => setMonth(addMonths(month, -1))} aria-label={t("monthPrevious")}>‹</button><button type="button" className="button secondary" onClick={() => selectDate(new Date())}>{t("today")}</button><button type="button" className="icon-button" onClick={() => setMonth(addMonths(month, 1))} aria-label={t("monthNext")}>›</button></div></div>
+      <div className="calendar-toolbar">
+        <div className="segmented compact-segmented">{(["aggregate", "task", "area"] as CalendarMode[]).map((item) => <button type="button" className={mode === item ? "active" : ""} key={item} onClick={() => setMode(item)}>{t(`calendarMode_${item}`)}</button>)}</div>
+        {mode === "task" && <select aria-label={t("tasks")} value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="">{t("allTasks")}</option>{data.tasks.filter((task) => !task.archived).map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select>}
+        {mode === "area" && <select aria-label={t("areas")} value={areaId} onChange={(event) => setAreaId(event.target.value)}><option value="">{t("allAreas")}</option>{data.areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select>}
+        <select aria-label={t("scheduleType")} value={scheduleMode} onChange={(event) => setScheduleMode(event.target.value as typeof scheduleMode)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
+        <select aria-label={t("taskKind")} value={taskKind} onChange={(event) => setTaskKind(event.target.value as typeof taskKind)}><option value="">{t("allTaskKinds")}</option><option value="task">{t("regularTask")}</option><option value="habit">{t("goodHabit")}</option><option value="avoidance">{t("avoidanceHabit")}</option></select>
+        <select aria-label={t("recordType")} value={recordType} onChange={(event) => setRecordType(event.target.value as RecordFilter)}><option value="all">{t("allRecords")}</option><option value="check-in">{t("checkIns")}</option><option value="quota">{t("quotaCredits")}</option><option value="reflection">{t("reflection")}</option><option value="experience">{t("experienceRecords")}</option></select>
+      </div>
+      <div className="calendar-legend" aria-label={t("calendarLegend")}><span><i className="legend-done">✓</i>{t("done")}/{t("safe")}</span><span><i className="legend-floating">●</i>{t("floatingTask")}</span><span><i className="legend-quota">◆</i>{t("quotaCompletion")}</span><span><i className="legend-skip">∕</i>{t("skipped")}</span><span><i className="legend-lapse">!</i>{t("lapse")}</span><span><i className="legend-missed">○</i>{t("missed")}</span><span><i className="legend-note">✎</i>{t("reflection")}</span><span><i className="legend-empty">·</i>{t("unrecorded")}</span></div>
+      <div className="calendar-grid weekday-row">{weekdays.map((item) => <span key={item}>{t(item)}</span>)}</div>
+      <div className="calendar-grid month-grid">{monthDays.map((date) => { const dateKey = toDateKey(date); const state = cellState(date); const showCheckIns = recordType === "all" || recordType === "check-in" || recordType === "quota"; const showReflection = recordType === "all" || recordType === "reflection"; const showExperience = recordType === "all" || recordType === "experience"; return <button type="button" key={dateKey} className={`calendar-cell evidence-cell ${!isSameMonth(date, month) ? "outside" : ""} ${dateKey === selectedDate ? "selected" : ""} ${dateKey === todayKey() ? "today-cell" : ""}`} onClick={() => selectDate(date)} onKeyDown={(event) => keyboardMove(event, date)} aria-label={`${dateKey}. ${state.fixedDone} ${t("completed")}, ${state.missed} ${t("missed")}`}><span>{format(date, "d")}</span><div className="cell-evidence">{showCheckIns && state.fixedDone > 0 && <i className="mark done-mark">✓{state.fixedDone}</i>}{showCheckIns && state.floating > 0 && <i className="mark floating-mark">●{state.floating}</i>}{showCheckIns && state.quota > 0 && <i className="mark quota-mark">◆{state.quota}</i>}{showCheckIns && state.skipped > 0 && <i className="mark skip-mark">∕{state.skipped}</i>}{showCheckIns && state.lapse > 0 && <i className="mark lapse-mark">!{state.lapse}</i>}{showCheckIns && state.missed > 0 && <i className="mark missed-mark">○{state.missed}</i>}{showReflection && state.reflection && <i className="mark note-mark">✎</i>}{showExperience && state.experience && <i className="mark experience-mark">≈</i>}</div></button>; })}</div>
+    </section>
+    <section className="panel date-detail" aria-live="polite"><div className="section-heading compact-heading"><div><span className="eyebrow">{t("supportingRecords")}</span><h2>{t("selectedDate", { date: new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(parseISO(selectedDate)) })}</h2></div>{selectedDate <= todayKey() && <button type="button" className="button secondary" onClick={() => onOpenReflection(selectedDate)}>{t("openReflection")}</button>}</div>
+      {selectedTasks.length === 0 && !selectedReflection && selectedExperiences.length === 0 ? <div className="empty-state small"><p>{t("noRecordsOnDate")}</p></div> : <div className="detail-sections">
+        {selectedTasks.length > 0 && <div><h3>{t("checkIns")}</h3><div className="history-list">{selectedTasks.map((task) => { const record = recordsByKey.get(`${task.id}:${selectedDate}`); const quota = task.schedule.mode === "quota" ? getQuotaProgress(task, getQuotaPeriod(task.schedule, parseISO(selectedDate), weekStartsOn), data.checkIns, parseISO(selectedDate)) : null; return <div className="history-row" key={task.id}><span className="task-color" style={{ background: resolveTaskColor(task, data.areas) }} /><div><strong>{task.title}</strong><span>{task.schedule.mode === "quota" ? `${record?.status === "done" ? t("quotaCompletion") : t("noQuotaCredit")} · ${quota?.count}/${quota?.target}` : record?.status ? t(record.status === "done" && task.kind === "avoidance" ? "safe" : record.status) : t("unrecorded")}</span></div><div className="history-actions"><button disabled={isAfter(parseISO(selectedDate), new Date())} type="button" className={record?.status === "done" ? "active" : ""} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "done" ? undefined : "done")}>{task.kind === "avoidance" ? t("safe") : t("done")}</button>{task.schedule.mode === "fixed" && task.kind === "avoidance" && <button type="button" className={record?.status === "lapse" ? "danger active" : "danger"} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "lapse" ? undefined : "lapse")}>{t("lapse")}</button>}{task.schedule.mode === "fixed" && <button type="button" className={record?.status === "skipped" ? "active" : ""} onClick={() => setCheckIn(task.id, selectedDate, record?.status === "skipped" ? undefined : "skipped")}>{t("skip")}</button>}</div></div>; })}</div></div>}
+        {selectedReflection && <div className="record-card"><h3>{t("reflection")}</h3>{selectedReflection.emotionIds.length > 0 && <div className="context-chips">{selectedReflection.emotionIds.map((id) => <span key={id}>{emotionById.get(id)?.label ?? id}</span>)}</div>}{selectedReflection.note && <p>{selectedReflection.note}</p>}</div>}
+        {selectedExperiences.length > 0 && <div><h3>{t("experienceRecords")}</h3>{selectedExperiences.map((item) => <div className="record-card" key={item.id}><strong>{taskById.get(item.taskId)?.title}</strong><span>{item.comparison ? t(item.comparison) : t("recorded")}</span>{item.note && <p>{item.note}</p>}</div>)}</div>}
+      </div>}
+    </section>
+  </div>;
 }

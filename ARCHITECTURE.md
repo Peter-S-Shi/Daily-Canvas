@@ -66,11 +66,11 @@ Do not store a conclusion when it can be reproduced from durable facts, unless a
 
 ## 3. Target Domain Model
 
-### Current implementation through v0.3
+### Current implementation through v0.5
 
-Milestone 3 implements the planning layer: first-class `Area` records, optional Task-to-Area relationships, and the explicit fixed/floating/quota `Schedule` union. Dexie schema version 3 migrates v2 category and recurrence records without changing task or check-in identifiers. Backup format version 3 preserves Areas and all schedule modes, with in-memory migration from supported version 1 and version 2 backups.
+Milestones 3 and 4 implement the current persistent model: first-class `Area` records, the fixed/floating/quota `Schedule` union, Daily Reflections, Emotion Definitions, Experience Logs, and local Appearance Assets. Dexie schema and backup format version 4 preserve and migrate every supported record from earlier releases.
 
-Reflection, Experience Logs, emotion definitions, appearance assets, and the insight engine remain target-model extensions for later milestones and are not present in v0.3.
+Milestone 5 adds no persistent tables. Its arbitrary-range review facts, eligibility rules, bilingual sentences, and Calendar evidence states are deterministically derived from the version 4 source records.
 
 ```text
 Area
@@ -553,9 +553,9 @@ Missing-data counts
 
 The service must return plain data structures and must not depend on React.
 
-### 14.2 Insight Engine
+### 14.2 Review Service
 
-The Insight Engine converts structured facts into cautious, plain-language statements.
+The Review Service converts structured facts into cautious, plain-language review models. It accepts any inclusive valid date range plus Area, task, task-kind, and schedule-mode filters. It preserves source record ids and dates so every completion statement can open supporting Calendar evidence.
 
 Recommended pipeline:
 
@@ -572,7 +572,7 @@ Prioritized insight candidates
     ↓
 Localized sentence templates
     ↓
-Weekly or monthly summary
+Localized period review
 ```
 
 ### Guardrails
@@ -580,8 +580,8 @@ Weekly or monthly summary
 - Every statement must be traceable to structured facts.
 - Minimum sample sizes should prevent fragile statements.
 - Missing data should be acknowledged when relevant.
-- The engine may say “was recorded more often” or “appeared together.”
-- The engine must not say “caused,” “proves,” “you are,” or diagnose a condition.
+- The service may report counts, distributions, and sufficiently supported recorded frequencies.
+- The service must not prescribe actions or say “caused,” “proves,” “you are,” or diagnose a condition.
 - Summaries must not punish low activity or difficult periods.
 - The user should be able to inspect the underlying dates and records.
 - AI rewriting is not part of the default architecture.
@@ -699,14 +699,14 @@ services/
   experienceService
   promptService
   statisticsService
-  insightService
+  reviewService
   appearanceService
   backupService
 ```
 
 This is a conceptual separation, not a requirement to create one file per line immediately.
 
-The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, and backup service boundaries. Future modules extend this directory without moving their rules back into React components.
+The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, review, and backup service boundaries. `reviewService` owns range presets, structured facts, sample-size rules, source traceability, and deterministic English/Chinese review text; React components only render those models.
 
 The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
 

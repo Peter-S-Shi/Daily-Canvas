@@ -13,6 +13,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const pause = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); }); };
 const button = (label: string) => [...document.querySelectorAll("button")].find((item) => item.textContent?.trim().includes(label)) as HTMLButtonElement | undefined;
+const waitForButton = async (label: string) => { for (let attempt = 0; attempt < 20; attempt += 1) { const found = button(label); if (found) return found; await pause(); } return undefined; };
 const click = async (element?: HTMLElement) => { expect(element).toBeTruthy(); await act(async () => { element!.click(); }); await pause(); };
 const change = async (element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: string) => {
   await act(async () => {
@@ -27,6 +28,7 @@ const change = async (element: HTMLInputElement | HTMLSelectElement | HTMLTextAr
 describe("Milestone 4 critical browser flow", () => {
   let root: Root;
   beforeAll(async () => {
+    await db.delete();
     document.body.innerHTML = '<div id="root"></div>';
     root = createRoot(document.getElementById("root")!);
     await act(async () => { root.render(<App />); });
@@ -39,7 +41,7 @@ describe("Milestone 4 critical browser flow", () => {
   });
 
   it("launches and uses Areas, fixed, floating, and quota planning before backup restore", async () => {
-    await click(button("Start empty"));
+    await click(await waitForButton("Start empty"));
     expect(button("New")).toBeTruthy();
 
     await click(button("New"));
@@ -104,6 +106,16 @@ describe("Milestone 4 critical browser flow", () => {
     await change(document.querySelector(".full-journal") as HTMLTextAreaElement, "A complete reflection.\n\nWith another paragraph.");
     await click(button("Save daily reflection"));
     expect((await db.dailyReflections.toArray())[0]).toMatchObject({ note: "A complete reflection.\n\nWith another paragraph." });
+
+    await click(button("Review"));
+    await click(button("Custom"));
+    const rangeInputs = [...document.querySelectorAll(".range-fields input")] as HTMLInputElement[];
+    await change(rangeInputs[0], toDateKey(new Date()));
+    await change(rangeInputs[1], toDateKey(new Date()));
+    expect(document.querySelector(".review-summary")?.textContent).toContain("You completed");
+    await click(document.querySelector(".completion-groups summary") as HTMLElement);
+    await click(document.querySelector(".evidence-dates button") as HTMLButtonElement);
+    expect(document.querySelector(".date-detail")?.textContent).toContain("Supporting records");
 
     await click(button("Settings"));
     await change(document.querySelector(".setting-row select") as HTMLSelectElement, "zh-CN");

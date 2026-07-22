@@ -197,11 +197,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Insights
+## Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed
 
-**Goal:** Make the calendar the primary surface for reviewing action, experience, and emotional patterns, while translating statistics into understandable language.
+**Goal:** Help the user clearly understand what they completed during a user-selected period, with Calendar as the inspectable evidence surface.
 
-**Planned scope:**
+**Delivered scope:**
 
 ### Calendar
 
@@ -209,22 +209,22 @@ Every milestone must preserve the following principles:
 - Separate aggregate calendar mode from single-task and single-Area history modes.
 - Add a date-detail drawer for check-ins, quota progress, experience notes, daily reflections, edits, and later backfills.
 - Add task, Area, schedule-type, and record-type filters.
-- Add week, month, quarter, year, and annual heatmap ranges.
+- Keep a focused monthly evidence grid with direct multi-year month navigation; arbitrary week, month, quarter, year, and custom periods are handled by the shared Review range model.
 - Use labels, shapes, and patterns in addition to color.
 - Improve keyboard navigation, touch interaction, performance, and multi-year queries.
 
 ### Structured Reviews
 
-- Add weekly and monthly reviews for task completion, quota achievement, Area balance, milestone progress, experience trends, and recorded emotions.
+- Add weekly, monthly, and first-class custom-range reviews for task completion, quota achievement, Area distribution, experience records, reflections, and recorded emotions.
 - Distinguish facts from interpretation.
 - Show sample size and missing-data context when a conclusion would otherwise look stronger than the underlying evidence.
 - Allow the user to move from a summary statement to the underlying dates and records.
 
-### Plain-Language Insight Engine
+### Plain-Language Review Engine
 
 - Build insights from deterministic local statistics and rule-based templates.
 - Generate concise, pleasant, bilingual summaries rather than presenting only technical dashboards.
-- Prefer statements such as “You recorded more piano sessions this month” over prescriptive or judgmental language.
+- Center summaries on what was completed, using calm factual language without recommendations or next-step prescriptions.
 - Describe associations cautiously and never present correlation as causation.
 - Avoid mental-health diagnosis, personality labeling, or predictive coaching.
 - Keep AI or LLM rewriting outside the default engine. Any future AI-assisted language layer must be explicit, optional, privacy-reviewed, and unable to alter the underlying facts.
@@ -238,6 +238,8 @@ Every milestone must preserve the following principles:
 - Several years of records remain responsive.
 
 **Not included:** Claims of causation, clinical interpretation, automated life decisions, or opaque AI-generated conclusions.
+
+**Completion evidence:** Arbitrary inclusive ranges and Monday/Sunday week presets feed a deterministic `reviewService` that separates fixed completions, Floating Tasks, Quota credits and period outcomes, Areas, active days, and optional reflection/emotion/experience context. Review statements retain source ids and dates for Calendar drill-down and suppress weak emotion or Area claims. Calendar supplies aggregate, single-task, and single-Area modes; filters; a color-independent legend; keyboard navigation; and a source-record detail surface. Application version is v0.5.0; Dexie and backup format remain at v4 because reviews are derived.
 
 ---
 

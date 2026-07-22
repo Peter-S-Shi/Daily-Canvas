@@ -6,11 +6,21 @@ Daily Canvas is a private, local-first personal planning, habit, and reflection 
 
 ## Milestone status
 
-**Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed**
+**Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed**
 
-Milestone 4 adds a complete daily reflection flow, reusable emotions, optional post-check-in experience notes, warm local prompts, and local background slots. Existing journal text and the prior app background migrate without alteration through database and backup format v4.
+Milestone 5 adds arbitrary inclusive date-range reviews, factual bilingual summaries, inspectable completion evidence, distinct fixed/Floating/Quota facts, and a filterable Calendar evidence surface. Reviews are derived locally from existing records; database and backup format v4 remain unchanged.
 
-See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 5 through Milestone 7 path.
+See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 6 through Milestone 8 path.
+
+## Milestone 5 delivered
+
+- Review this week, last week, this month, last month, or any valid custom date range with inclusive date semantics.
+- Read concise English or Chinese summaries centered on completed work, never coaching or prescriptions.
+- Inspect repeated task completions by source date, with distinct fixed, Floating Task, and Quota Goal counts.
+- Review Area and schedule-type distributions, completed quota periods, and optional reflection, emotion, and experience context.
+- Filter Calendar evidence by task, Area, task kind, schedule type, and record type; use aggregate, single-task, or single-Area mode.
+- Read Calendar cells without color alone through labels, shapes, counts, a full legend, keyboard navigation, and a date-detail evidence view.
+- Copy a readable local review without uploading it.
 
 ## Milestone 4 delivered
 
@@ -97,4 +107,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.4 does not include emotion trend conclusions, natural-language insight summaries, diagnosis, coaching, notifications, habit lifecycle flows, accounts, cloud sync, recursive subtasks, or team project management.
+Version 0.5 does not include recommendations, causal or predictive claims, diagnosis, coaching, notifications, habit lifecycle flows, accounts, cloud sync, remote AI, recursive subtasks, or team project management.
