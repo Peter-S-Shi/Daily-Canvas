@@ -1,5 +1,13 @@
 # Development log
 
+## Milestone 5 follow-up: Calendar evidence corrections
+
+### 2026-07-22 — Lifecycle-safe history and distinct record filters
+
+- Separated lifecycle-aware active-task selectors from historical Calendar evidence so archived, completed, and paused tasks keep their recorded check-ins and experience context.
+- Split CheckIn, Floating, Quota, Reflection, and Experience visibility rules; the Quota filter now renders quota credits only.
+- Added focused regression coverage for both boundaries before closing Milestone 6.
+
 ## Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed
 
 ### 2026-07-22 — Milestones, neutral pauses, and compassionate recovery

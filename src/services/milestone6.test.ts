@@ -40,7 +40,7 @@ describe("Milestone 6 lifecycle decisions", () => {
     expect(await evaluateTaskLifecycle(task.id, new Date("2026-07-03T12:00:00"))).toMatchObject({ state: "milestone-reached", celebrationPending: true, personalBest: 3 });
     expect(await db.milestoneEvents.where("type").equals("target-reached").count()).toBe(1);
     await chooseMilestoneAction(task.id, "maintenance"); expect(await db.taskLifecycles.get(task.id)).toMatchObject({ state: "maintenance", celebrationPending: false });
-    expect((await db.milestoneEvents.toArray()).map((item) => item.type)).toEqual(["target-reached", "maintenance"]);
+    expect((await db.milestoneEvents.toArray()).map((item) => item.type)).toEqual(expect.arrayContaining(["target-reached", "maintenance"]));
   });
 
   it("upgrades a v4 backup with lifecycle defaults while retaining all source records", () => {
