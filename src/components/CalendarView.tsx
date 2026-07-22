@@ -14,10 +14,13 @@ import {
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { db, setCheckIn } from "../db";
-import { calculateTaskStats, isTaskScheduledOn, scheduledTasks, toDateKey, todayKey } from "../lib/dates";
+import { db } from "../db";
+import { setCheckIn } from "../services/checkInService";
+import { toDateKey, todayKey } from "../lib/dates";
+import { isTaskScheduledOn, scheduledTasks } from "../services/scheduleService";
+import { calculateTaskStats } from "../services/statisticsService";
 
-export function CalendarView() {
+export function CalendarView({ weekStartsOn }: { weekStartsOn: 0 | 1 }) {
   const { t, i18n } = useTranslation();
   const [month, setMonth] = useState(startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState(todayKey());
@@ -26,15 +29,15 @@ export function CalendarView() {
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
   const activeTasks = tasks.filter((task) => !task.archived);
   const focusTask = activeTasks.find((task) => task.id === focusTaskId) ?? activeTasks.find((task) => task.kind !== "task") ?? activeTasks[0];
-  const first = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
-  const last = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
+  const first = startOfWeek(startOfMonth(month), { weekStartsOn });
+  const last = endOfWeek(endOfMonth(month), { weekStartsOn });
   const monthDays = eachDayOfInterval({ start: first, end: last });
   const recordsByKey = useMemo(() => new Map(checkIns.map((item) => [`${item.taskId}:${item.date}`, item])), [checkIns]);
   const dateTasks = scheduledTasks(activeTasks, parseISO(selectedDate));
   const selectedIsFuture = selectedDate > todayKey();
   const stats = focusTask ? calculateTaskStats(focusTask, checkIns.filter((item) => item.taskId === focusTask.id)) : null;
   const heatDays = eachDayOfInterval({ start: subDays(new Date(), 111), end: new Date() });
-  const weekdays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  const weekdays = weekStartsOn === 1 ? ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] : ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
   const cellState = (date: Date) => {
     const dateKey = toDateKey(date);

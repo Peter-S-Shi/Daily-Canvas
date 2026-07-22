@@ -586,7 +586,7 @@ A future optional AI language layer may only rewrite approved structured facts. 
 
 ## 15. Database Evolution
 
-The target Dexie database will expand beyond the current version-1 tables.
+The target Dexie database will expand beyond the current version-2 core tables.
 
 Expected entity groups:
 
@@ -615,6 +615,8 @@ A safe conceptual sequence is:
 6. add Emotion Definitions;
 7. move the current background into Appearance Assets and slot preferences;
 8. update backup format and restoration validation after each schema change.
+
+Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade, backup v1-to-v2 migration, validation and integrity checks, and reusable services around the existing domain. The remaining steps intentionally belong to later milestones.
 
 The exact Dexie version numbers belong to implementation, but every version must have:
 
@@ -697,6 +699,8 @@ services/
 ```
 
 This is a conceptual separation, not a requirement to create one file per line immediately.
+
+The Milestone 2 implementation currently provides task, schedule, check-in, daily-order/journal, reward, settings, statistics, and backup service boundaries. Future modules extend this directory without moving their rules back into React components.
 
 The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
 

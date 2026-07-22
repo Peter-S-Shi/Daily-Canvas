@@ -19,8 +19,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { subDays } from "date-fns";
-import { db, setCheckIn } from "../db";
-import { calculateTaskStats, scheduledTasks, todayKey } from "../lib/dates";
+import { db } from "../db";
+import { setCheckIn } from "../services/checkInService";
+import { saveDailyOrder, saveJournal } from "../services/dailyService";
+import { todayKey } from "../lib/dates";
+import { scheduledTasks } from "../services/scheduleService";
+import { calculateTaskStats } from "../services/statisticsService";
 import type { CheckIn, Task } from "../types";
 
 interface TodayViewProps {
@@ -86,12 +90,7 @@ export function TodayView({ onEditTask }: TodayViewProps) {
     if (!over || active.id === over.id) return;
     const ids = todayTasks.map((task) => task.id);
     const next = arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
-    await db.dailyOrders.put({ date, taskIds: next });
-  };
-
-  const saveJournal = async (content: string) => {
-    const limited = Array.from(content).slice(0, 500).join("");
-    await db.journalEntries.put({ date, content: limited, updatedAt: new Date().toISOString() });
+    await saveDailyOrder(date, next);
   };
 
   return (
@@ -135,7 +134,7 @@ export function TodayView({ onEditTask }: TodayViewProps) {
           <div><h2>{t("journal")}</h2><p>{t("journalHint")}</p></div>
           <span className="character-count">{t("charsLeft", { count: 500 - Array.from(journal?.content ?? "").length })}</span>
         </div>
-        <textarea value={journal?.content ?? ""} onChange={(event) => saveJournal(event.target.value)} maxLength={500} placeholder={t("journalHint")} />
+        <textarea value={journal?.content ?? ""} onChange={(event) => saveJournal(date, event.target.value)} maxLength={500} placeholder={t("journalHint")} />
       </section>
     </div>
   );

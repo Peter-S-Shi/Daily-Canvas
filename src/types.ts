@@ -62,14 +62,16 @@ export interface Reward {
 
 export interface AppSettings {
   id: "app";
+  dataVersion: 2;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
   backgroundDataUrl?: string;
   reduceMotion: boolean;
+  onboardingComplete: boolean;
 }
 
-export interface BackupPayload {
+export interface BackupPayloadV1 {
   format: "daily-canvas-backup";
   version: 1;
   exportedAt: string;
@@ -78,5 +80,31 @@ export interface BackupPayload {
   dailyOrders: DailyOrder[];
   journalEntries: JournalEntry[];
   rewards: Reward[];
+  settings: Array<Omit<AppSettings, "dataVersion" | "onboardingComplete">>;
+}
+
+export interface BackupPayload {
+  format: "daily-canvas-backup";
+  version: 2;
+  exportedAt: string;
+  tasks: Task[];
+  checkIns: CheckIn[];
+  dailyOrders: DailyOrder[];
+  journalEntries: JournalEntry[];
+  rewards: Reward[];
   settings: AppSettings[];
+}
+
+export interface RestorePreview {
+  payload: BackupPayload;
+  sourceVersion: 1 | 2;
+  migrated: boolean;
+  warnings: string[];
+  counts: {
+    tasks: number;
+    checkIns: number;
+    dailyOrders: number;
+    journalEntries: number;
+    rewards: number;
+  };
 }

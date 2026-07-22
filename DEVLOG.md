@@ -1,5 +1,18 @@
 # Development log
 
+## Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core — Completed
+
+### 2026-07-21 — Reliability and first-run delivery
+
+- Added a versioned Dexie v1-to-v2 migration and a version 2 backup format with in-memory migration from version 1.
+- Added import validation, restoration previews and warnings, automatic safety exports, transactional restoration, and post-restore integrity checks.
+- Introduced reusable task, check-in, schedule, statistics, daily entry, reward, settings, and backup services.
+- Replaced silent startup failure with an error boundary and local-database recovery screen.
+- Added English-first onboarding with editable starter examples, empty states, and a progressive two-step task editor.
+- Made calendar week order follow the configured Monday/Sunday preference.
+- Added visible save/error states and expanded date, avoidance, skipped-day, milestone, archive, backup-migration, and critical browser-flow coverage.
+- Verified 14 automated tests, type checking, a production build, and a live local-browser smoke flow with no console errors.
+
 ## Milestone 1: Daily Canvas v0.1 Foundation — Completed
 
 ### 2026-07-17 — Windows launcher stabilization

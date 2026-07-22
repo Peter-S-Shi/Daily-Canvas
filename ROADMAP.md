@@ -61,11 +61,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core
+## Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core — Completed
 
 **Goal:** Make the existing daily workflow and data layer dependable enough for long-term personal use before expanding the product model.
 
-**Planned scope:**
+**Delivered scope:**
 
 - Introduce application services for tasks, check-ins, schedules, statistics, settings, and backups so UI components no longer own business rules.
 - Add explicit Dexie database migrations and versioned backup migrations.
@@ -87,6 +87,8 @@ Every milestone must preserve the following principles:
 - Later milestones can extend domain entities through services and migrations rather than rewriting page components.
 
 **Not included:** Mainlines/Areas, floating tasks, quota goals, emotion tracking, experience questionnaires, advanced insights, cloud accounts, cross-device sync, or public deployment.
+
+**Completion evidence:** Dexie and backup migrations are versioned and tested; imports are previewed before a transactional restore and current data is exported first; first-run and failure recovery screens replace silent loading; task creation is progressive; calendar layout follows the week-start setting; and an automated browser-like smoke test covers launch, creation, check-in, history editing, backup/restore, and language switching. Type checking, 14 automated tests, production build, and a live local-browser smoke pass succeeded.
 
 ---
 

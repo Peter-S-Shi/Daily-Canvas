@@ -2,7 +2,9 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
-import { calculateTaskStats, todayKey } from "../lib/dates";
+import { claimReward, createReward, deleteReward } from "../services/rewardService";
+import { todayKey } from "../lib/dates";
+import { calculateTaskStats } from "../services/statisticsService";
 import type { RewardTrigger } from "../types";
 
 export function RewardsView() {
@@ -26,7 +28,7 @@ export function RewardsView() {
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
-    await db.rewards.add({
+    await createReward({
       id: globalThis.crypto.randomUUID(),
       title: title.trim(),
       trigger,
@@ -71,8 +73,8 @@ export function RewardsView() {
               <div className="gift-mark">✦</div>
               <div><span className="eyebrow">{reward.claimedAt ? t("claimed") : unlocked ? t("rewardUnlocked") : t("locked")}</span><h3>{reward.title}</h3><p>{reward.trigger === "date" ? reward.rewardDate : `${task?.title ?? ""} · ${reward.streakDays} ${t("days")}`}</p></div>
               <div className="reward-actions">
-                {unlocked && !reward.claimedAt && <button type="button" className="button primary" onClick={() => db.rewards.update(reward.id, { claimedAt: new Date().toISOString() })}>{t("claim")}</button>}
-                <button type="button" className="icon-button" aria-label={t("delete")} onClick={() => globalThis.confirm(t("rewardDeleteConfirm")) && db.rewards.delete(reward.id)}>×</button>
+                {unlocked && !reward.claimedAt && <button type="button" className="button primary" onClick={() => claimReward(reward.id)}>{t("claim")}</button>}
+                <button type="button" className="icon-button" aria-label={t("delete")} onClick={() => globalThis.confirm(t("rewardDeleteConfirm")) && deleteReward(reward.id)}>×</button>
               </div>
             </article>
           );

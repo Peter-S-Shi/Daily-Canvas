@@ -6,11 +6,11 @@ Daily Canvas is a private, local-first task and habit tracker built around a viv
 
 ## Milestone status
 
-**Milestone 1: Daily Canvas v0.1 Foundation — Completed**
+**Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core — Completed**
 
-The foundation milestone established the local-first domain model, core daily workflow, calendar tracking, privacy boundary, bilingual interface structure, validation baseline, and reliable Windows startup path.
+The trustworthy-core milestone adds explicit data and backup migrations, validated restoration with safety exports, service boundaries, startup recovery, progressive creation, first-run onboarding, week-start preferences, and automated critical-flow coverage on top of the v0.1 foundation.
 
-See [ROADMAP.md](ROADMAP.md) for the planned Milestone 2 through Milestone 7 development path.
+See [ROADMAP.md](ROADMAP.md) for the planned Milestone 3 through Milestone 7 development path.
 
 ## Milestone 1 delivered
 
