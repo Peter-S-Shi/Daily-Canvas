@@ -52,18 +52,27 @@ export interface LegacyTask extends Omit<Task, "schedule" | "areaId" | "colorOve
 export interface CheckIn { id: string; taskId: string; date: string; status: CheckInStatus; note?: string; updatedAt: string }
 export interface DailyOrder { date: string; taskIds: string[] }
 export interface JournalEntry { date: string; content: string; updatedAt: string }
+export interface DailyReflection { date: string; emotionIds: string[]; intensity?: number; note: string; promptId?: string; createdAt: string; updatedAt: string }
+export interface EmotionDefinition { id: string; label: string; normalizedLabel: string; systemKey?: string; isSystem: boolean; archived: boolean; createdAt: string; updatedAt: string }
+export type ExperienceComparison = "easier" | "similar" | "harder";
+export interface ExperienceLog { id: string; taskId: string; date: string; comparison?: ExperienceComparison; effort?: number; urgeIntensity?: number; note?: string; updatedAt: string }
+export type BackgroundSlot = "app" | "today" | "calendar" | "reflection";
+export interface AppearanceAsset { id: string; kind: "background"; mimeType: string; dataUrl: string; createdAt: string }
+export interface BackgroundPreference { slot: BackgroundSlot; assetId?: string; fit: "cover" | "contain"; position: string; overlayOpacity: number; blurPx: number }
 export type RewardTrigger = "date" | "streak";
 export interface Reward { id: string; title: string; taskId?: string; trigger: RewardTrigger; rewardDate?: string; streakDays?: number; claimedAt?: string; createdAt: string }
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 3;
+  dataVersion: 4;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
-  backgroundDataUrl?: string;
   reduceMotion: boolean;
   onboardingComplete: boolean;
+  reflectionPromptsEnabled: boolean;
+  promptRotationState?: { remainingPromptIds: string[]; promptSetVersion: number };
+  backgroundPreferences: BackgroundPreference[];
 }
 
 interface BackupBase<TTask, TSettings> {
@@ -76,14 +85,16 @@ interface BackupBase<TTask, TSettings> {
   rewards: Reward[];
   settings: TSettings[];
 }
-export interface BackupPayloadV1 extends BackupBase<LegacyTask, Omit<AppSettings, "dataVersion" | "onboardingComplete">> { version: 1 }
-export interface BackupPayloadV2 extends BackupBase<LegacyTask, Omit<AppSettings, "dataVersion"> & { dataVersion: 2 }> { version: 2 }
-export interface BackupPayload extends BackupBase<Task, AppSettings> { version: 3; areas: Area[] }
+type LegacySettings = Omit<AppSettings, "dataVersion" | "reflectionPromptsEnabled" | "promptRotationState" | "backgroundPreferences"> & { backgroundDataUrl?: string };
+export interface BackupPayloadV1 extends BackupBase<LegacyTask, Omit<LegacySettings, "onboardingComplete">> { version: 1 }
+export interface BackupPayloadV2 extends BackupBase<LegacyTask, LegacySettings & { dataVersion: 2 }> { version: 2 }
+export interface BackupPayloadV3 extends BackupBase<Task, LegacySettings & { dataVersion: 3 }> { version: 3; areas: Area[] }
+export interface BackupPayload { format: "daily-canvas-backup"; version: 4; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: AppSettings[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2 | 3;
+  sourceVersion: 1 | 2 | 3 | 4;
   migrated: boolean;
   warnings: string[];
-  counts: { areas: number; tasks: number; checkIns: number; dailyOrders: number; journalEntries: number; rewards: number };
+  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; dailyOrders: number; dailyReflections: number; emotions: number; rewards: number; appearanceAssets: number };
 }

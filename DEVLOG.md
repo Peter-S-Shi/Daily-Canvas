@@ -1,5 +1,17 @@
 # Development log
 
+## Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed
+
+### 2026-07-21 — Private reflection and appearance delivery
+
+- Migrated complete legacy journal text into one editable Daily Reflection per date without truncation or rewriting.
+- Added multi-select bilingual system emotions, normalized reusable custom labels, optional intensity, and an unrestricted multi-paragraph journal editor.
+- Added optional bilingual prompts with a persisted non-repeating shuffle bag and a setting to disable them.
+- Added optional post-check-in Experience Logs with comparison, effort, avoidance urge intensity, and short notes, separate from CheckIns.
+- Replaced the embedded global background with local appearance assets and App, Today, Calendar, and Reflection slot preferences.
+- Added Dexie schema version 4 and backup format version 4 with migration from every supported older version.
+- Expanded automated coverage to 27 tests for migration, reflection, prompts, emotions, experience validation, appearance references, backup, and the critical bilingual UI flow.
+
 ## Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines — Completed
 
 ### 2026-07-21 — Flexible planning delivery

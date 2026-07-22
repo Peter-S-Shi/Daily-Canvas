@@ -1,12 +1,15 @@
 import Dexie, { type EntityTable, type Transaction } from "dexie";
-import type { AppSettings, Area, CheckIn, DailyOrder, JournalEntry, LegacyTask, Reward, Task } from "./types";
+import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, Reward, Task } from "./types";
 
 export const db = new Dexie("DailyCanvas") as Dexie & {
   areas: EntityTable<Area, "id">;
   tasks: EntityTable<Task, "id">;
   checkIns: EntityTable<CheckIn, "id">;
+  experienceLogs: EntityTable<ExperienceLog, "id">;
   dailyOrders: EntityTable<DailyOrder, "date">;
-  journalEntries: EntityTable<JournalEntry, "date">;
+  dailyReflections: EntityTable<DailyReflection, "date">;
+  emotionDefinitions: EntityTable<EmotionDefinition, "id">;
+  appearanceAssets: EntityTable<AppearanceAsset, "id">;
   rewards: EntityTable<Reward, "id">;
   settings: EntityTable<AppSettings, "id">;
 };
@@ -24,6 +27,17 @@ export const storesV3 = {
   checkIns: "id, taskId, date, [taskId+date], status, updatedAt",
   dailyOrders: "date", journalEntries: "date, updatedAt",
   rewards: "id, taskId, trigger, rewardDate, claimedAt", settings: "id",
+};
+
+export const storesV4 = {
+  areas: "id, name, sortOrder, archived, updatedAt",
+  tasks: "id, kind, areaId, archived, startDate, endDate, updatedAt",
+  checkIns: "id, taskId, date, [taskId+date], status, updatedAt",
+  experienceLogs: "id, taskId, date, [taskId+date], updatedAt",
+  dailyOrders: "date", dailyReflections: "date, updatedAt",
+  emotionDefinitions: "id, normalizedLabel, isSystem, archived, updatedAt",
+  rewards: "id, taskId, trigger, rewardDate, claimedAt",
+  appearanceAssets: "id, kind, createdAt", settings: "id",
 };
 
 db.version(1).stores(storesV2);
@@ -60,17 +74,53 @@ export async function upgradeDataToV3(transaction: Transaction): Promise<void> {
     await taskTable.put(migrated);
   }
   const settings = await transaction.table<AppSettings>("settings").get("app");
-  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 3 });
+  if (settings) await transaction.table("settings").put({ ...settings, dataVersion: 3 } as unknown as AppSettings);
 }
 
 db.version(3).stores(storesV3).upgrade(upgradeDataToV3);
 
-export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 3, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false });
+export const SYSTEM_EMOTIONS = [
+  ["joyful", "Joyful"], ["content", "Content"], ["calm", "Calm"], ["energized", "Energized"],
+  ["hopeful", "Hopeful"], ["tired", "Tired"], ["sad", "Sad"], ["frustrated", "Frustrated"],
+  ["anxious", "Anxious"], ["uncertain", "Uncertain"], ["mixed", "Mixed"], ["neutral", "Neutral"],
+] as const;
+
+export async function upgradeDataToV4(transaction: Transaction): Promise<void> {
+  const now = new Date().toISOString();
+  const journalTable = transaction.table<JournalEntry>("journalEntries");
+  const reflectionTable = transaction.table<DailyReflection>("dailyReflections");
+  for (const journal of await journalTable.toArray()) {
+    await reflectionTable.put({ date: journal.date, emotionIds: [], note: journal.content, createdAt: journal.updatedAt || now, updatedAt: journal.updatedAt || now });
+  }
+  const emotions = SYSTEM_EMOTIONS.map(([systemKey, label]) => ({ id: `system-${systemKey}`, label, normalizedLabel: label.toLocaleLowerCase(), systemKey, isSystem: true, archived: false, createdAt: now, updatedAt: now }));
+  await transaction.table<EmotionDefinition>("emotionDefinitions").bulkPut(emotions);
+  const settingsTable = transaction.table<AppSettings & { backgroundDataUrl?: string }>("settings");
+  const current = await settingsTable.get("app");
+  if (current) {
+    const backgroundPreferences: AppSettings["backgroundPreferences"] = (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
+    if (current.backgroundDataUrl) {
+      const assetId = "migrated-app-background";
+      await transaction.table<AppearanceAsset>("appearanceAssets").put({ id: assetId, kind: "background", mimeType: current.backgroundDataUrl.slice(5, current.backgroundDataUrl.indexOf(";")) || "image/jpeg", dataUrl: current.backgroundDataUrl, createdAt: now });
+      backgroundPreferences[0].assetId = assetId;
+    }
+    const { backgroundDataUrl: _removed, ...rest } = current;
+    await settingsTable.put({ ...rest, dataVersion: 4, reflectionPromptsEnabled: true, backgroundPreferences });
+  }
+}
+
+db.version(4).stores(storesV4).upgrade(upgradeDataToV4);
+
+export const defaultBackgroundPreferences = (): AppSettings["backgroundPreferences"] => (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
+export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 4, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
 
 export async function initializeDb(): Promise<void> {
   await db.open();
   const settings = await db.settings.get("app");
   if (!settings) await db.settings.put(defaultSettings());
+  if (await db.emotionDefinitions.where("isSystem").equals(1).count() === 0) {
+    const now = new Date().toISOString();
+    await db.emotionDefinitions.bulkPut(SYSTEM_EMOTIONS.map(([systemKey, label]) => ({ id: `system-${systemKey}`, label, normalizedLabel: label.toLocaleLowerCase(), systemKey, isSystem: true, archived: false, createdAt: now, updatedAt: now })));
+  }
 }
 
 export async function resetDatabase(): Promise<void> { db.close(); await Dexie.delete("DailyCanvas"); await initializeDb(); }

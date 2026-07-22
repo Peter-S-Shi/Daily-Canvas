@@ -1,16 +1,25 @@
 # Daily Canvas
 
-Daily Canvas is a private, local-first personal planning and habit tracker built around a vivid calendar. It combines Mainline Areas, fixed schedules, Floating Tasks, weekly and monthly Quota Goals, habits, daily notes, rewards, and editable history in one responsive interface.
+Daily Canvas is a private, local-first personal planning, habit, and reflection tracker built around a vivid calendar. It combines flexible planning, full daily reflections, optional habit experience notes, personal backgrounds, rewards, and editable history in one responsive interface.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Milestone status
 
-**Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines — Completed**
+**Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed**
 
-Milestone 3 adds editable Mainline Areas, dedicated Floating Tasks, and weekly/monthly Quota Goals. Fixed days, flexible work, and quota periods now have distinct scheduling and statistical semantics, backed by a v3 database and backup migration.
+Milestone 4 adds a complete daily reflection flow, reusable emotions, optional post-check-in experience notes, warm local prompts, and local background slots. Existing journal text and the prior app background migrate without alteration through database and backup format v4.
 
-See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 4 through Milestone 7 path.
+See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 5 through Milestone 7 path.
+
+## Milestone 4 delivered
+
+- Begin a reflection with several built-in or user-authored emotions, then move into an unrestricted, multi-paragraph journal editor.
+- Reopen and edit one reflection per date from Reflection or Calendar without duplicating records.
+- Rotate optional bilingual prompts locally with a persisted shuffle bag; prompts can be skipped or disabled.
+- Add an optional, dismissible micro-reflection after a check-in, separate from completion data.
+- Assign local images to App, Today, Calendar, or Reflection with fit, position, overlay, blur, replace, and clear controls.
+- Preserve old journal text and the previous global background through Dexie v4 and backup format v4 migrations.
 
 ## Milestone 3 delivered
 
@@ -32,11 +41,11 @@ See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milest
 - Review a color-filled monthly calendar and a per-task history heatmap.
 - Edit past check-ins and distinguish completed, safe, lapsed, skipped, and unrecorded days.
 - See current streak, personal best, and completion rate.
-- Write one local daily note of up to 500 characters.
+- Write a complete local daily reflection with preserved paragraphs.
 - Plan rewards for dates or streak milestones.
 - Switch between Chinese and English, light and dark themes, and reduced motion.
 - Start in English by default while retaining the complete Chinese interface.
-- Use a private local background image.
+- Use private local background images for supported product surfaces.
 - Export and restore a JSON backup.
 
 ## Privacy model
@@ -88,4 +97,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.3 does not include emotion tracking, structured reflection, Experience Logs, human-friendly insight summaries, notifications, accounts, cloud sync, recursive subtasks, or team project management. Later milestones introduce capabilities only after their supporting reliability and privacy foundations are complete.
+Version 0.4 does not include emotion trend conclusions, natural-language insight summaries, diagnosis, coaching, notifications, habit lifecycle flows, accounts, cloud sync, recursive subtasks, or team project management.

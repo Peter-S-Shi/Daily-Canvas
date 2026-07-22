@@ -14,9 +14,9 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const pause = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); }); };
 const button = (label: string) => [...document.querySelectorAll("button")].find((item) => item.textContent?.trim().includes(label)) as HTMLButtonElement | undefined;
 const click = async (element?: HTMLElement) => { expect(element).toBeTruthy(); await act(async () => { element!.click(); }); await pause(); };
-const change = async (element: HTMLInputElement | HTMLSelectElement, value: string) => {
+const change = async (element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: string) => {
   await act(async () => {
-    const prototype = element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+    const prototype = element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
     Object.getOwnPropertyDescriptor(prototype, "value")?.set?.call(element, value);
     element.dispatchEvent(new Event("change", { bubbles: true }));
     element.dispatchEvent(new Event("input", { bubbles: true }));
@@ -24,7 +24,7 @@ const change = async (element: HTMLInputElement | HTMLSelectElement, value: stri
   await pause();
 };
 
-describe("Milestone 3 critical browser flow", () => {
+describe("Milestone 4 critical browser flow", () => {
   let root: Root;
   beforeAll(async () => {
     document.body.innerHTML = '<div id="root"></div>';
@@ -89,12 +89,21 @@ describe("Milestone 3 critical browser flow", () => {
     await click(document.querySelector('.quota-card .round-check') as HTMLButtonElement);
 
     const backup = await createBackup();
-    expect(backup).toMatchObject({ version: 3 });
+    expect(backup).toMatchObject({ version: 4 });
     expect(backup.areas).toHaveLength(1);
     const task = (await db.tasks.toArray()).find((item) => item.title === "Smoke-test habit");
     await db.tasks.update(task!.id, { title: "Temporary change" });
     await restoreBackup(backup);
     expect((await db.tasks.toArray()).filter((item) => item.title === "Smoke-test habit")).toHaveLength(1);
+
+    await click(button("Reflection"));
+    await click(button("Calm"));
+    await click(button("Continue to journal"));
+    await click(button("Skip prompt"));
+    expect(button("Skip prompt")).toBeUndefined();
+    await change(document.querySelector(".full-journal") as HTMLTextAreaElement, "A complete reflection.\n\nWith another paragraph.");
+    await click(button("Save daily reflection"));
+    expect((await db.dailyReflections.toArray())[0]).toMatchObject({ note: "A complete reflection.\n\nWith another paragraph." });
 
     await click(button("Settings"));
     await change(document.querySelector(".setting-row select") as HTMLSelectElement, "zh-CN");

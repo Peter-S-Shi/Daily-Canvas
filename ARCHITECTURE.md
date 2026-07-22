@@ -383,7 +383,7 @@ interface EmotionDefinition {
 - Normalized labels prevent accidental duplicates while preserving the user's display text.
 - System emotion labels may be localized; user-created labels are authored content and must not be auto-translated.
 - An empty emotion list is valid.
-- The note remains short and optional.
+- The note remains optional and supports complete free-form, multi-paragraph writing without an application-imposed diary-length limit.
 - Existing `JournalEntry.content` migrates into `DailyReflection.note` without alteration.
 
 ---
@@ -592,7 +592,7 @@ A future optional AI language layer may only rewrite approved structured facts. 
 
 ## 15. Database Evolution
 
-The Dexie database is currently at version 3. It contains the Milestone 3 planning tables and will expand further as later reflection and appearance milestones are delivered.
+The Dexie database is currently at version 4. It contains the Milestone 3 planning tables plus Daily Reflections, Emotion Definitions, Experience Logs, Appearance Assets, background slot preferences, and persisted reflection-prompt rotation state.
 
 Expected entity groups:
 
@@ -622,7 +622,7 @@ A safe conceptual sequence is:
 7. move the current background into Appearance Assets and slot preferences;
 8. update backup format and restoration validation after each schema change.
 
-Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration, plus backup format version 3. The remaining steps intentionally belong to later milestones.
+Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration, plus backup format version 4.
 
 The exact Dexie version numbers belong to implementation, but every version must have:
 
@@ -706,7 +706,7 @@ services/
 
 This is a conceptual separation, not a requirement to create one file per line immediately.
 
-The Milestone 2 implementation currently provides task, schedule, check-in, daily-order/journal, reward, settings, statistics, and backup service boundaries. Future modules extend this directory without moving their rules back into React components.
+The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, and backup service boundaries. Future modules extend this directory without moving their rules back into React components.
 
 The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
 

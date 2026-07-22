@@ -145,11 +145,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 4: Daily Canvas v0.4 Reflection and Personalization
+## Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed
 
 **Goal:** Turn daily notes and habit check-ins into a lightweight, warm, and structured reflection practice without increasing daily friction.
 
-**Planned scope:**
+**Delivered scope:**
 
 ### Daily Reflection
 
@@ -192,6 +192,8 @@ Every milestone must preserve the following principles:
 - Reflection and appearance features remain usable with keyboard navigation, reduced motion, and high-contrast needs.
 
 **Not included:** Mental-health diagnosis, clinical screening, mandatory mood scoring, AI therapy, or remote image storage.
+
+**Completion evidence:** Existing journals migrate without text changes into one editable `DailyReflection` per date, and the prior app background becomes a local appearance asset. Built-in and custom emotions, optional persisted prompt rotation, separate Experience Logs, and App/Today/Calendar/Reflection background slots are implemented through reusable services. Backup format v4 migrates all supported older versions and includes every Milestone 4 entity. Type checking, 27 automated tests, and a production build passed; the English and Chinese critical reflection flow is covered by browser-like automation.
 
 ---
 

@@ -22,7 +22,7 @@ import { toDateKey, todayKey } from "../lib/dates";
 import { isQuotaAvailableOn, isTaskScheduledOn, scheduledTasks } from "../services/scheduleService";
 import { calculateTaskStats } from "../services/statisticsService";
 
-export function CalendarView({ weekStartsOn }: { weekStartsOn: 0 | 1 }) {
+export function CalendarView({ weekStartsOn, onOpenReflection }: { weekStartsOn: 0 | 1; onOpenReflection: (date: string) => void }) {
   const { t, i18n } = useTranslation();
   const [month, setMonth] = useState(startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState(todayKey());
@@ -90,7 +90,7 @@ export function CalendarView({ weekStartsOn }: { weekStartsOn: 0 | 1 }) {
 
       <section className="panel history-editor">
         <div className="section-heading compact-heading">
-          <div><h2>{t("selectedDate", { date: new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(parseISO(selectedDate)) })}</h2><p>{isAfter(parseISO(selectedDate), new Date()) ? "" : t("calendarHint")}</p></div>
+          <div><h2>{t("selectedDate", { date: new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(parseISO(selectedDate)) })}</h2><p>{isAfter(parseISO(selectedDate), new Date()) ? "" : t("calendarHint")}</p></div>{!selectedIsFuture && <button type="button" className="button secondary" onClick={() => onOpenReflection(selectedDate)}>{t("openReflection")}</button>}
         </div>
         {dateTasks.length === 0 ? <div className="empty-state small"><p>{t("noTasksOnDate")}</p></div> : (
           <div className="history-list">

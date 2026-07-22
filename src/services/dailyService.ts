@@ -5,6 +5,7 @@ export async function saveDailyOrder(date: string, taskIds: string[]): Promise<v
 }
 
 export async function saveJournal(date: string, content: string): Promise<void> {
-  const limited = Array.from(content).slice(0, 500).join("");
-  await db.journalEntries.put({ date, content: limited, updatedAt: new Date().toISOString() });
+  const existing = await db.dailyReflections.get(date);
+  const now = new Date().toISOString();
+  await db.dailyReflections.put({ date, emotionIds: existing?.emotionIds ?? [], intensity: existing?.intensity, note: content, promptId: existing?.promptId, createdAt: existing?.createdAt ?? now, updatedAt: now });
 }
