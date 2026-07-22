@@ -53,8 +53,8 @@ export interface LegacyTask extends Omit<Task, "schedule" | "areaId" | "colorOve
 export interface CheckIn { id: string; taskId: string; date: string; status: CheckInStatus; note?: string; updatedAt: string }
 export type LifecycleState = "starting" | "building" | "milestone-reached" | "maintenance" | "paused" | "completed" | "archived";
 export type PauseType = "planned-break" | "vacation" | "retroactive";
-export interface TaskLifecycle { taskId: string; state: LifecycleState; resumeState?: Exclude<LifecycleState, "paused" | "archived" | "completed">; milestoneSequence: number; personalBest: number; celebrationPending: boolean; createdAt: string; updatedAt: string }
-export interface PausePeriod { id: string; taskId: string; startDate: string; endDate?: string; type: PauseType; note?: string; createdAt: string; updatedAt: string }
+export interface TaskLifecycle { taskId: string; state: LifecycleState; resumeState?: Exclude<LifecycleState, "paused" | "archived" | "completed">; milestoneSequence: number; nextMilestoneTarget?: number; personalBest: number; celebrationPending: boolean; createdAt: string; updatedAt: string }
+export interface PausePeriod { id: string; taskId: string; startDate: string; endDate?: string; resumedAt?: string; type: PauseType; note?: string; createdAt: string; updatedAt: string }
 export type MilestoneEventType = "target-reached" | "continued" | "maintenance" | "extended" | "completed" | "archived" | "paused" | "resumed" | "recovery-continued" | "plan-adjusted" | "reward-claimed";
 export interface MilestoneEvent { id: string; taskId: string; date: string; type: MilestoneEventType; sequence: number; targetValue?: number; note?: string; createdAt: string }
 export interface DailyOrder { date: string; taskIds: string[] }

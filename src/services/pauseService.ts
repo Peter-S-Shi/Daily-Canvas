@@ -5,5 +5,5 @@ export function effectivePauseStart(pause: PausePeriod): string {
 }
 
 export function isPausedOn(pauses: PausePeriod[], date: string): boolean {
-  return pauses.some((pause) => date >= effectivePauseStart(pause) && (!pause.endDate || date <= pause.endDate));
+  return pauses.some((pause) => date >= effectivePauseStart(pause) && (!pause.endDate || date <= pause.endDate) && (!pause.resumedAt || date < pause.resumedAt.slice(0, 10)));
 }

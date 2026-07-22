@@ -1,5 +1,14 @@
 # Development log
 
+## Milestone 6.1: Lifecycle corrections
+
+### 2026-07-22 — Durable milestone continuation and manual resume
+
+- Added a persistent next-milestone threshold so Continue original plan keeps the existing schedule while preventing the acknowledged target from reopening immediately.
+- Closed active pauses with a recorded resume timestamp, preserving the original pause range and evidence while making the resume date active again.
+- Added regression coverage for repeated milestones, open-ended pauses, and dated pauses resumed before their planned end.
+- Kept backup format v5 compatible by adding only optional lifecycle fields.
+
 ## Milestone 5 follow-up: Calendar evidence corrections
 
 ### 2026-07-22 — Lifecycle-safe history and distinct record filters
