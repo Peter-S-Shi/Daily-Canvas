@@ -1,16 +1,26 @@
 # Daily Canvas
 
-Daily Canvas is a private, local-first task and habit tracker built around a vivid calendar. It combines one-time tasks, positive habits, habits to avoid, daily notes, milestone rewards, and editable history in one responsive interface.
+Daily Canvas is a private, local-first personal planning and habit tracker built around a vivid calendar. It combines Mainline Areas, fixed schedules, Floating Tasks, weekly and monthly Quota Goals, habits, daily notes, rewards, and editable history in one responsive interface.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Milestone status
 
-**Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core — Completed**
+**Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines — Completed**
 
-The trustworthy-core milestone adds explicit data and backup migrations, validated restoration with safety exports, service boundaries, startup recovery, progressive creation, first-run onboarding, week-start preferences, and automated critical-flow coverage on top of the v0.1 foundation.
+Milestone 3 adds editable Mainline Areas, dedicated Floating Tasks, and weekly/monthly Quota Goals. Fixed days, flexible work, and quota periods now have distinct scheduling and statistical semantics, backed by a v3 database and backup migration.
 
-See [ROADMAP.md](ROADMAP.md) for the planned Milestone 3 through Milestone 7 development path.
+See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 4 through Milestone 7 path.
+
+## Milestone 3 delivered
+
+- Create, edit, order, archive, restore, and safely delete Mainline Areas without deleting their tasks or history.
+- Assign a task to one optional Area and inherit its color, with an optional task-level color override.
+- Keep fixed schedules compatible with existing once, daily, weekday, and interval recurrence.
+- Keep undated Floating Tasks in a dedicated list; optional deadlines indicate overdue state without creating missed days.
+- Track weekly or monthly Quota Goals by completion count, with current progress and successful-period streaks.
+- Respect Monday or Sunday week starts in quota boundaries and calendar layout.
+- Preserve supported older data through Dexie schema version 3 and backup format version 3 migrations.
 
 ## Milestone 1 delivered
 
@@ -78,4 +88,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Milestone 1 does not include accounts, cross-device sync, system notifications, a native mobile wrapper, collaboration, or a points store. Later milestones introduce capabilities only after their supporting reliability and privacy foundations are complete.
+Version 0.3 does not include emotion tracking, structured reflection, Experience Logs, human-friendly insight summaries, notifications, accounts, cloud sync, recursive subtasks, or team project management. Later milestones introduce capabilities only after their supporting reliability and privacy foundations are complete.

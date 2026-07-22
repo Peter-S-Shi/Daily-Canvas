@@ -92,11 +92,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines
+## Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines — Completed
 
 **Goal:** Support real-life plans that do not always belong to a predetermined date, while organizing daily action around meaningful life areas.
 
-**Planned scope:**
+**Delivered scope:**
 
 ### Mainlines / Areas
 
@@ -120,8 +120,8 @@ Every milestone must preserve the following principles:
 
 ### Daily Workflow
 
-- Present fixed items, floating items, and quota progress without making the Today view feel crowded.
-- Allow the user to choose a floating item for today without permanently converting it into a fixed schedule.
+- Present fixed scheduled items and relevant quota progress without making the Today view feel crowded.
+- Keep Floating Tasks in a dedicated discoverable list where they can be completed without converting them into fixed schedules.
 - Keep drag-and-drop ordering compatible with Area grouping and mixed schedule types.
 - Provide clear wording for due, available, completed, skipped, partial quota, and expired states.
 
@@ -140,6 +140,8 @@ Every milestone must preserve the following principles:
 - Existing Milestone 1 tasks and check-ins remain valid after migration.
 
 **Not included:** Unlimited nested subtasks, project-management dependencies, kanban boards, team collaboration, or arbitrary multi-level task trees.
+
+**Completion evidence:** The v2-to-v3 Dexie migration converts unique categories into editable Areas, preserves task and history identities, and converts recurrence into the fixed schedule union. Dedicated services implement Area color resolution, Floating Task availability and overdue semantics, weekly/monthly quota periods, progress, outcomes, and period streaks. Backup format v3 migrates supported older exports. Today, Floating Tasks, Tasks, Calendar, history, and statistics distinguish schedule modes. Type checking, 21 automated tests, production build, and a live local-browser smoke check passed.
 
 ---
 

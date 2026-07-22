@@ -24,7 +24,7 @@ const change = async (element: HTMLInputElement | HTMLSelectElement, value: stri
   await pause();
 };
 
-describe("Milestone 2 critical browser flow", () => {
+describe("Milestone 3 critical browser flow", () => {
   let root: Root;
   beforeAll(async () => {
     document.body.innerHTML = '<div id="root"></div>';
@@ -38,7 +38,7 @@ describe("Milestone 2 critical browser flow", () => {
     db.close();
   });
 
-  it("launches, creates, checks in, edits history, restores a backup, and changes language", async () => {
+  it("launches and uses Areas, fixed, floating, and quota planning before backup restore", async () => {
     await click(button("Start empty"));
     expect(button("New")).toBeTruthy();
 
@@ -59,7 +59,38 @@ describe("Milestone 2 critical browser flow", () => {
     await click(button("Skip"));
     expect(await db.checkIns.where("date").equals(toDateKey(yesterday)).first()).toMatchObject({ status: "skipped" });
 
+    await click(button("Tasks & habits"));
+    await click(button("New Area"));
+    await change(document.querySelector('.area-form input[maxlength="40"]') as HTMLInputElement, "Wellbeing");
+    await click(document.querySelector('.area-form button[type="submit"]') as HTMLButtonElement);
+    const area = await db.areas.where("name").equals("Wellbeing").first();
+    expect(area).toBeTruthy();
+
+    await click(button("New"));
+    await change(document.querySelector('input[required][maxlength="80"]') as HTMLInputElement, "Flexible errand");
+    await click(button("Floating task"));
+    await click(button("Continue"));
+    await change(document.querySelector('.task-form select') as HTMLSelectElement, area!.id);
+    await click(button("Save"));
+    expect((await db.tasks.toArray()).find((item) => item.title === "Flexible errand")).toMatchObject({ areaId: area!.id, schedule: { mode: "floating" } });
+    await click(button("Floating"));
+    await click(button("Complete today"));
+    expect(await db.checkIns.get(`${(await db.tasks.filter((item) => item.title === "Flexible errand").first())!.id}:${toDateKey(new Date())}`)).toMatchObject({ status: "done" });
+
+    await click(button("New"));
+    await change(document.querySelector('input[required][maxlength="80"]') as HTMLInputElement, "Weekly practice");
+    await click(button("Quota goal"));
+    await change(document.querySelector('.task-form input[type="number"]') as HTMLInputElement, "2");
+    await click(button("Continue"));
+    await change(document.querySelector('.task-form select') as HTMLSelectElement, area!.id);
+    await click(button("Save"));
+    expect((await db.tasks.toArray()).find((item) => item.title === "Weekly practice")).toMatchObject({ areaId: area!.id, schedule: { mode: "quota", period: "week", targetCount: 2 } });
+    await click(button("Today"));
+    await click(document.querySelector('.quota-card .round-check') as HTMLButtonElement);
+
     const backup = await createBackup();
+    expect(backup).toMatchObject({ version: 3 });
+    expect(backup.areas).toHaveLength(1);
     const task = (await db.tasks.toArray()).find((item) => item.title === "Smoke-test habit");
     await db.tasks.update(task!.id, { title: "Temporary change" });
     await restoreBackup(backup);

@@ -24,6 +24,9 @@ exports/
 backups/
 screenshots/private/
 
+# Private product and milestone drafts
+prompt draft/
+
 # Python and local tooling
 .venv/
 venv/

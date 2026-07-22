@@ -66,6 +66,12 @@ Do not store a conclusion when it can be reproduced from durable facts, unless a
 
 ## 3. Target Domain Model
 
+### Current implementation through v0.3
+
+Milestone 3 implements the planning layer: first-class `Area` records, optional Task-to-Area relationships, and the explicit fixed/floating/quota `Schedule` union. Dexie schema version 3 migrates v2 category and recurrence records without changing task or check-in identifiers. Backup format version 3 preserves Areas and all schedule modes, with in-memory migration from supported version 1 and version 2 backups.
+
+Reflection, Experience Logs, emotion definitions, appearance assets, and the insight engine remain target-model extensions for later milestones and are not present in v0.3.
+
 ```text
 Area
   └── Task
@@ -586,7 +592,7 @@ A future optional AI language layer may only rewrite approved structured facts. 
 
 ## 15. Database Evolution
 
-The target Dexie database will expand beyond the current version-2 core tables.
+The Dexie database is currently at version 3. It contains the Milestone 3 planning tables and will expand further as later reflection and appearance milestones are delivered.
 
 Expected entity groups:
 
@@ -616,7 +622,7 @@ A safe conceptual sequence is:
 7. move the current background into Appearance Assets and slot preferences;
 8. update backup format and restoration validation after each schema change.
 
-Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade, backup v1-to-v2 migration, validation and integrity checks, and reusable services around the existing domain. The remaining steps intentionally belong to later milestones.
+Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration, plus backup format version 3. The remaining steps intentionally belong to later milestones.
 
 The exact Dexie version numbers belong to implementation, but every version must have:
 

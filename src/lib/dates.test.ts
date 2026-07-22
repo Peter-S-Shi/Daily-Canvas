@@ -6,12 +6,12 @@ const baseTask: Task = {
   id: "task-1",
   title: "Read",
   kind: "habit",
-  category: "Growth",
-  color: "#f4a261",
+  areaId: "growth",
+  colorOverride: "#f4a261",
   starred: false,
   archived: false,
   startDate: "2026-07-01",
-  recurrence: { type: "daily" },
+  schedule: { mode: "fixed", recurrence: { type: "daily" } },
   targetDays: 21,
   stopReminderAtTarget: true,
   createdAt: "2026-07-01T00:00:00.000Z",
@@ -20,13 +20,13 @@ const baseTask: Task = {
 
 describe("recurrence", () => {
   it("supports interval schedules", () => {
-    const task = { ...baseTask, recurrence: { type: "interval" as const, intervalDays: 3 } };
+    const task: Task = { ...baseTask, schedule: { mode: "fixed", recurrence: { type: "interval", intervalDays: 3 } } };
     expect(isTaskScheduledOn(task, new Date("2026-07-04T12:00:00"))).toBe(true);
     expect(isTaskScheduledOn(task, new Date("2026-07-05T12:00:00"))).toBe(false);
   });
 
   it("supports selected weekdays", () => {
-    const task = { ...baseTask, recurrence: { type: "weekdays" as const, weekdays: [1, 3, 5] } };
+    const task: Task = { ...baseTask, schedule: { mode: "fixed", recurrence: { type: "weekdays", weekdays: [1, 3, 5] } } };
     expect(isTaskScheduledOn(task, new Date("2026-07-17T12:00:00"))).toBe(true);
     expect(isTaskScheduledOn(task, new Date("2026-07-18T12:00:00"))).toBe(false);
   });
@@ -44,7 +44,7 @@ describe("recurrence", () => {
   });
 
   it("uses calendar days across a daylight-saving boundary", () => {
-    const task = { ...baseTask, startDate: "2026-03-07", recurrence: { type: "interval" as const, intervalDays: 1 } };
+    const task: Task = { ...baseTask, startDate: "2026-03-07", schedule: { mode: "fixed", recurrence: { type: "interval", intervalDays: 1 } } };
     expect(isTaskScheduledOn(task, new Date("2026-03-08T12:00:00"))).toBe(true);
     expect(isTaskScheduledOn(task, new Date("2026-03-09T12:00:00"))).toBe(true);
   });

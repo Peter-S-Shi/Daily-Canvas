@@ -10,59 +10,54 @@ export interface Recurrence {
   intervalDays?: number;
 }
 
+export interface FixedSchedule { mode: "fixed"; recurrence: Recurrence }
+export interface FloatingSchedule { mode: "floating"; availableFrom: string; optionalDeadline?: string }
+export interface QuotaSchedule { mode: "quota"; period: "week" | "month"; targetCount: number; availableFrom: string; optionalEndDate?: string }
+export type Schedule = FixedSchedule | FloatingSchedule | QuotaSchedule;
+
+export interface Area {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+  sortOrder: number;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
   kind: TaskKind;
-  category: string;
-  color: string;
+  areaId?: string;
+  colorOverride?: string;
   starred: boolean;
   archived: boolean;
   startDate: string;
   endDate?: string;
-  recurrence: Recurrence;
+  schedule: Schedule;
   targetDays?: number;
   stopReminderAtTarget: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CheckIn {
-  id: string;
-  taskId: string;
-  date: string;
-  status: CheckInStatus;
-  note?: string;
-  updatedAt: string;
+export interface LegacyTask extends Omit<Task, "schedule" | "areaId" | "colorOverride"> {
+  category: string;
+  color: string;
+  recurrence: Recurrence;
 }
 
-export interface DailyOrder {
-  date: string;
-  taskIds: string[];
-}
-
-export interface JournalEntry {
-  date: string;
-  content: string;
-  updatedAt: string;
-}
-
+export interface CheckIn { id: string; taskId: string; date: string; status: CheckInStatus; note?: string; updatedAt: string }
+export interface DailyOrder { date: string; taskIds: string[] }
+export interface JournalEntry { date: string; content: string; updatedAt: string }
 export type RewardTrigger = "date" | "streak";
-
-export interface Reward {
-  id: string;
-  title: string;
-  taskId?: string;
-  trigger: RewardTrigger;
-  rewardDate?: string;
-  streakDays?: number;
-  claimedAt?: string;
-  createdAt: string;
-}
+export interface Reward { id: string; title: string; taskId?: string; trigger: RewardTrigger; rewardDate?: string; streakDays?: number; claimedAt?: string; createdAt: string }
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 2;
+  dataVersion: 3;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
@@ -71,40 +66,24 @@ export interface AppSettings {
   onboardingComplete: boolean;
 }
 
-export interface BackupPayloadV1 {
+interface BackupBase<TTask, TSettings> {
   format: "daily-canvas-backup";
-  version: 1;
   exportedAt: string;
-  tasks: Task[];
+  tasks: TTask[];
   checkIns: CheckIn[];
   dailyOrders: DailyOrder[];
   journalEntries: JournalEntry[];
   rewards: Reward[];
-  settings: Array<Omit<AppSettings, "dataVersion" | "onboardingComplete">>;
+  settings: TSettings[];
 }
-
-export interface BackupPayload {
-  format: "daily-canvas-backup";
-  version: 2;
-  exportedAt: string;
-  tasks: Task[];
-  checkIns: CheckIn[];
-  dailyOrders: DailyOrder[];
-  journalEntries: JournalEntry[];
-  rewards: Reward[];
-  settings: AppSettings[];
-}
+export interface BackupPayloadV1 extends BackupBase<LegacyTask, Omit<AppSettings, "dataVersion" | "onboardingComplete">> { version: 1 }
+export interface BackupPayloadV2 extends BackupBase<LegacyTask, Omit<AppSettings, "dataVersion"> & { dataVersion: 2 }> { version: 2 }
+export interface BackupPayload extends BackupBase<Task, AppSettings> { version: 3; areas: Area[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2;
+  sourceVersion: 1 | 2 | 3;
   migrated: boolean;
   warnings: string[];
-  counts: {
-    tasks: number;
-    checkIns: number;
-    dailyOrders: number;
-    journalEntries: number;
-    rewards: number;
-  };
+  counts: { areas: number; tasks: number; checkIns: number; dailyOrders: number; journalEntries: number; rewards: number };
 }

@@ -30,7 +30,7 @@ export function Onboarding({ settings }: { settings: AppSettings }) {
         <div className="template-grid">
           {templates.map((template, index) => (
             <button key={template.title} type="button" className={selected.includes(index) ? "template-card selected" : "template-card"} onClick={() => setSelected((items) => items.includes(index) ? items.filter((item) => item !== index) : [...items, index])}>
-              <span className="task-color" style={{ background: template.color }} />
+              <span className="task-color" style={{ background: template.colorOverride }} />
               <strong>{template.title}</strong>
               <small>{t(template.kind === "avoidance" ? "avoidanceHabit" : "goodHabit")}</small>
             </button>

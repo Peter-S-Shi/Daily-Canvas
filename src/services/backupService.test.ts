@@ -13,12 +13,21 @@ const v1 = {
 };
 
 describe("backup migration", () => {
-  it("upgrades a version 1 backup without mutating its task data", () => {
+  it("upgrades a version 1 backup into Areas and fixed schedules without mutating task identity", () => {
     const result = migrateBackup(v1);
     expect(result.migrated).toBe(true);
-    expect(result.payload.version).toBe(2);
+    expect(result.payload.version).toBe(3);
     expect(result.payload.tasks[0].title).toBe("Example");
-    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 2, onboardingComplete: true });
+    expect(result.payload.tasks[0]).toMatchObject({ id: "example-task", colorOverride: "#f4a261", schedule: { mode: "fixed", recurrence: { type: "daily" } } });
+    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 3, onboardingComplete: true });
+  });
+
+  it("migrates shared categories to one editable Area and preserves its visual color", () => {
+    const result = migrateBackup({ ...v1, tasks: [{ ...task, category: "Health" }, { ...task, id: "second", category: "Health", color: "#2a9d8f" }] });
+    expect(result.payload.areas).toHaveLength(1);
+    expect(result.payload.areas[0]).toMatchObject({ name: "Health", color: "#f4a261" });
+    expect(result.payload.tasks.every((item) => item.areaId === result.payload.areas[0].id)).toBe(true);
+    expect(result.counts.areas).toBe(1);
   });
 
   it("rejects unsupported versions and malformed collections", () => {

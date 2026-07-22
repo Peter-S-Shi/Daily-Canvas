@@ -2,40 +2,23 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
+import { resolveTaskColor } from "../services/areaService";
 import { deleteTask, updateTask } from "../services/taskService";
+import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
 import { calculateTaskStats } from "../services/statisticsService";
+import { AreasManager } from "./AreasManager";
 import type { Task } from "../types";
 
 interface TasksViewProps { onAdd: () => void; onEdit: (task: Task) => void }
-
 export function TasksView({ onAdd, onEdit }: TasksViewProps) {
-  const { t } = useTranslation();
-  const [filter, setFilter] = useState<"all" | "starred" | "archived">("all");
-  const [error, setError] = useState("");
-  const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
-  const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
-  const visible = tasks.filter((task) => filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)).sort((a, b) => Number(b.starred) - Number(a.starred) || b.updatedAt.localeCompare(a.updatedAt));
-
-  const remove = async (task: Task) => {
-    if (!globalThis.confirm(t("deleteConfirm", { title: task.title }))) return;
-    try { await deleteTask(task.id); } catch { setError(t("deleteError")); }
-  };
-
-  return (
-    <div className="view-stack"><section className="panel">
-      <div className="section-heading"><div><span className="eyebrow">{t("tasks")}</span><h1>{t("tasks")}</h1><p>{t("appTagline")}</p></div><button type="button" className="button primary" onClick={onAdd}>＋ {t("addTask")}</button></div>
-      <div className="filter-tabs">{(["all", "starred", "archived"] as const).map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{t(item === "all" ? "filterAll" : item === "starred" ? "filterStarred" : "archived")}</button>)}</div>
-      {error && <p className="error-message" role="alert">{error}</p>}
-      {visible.length === 0 && <div className="empty-state"><span>＋</span><p>{t(filter === "archived" ? "emptyArchived" : "emptyTasks")}</p>{filter !== "archived" && <button type="button" className="button primary" onClick={onAdd}>{t("createFirstTask")}</button>}</div>}
-      <div className="task-gallery">{visible.map((task) => {
-        const stats = calculateTaskStats(task, checkIns.filter((item) => item.taskId === task.id));
-        return <article className="task-tile" key={task.id} style={{ "--task-color": task.color } as React.CSSProperties}>
-          <div className="tile-top"><span className="kind-pill">{t(task.kind === "task" ? "regularTask" : task.kind === "habit" ? "goodHabit" : "avoidanceHabit")}</span><button type="button" className="star-button" onClick={() => updateTask(task.id, { starred: !task.starred })}>{task.starred ? "★" : "☆"}</button></div>
-          <button type="button" className="tile-copy" onClick={() => onEdit(task)}><h3>{task.title}</h3><p>{task.category || t("category")}</p></button>
-          <div className="mini-stats"><span><strong>{stats.currentStreak}</strong>{t("days")}</span><span><strong>{stats.completionRate}%</strong>{t("completionRate")}</span></div>
-          <div className="tile-actions"><button type="button" onClick={() => updateTask(task.id, { archived: !task.archived })}>{task.archived ? t("restore") : t("archive")}</button><button type="button" className="danger-text" onClick={() => remove(task)}>{t("delete")}</button></div>
-        </article>;
-      })}</div>
-    </section></div>
-  );
+  const { t } = useTranslation(); const [filter, setFilter] = useState<"all" | "starred" | "archived">("all"); const [areaFilter, setAreaFilter] = useState(""); const [scheduleFilter, setScheduleFilter] = useState(""); const [error, setError] = useState("");
+  const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? []; const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? []; const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? []; const settings = useLiveQuery(() => db.settings.get("app"), []);
+  const visible = tasks.filter((task) => (filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)) && (!areaFilter || task.areaId === areaFilter) && (!scheduleFilter || task.schedule.mode === scheduleFilter)).sort((a,b) => Number(b.starred)-Number(a.starred)||b.updatedAt.localeCompare(a.updatedAt));
+  const remove = async (task: Task) => { if (!globalThis.confirm(t("deleteConfirm", { title: task.title }))) return; try { await deleteTask(task.id); } catch { setError(t("deleteError")); } };
+  return <div className="view-stack"><section className="panel"><div className="section-heading"><div><span className="eyebrow">{t("tasks")}</span><h1>{t("tasks")}</h1><p>{t("planningHint")}</p></div><button type="button" className="button primary" onClick={onAdd}>＋ {t("addTask")}</button></div><AreasManager />
+    <div className="task-filters"><div className="filter-tabs">{(["all","starred","archived"] as const).map((item) => <button type="button" key={item} className={filter===item?"active":""} onClick={() => setFilter(item)}>{t(item === "all" ? "filterAll" : item === "starred" ? "filterStarred" : "archived")}</button>)}</div><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}><option value="">{t("allAreas")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select><select value={scheduleFilter} onChange={(e) => setScheduleFilter(e.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select></div>
+    {error && <p className="error-message">{error}</p>}{visible.length===0 && <div className="empty-state"><span>＋</span><p>{t(filter === "archived" ? "emptyArchived" : "emptyTasks")}</p></div>}
+    <div className="task-gallery">{visible.map((task) => { const records = checkIns.filter((item) => item.taskId===task.id); const stats = calculateTaskStats(task, records); const area = areas.find((item)=>item.id===task.areaId); let statA = stats.currentStreak, statALabel = t("currentStreak"), statB = `${stats.completionRate}%`, statBLabel = t("completionRate"); if (task.schedule.mode === "floating") { statA = stats.completed; statALabel = t("completed"); statB = task.schedule.optionalDeadline ?? "—"; statBLabel = t("deadline"); } else if (task.schedule.mode === "quota") { const progress = getQuotaProgress(task, getQuotaPeriod(task.schedule, new Date(), settings?.weekStartsOn ?? 1), records); statA = `${progress.count}/${progress.target}` as unknown as number; statALabel = t(task.schedule.period === "week" ? "thisWeek" : "thisMonth"); statB = getQuotaStreak(task, records, new Date(), settings?.weekStartsOn ?? 1) as unknown as string; statBLabel = t("periodStreak"); }
+      return <article className="task-tile" key={task.id} style={{ "--task-color": resolveTaskColor(task, areas) } as React.CSSProperties}><div className="tile-top"><span className="kind-pill">{t(task.schedule.mode === "fixed" ? "fixedSchedule" : task.schedule.mode === "floating" ? "floatingTask" : "quotaGoal")}</span><button className="star-button" onClick={() => updateTask(task.id,{starred:!task.starred})}>{task.starred?"★":"☆"}</button></div><button className="tile-copy" onClick={() => onEdit(task)}><h3>{task.title}</h3><p>{area ? `${area.icon ?? ""} ${area.name}` : t("noArea")}</p></button><div className="mini-stats"><span><strong>{String(statA)}</strong>{statALabel}</span><span><strong>{String(statB)}</strong>{statBLabel}</span></div><div className="tile-actions"><button onClick={() => updateTask(task.id,{archived:!task.archived})}>{task.archived?t("restore"):t("archive")}</button><button className="danger-text" onClick={() => remove(task)}>{t("delete")}</button></div></article>; })}</div>
+  </section></div>;
 }

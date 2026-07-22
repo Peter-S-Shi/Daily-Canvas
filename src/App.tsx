@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
+import { FloatingView } from "./components/FloatingView";
 import { Onboarding } from "./components/Onboarding";
 import { RewardsView } from "./components/RewardsView";
 import { SettingsView } from "./components/SettingsView";
@@ -11,10 +12,11 @@ import { TodayView } from "./components/TodayView";
 import { db, initializeDb, resetDatabase } from "./db";
 import type { Task } from "./types";
 
-type View = "today" | "calendar" | "tasks" | "rewards" | "settings";
+type View = "today" | "floating" | "calendar" | "tasks" | "rewards" | "settings";
 
 const nav: Array<{ id: View; icon: string }> = [
   { id: "today", icon: "☀" },
+  { id: "floating", icon: "◌" },
   { id: "calendar", icon: "▦" },
   { id: "tasks", icon: "✓" },
   { id: "rewards", icon: "✦" },
@@ -59,6 +61,7 @@ export default function App() {
       </aside>
       <main className="main-content">
         {view === "today" && <TodayView onEditTask={(task) => setEditingTask(task)} />}
+        {view === "floating" && <FloatingView onAdd={() => setEditingTask(null)} onEdit={(task) => setEditingTask(task)} />}
         {view === "calendar" && <CalendarView weekStartsOn={settings.weekStartsOn} />}
         {view === "tasks" && <TasksView onAdd={() => setEditingTask(null)} onEdit={(task) => setEditingTask(task)} />}
         {view === "rewards" && <RewardsView />}
