@@ -24,6 +24,8 @@ Flexible Planning
 Structured Reflection
         ↓
 Human-Friendly Insights
+        ↓
+Personal Preservation
 ```
 
 ## Cross-Cutting Principles
@@ -272,69 +274,167 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 7: Daily Canvas v0.7 Installable Experience and Reminders
+## Milestone 6.1: Lifecycle Corrections — Completed
 
-**Goal:** Make Daily Canvas convenient to open and useful at the right time while preserving local-first privacy.
+**Goal:** Correct two lifecycle transitions without redesigning the completed Milestone 6 model.
 
-**Planned scope:**
+**Delivered scope:**
 
-- Add Progressive Web App installation and an offline application shell.
-- Add opt-in local reminders derived from schedule, quota, milestone, and lifecycle services.
-- Add quiet hours, reminder dismissal, permission education, and notification health checks.
-- Support gentle quota-progress reminders near the end of a week or month without treating them as failure notices.
-- Add update availability, safe refresh, and offline/online status feedback.
-- Add scheduled backup reminders and a lightweight backup-health indicator.
-- Polish desktop, tablet, and mobile layouts and startup performance.
+- Persist a genuinely higher `nextMilestoneTarget` after Continue original plan so an acknowledged threshold cannot immediately reopen.
+- Close the effective active pause on manual Resume while preserving the original `PausePeriod` as inspectable history.
+- Record resumed lifecycle evidence and make the resume date immediately eligible for schedule and statistics evaluation.
+- Keep backup format v5 compatible through optional lifecycle fields.
 
-**Exit criteria:**
-
-- The application can be installed, reopened offline, updated safely, and deliver only user-approved reminders.
-- Reminder behavior is consistent with fixed, floating, quota, pause, and lifecycle semantics.
-- No product data is sent to a server for local reminders.
-
-**Not included:** Mandatory accounts or remote push-notification infrastructure.
+**Completion evidence:** Focused regressions cover continued milestones, open-ended pauses, and dated pauses resumed before their planned end. Type checking, 47 automated tests, and a production build passed.
 
 ---
 
-## Milestone 8: Daily Canvas v1.0 Stable Local-First Release
+## Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection — Planned
 
-**Goal:** Produce a polished, documented, accessible release that can be trusted as a durable personal planning and reflection system.
+**Goal:** Let the user preserve short personal principles, lessons, and philosophical reflections as a private ordered collection that can become a printable personal volume.
 
 **Planned scope:**
 
-- Complete accessibility review for keyboard use, screen readers, contrast, color independence, touch targets, and reduced motion.
-- Complete performance review for multi-year histories, larger task collections, emotion records, experience logs, and local image assets.
-- Add end-to-end coverage for daily action, quota evaluation, calendar review, reflection, backup, restore, migration, reminders, and milestone journeys.
-- Finalize onboarding, empty states, recovery flows, release documentation, and data-ownership explanations.
-- Define compatibility, upgrade, support, and release-checklist policies.
-- Resolve all release-blocking defects discovered during an extended real-use trial.
+- Add a separate bilingual Meditations / 感悟 page for multiline `MeditationEntry` records.
+- Limit each entry to 150 semantic units using one reusable mixed-language rule: each Han character and each non-CJK word counts as one; punctuation, whitespace, and paragraph breaks do not count.
+- Support create, edit, confirmed delete, persisted manual ordering, immutable creation time, and separate edited time.
+- Add Select Mode, Export All, and Export Selected while preserving the global manual order.
+- Build a deterministic export model with editable default cover titles `我的感悟` and `Meditations`, dates visible by default, restrained page backgrounds, A4/Letter layouts, and compact/standard/large text.
+- Add a local print view for browser Print / Save as PDF and a locally generated editable `.docx` file.
+- Add Meditations through an additive Dexie and backup migration while preserving every existing record.
+- Keep the full workflow local, bilingual, keyboard accessible, touch friendly, and compatible with reduced motion.
 
 **Exit criteria:**
 
-- All release checks pass.
-- Privacy boundaries are documented.
-- Upgrade and restore paths are verified.
-- No critical workflow depends on developer tooling.
-- A user can understand how planning, tracking, reflection, insights, and data ownership fit together.
+- The user can create, edit, delete, reorder, reload, and inspect multiline Meditations without losing content, timestamps, or order.
+- The 150-unit rule is deterministic and enforced by both reusable domain logic and the editor.
+- All and selected exports use the persisted manual order and never mutate source entries.
+- Print/PDF and Word output preserve requested content, paragraphs, dates, Unicode text, and reasonable page layout.
+- Existing databases and supported backups migrate safely; new backups restore Meditations with content, order, and timestamps intact.
+- Automated checks and the defined live local acceptance journey pass in both content languages.
+
+**Not included:** AI generation or rewriting, automatic extraction from Daily Reflection, public sharing, cloud sync, categories, tags, chapters, full-text search, rich text, Markdown rendering, attachments, collaborative editing, or the former PWA/reminder scope.
 
 ---
 
-## Milestone 9: Optional Private Sync and Accounts — Not Scheduled
+## Feature Complete Gate
 
-**Goal:** Add cross-device continuity only if sustained use demonstrates that it is worth the security and operational complexity.
+The current release becomes feature-complete only when:
 
-**Possible scope:**
+- Milestone 7 is implemented and accepted.
+- The planned Milestones 1–7 user-facing scope is present.
+- Migrations and backups cover the complete current-release data model.
+- Required documentation, versions, and validation records are synchronized.
+- No known missing capability prevents the product from fulfilling the current release promise.
 
-- Explicitly opt-in accounts and encrypted synchronization.
-- Offline-first conflict resolution with deterministic check-in identities.
-- Device management, export, account deletion, and complete remote-data deletion.
-- A documented privacy model, retention policy, and recovery strategy.
-- Clear handling for local images, reflection records, emotions, and experience logs.
+Feature Complete does not mean Release Ready. It closes planned feature development and creates the entry condition for Feature Freeze and Product Hardening.
 
-**Entry criteria:**
+---
 
-- The local-first v1.0 product is stable.
-- The need is validated through real use.
-- Encryption, conflict resolution, ownership, operating cost, and deletion semantics have been reviewed before implementation.
+## Feature Freeze Policy
 
-This milestone is intentionally optional. Local-only use remains a fully supported product mode even if sync is added later.
+Feature Freeze begins only after the Feature Complete Gate is explicitly accepted and recorded in both this roadmap and `PROJECT_STATUS.md`.
+
+During freeze:
+
+- release-blocking defects must be fixed;
+- data-integrity, privacy, security, migration, backup, and core-workflow defects must be fixed;
+- severe UX failures in promised workflows must be fixed;
+- nonessential new functionality moves to Deferred Features / Next Version;
+- any intentional scope reopening must be explicitly recorded in `ROADMAP.md` and `PROJECT_STATUS.md`.
+
+---
+
+## Milestone 8: Product Hardening
+
+**Goal:** Converge the complete Daily Canvas system on release-level correctness, resilience, usability, privacy, and evidence rather than adding another feature set.
+
+### 1. System Audit and Defect Inventory
+
+- Audit the current release promise against implementation, documentation, migrations, backups, and known validation evidence.
+- Build a prioritized defect inventory only from reproduced or clearly evidenced findings.
+- Create `HARDENING_BACKLOG.md` after the audit only if the number or complexity of findings justifies a separate ledger.
+
+### 2. Correctness and Data Integrity
+
+- Verify fixed, Floating, and Quota semantics across Today, Calendar, Review, Lifecycle, and historical evidence.
+- Verify lifecycle continuation, pause, resume, recovery, completion, archive, and preserved history.
+- Verify Daily Reflection, emotions, Experience Logs, Meditations, rewards, and appearance assets remain distinct and correctly linked.
+- Exercise Dexie migrations and backup/restore compatibility across every supported source version.
+
+### 3. Workflow and UX Consistency
+
+- Review creation, editing, cancellation, deletion, repeated clicks, reload, partial failure, and interrupted-operation behavior.
+- Verify promised journeys use consistent bilingual language, date semantics, empty states, confirmations, focus management, and recovery guidance.
+- Confirm archived, completed, and paused records retain inspectable evidence without reappearing as ordinary active work.
+
+### 4. Robustness, Privacy, Accessibility, and Performance
+
+- Test large multi-year histories, larger local image assets, and representative collection sizes.
+- Audit keyboard use, screen-reader semantics, touch targets, contrast, color independence, and reduced motion.
+- Review local data boundaries, export behavior, secret safety, and all sensitive reflection and Meditation content paths.
+- Verify Windows launcher and production-build behavior without assuming developer tooling is already configured.
+- Exercise Meditations selection, ordering, print/PDF, Word export, Unicode, pagination, and local-only document generation.
+
+### 5. Full Regression and Manual Acceptance
+
+- Run the complete automated suite and production build.
+- Execute defined manual journeys for daily action, Floating Tasks, Quota Goals, Calendar evidence, Review, Reflection, Lifecycle, backup/restore, Meditations, print/PDF, and Word export.
+- Record the environment, result, and verification method for critical paths that cannot be fully automated.
+
+**Exit criteria:**
+
+- No known release-blocking defect remains.
+- No known high-risk data-integrity, privacy, security, or migration defect remains.
+- Every defined core journey passes manual acceptance.
+- Automated checks pass.
+- Critical fixes have regression coverage or a documented repeatable verification procedure.
+- Deferred issues and features are documented.
+- Privacy and secret-safety checks pass.
+- `ROADMAP.md`, `PROJECT_STATUS.md`, both READMEs, `ARCHITECTURE.md`, and release notes agree.
+
+---
+
+## Milestone 9: Daily Canvas v1.0 Release Candidate and Delivery
+
+**Goal:** Produce and verify a release candidate for the current local React/Vite application without making PWA installation a release requirement.
+
+**Planned scope:**
+
+- Produce the final production build and verify a clean-environment start through the Windows launcher.
+- Verify empty-database and migrated-database startup behavior.
+- Verify backup/export and restore using supported representative source versions.
+- Finalize release notes, known limitations, data-ownership explanation, and user documentation.
+- Confirm package, UI, documentation, database, and backup version consistency.
+- Complete final accessibility, privacy, and secret-safety reviews.
+- Verify local and remote commits agree and prepare a release/tag where appropriate.
+
+**Exit criteria:**
+
+- All release-candidate checks pass with recorded evidence.
+- No release blocker remains open.
+- The candidate can start, preserve, export, restore, and present the current release scope without developer intervention.
+- Release documentation and repository state identify the same accepted candidate.
+
+Any release-blocking finding returns the project to Product Hardening. A new candidate must be produced and accepted after the fix.
+
+---
+
+## Current Version Complete / Maintenance
+
+Daily Canvas v1.0 becomes complete only when the accepted release candidate satisfies every Milestone 9 exit criterion. Later maintenance fixes preserve the accepted release scope. New capabilities require explicit next-version planning rather than silently reopening the completed release.
+
+---
+
+## Deferred Features / Next Version
+
+The following ideas are not part of the current v1.0 release path:
+
+- PWA installation and offline application shell.
+- Local reminders, quiet hours, notification permissions, quota reminders, and backup reminders.
+- Update and offline-status UX associated with the former Milestone 7.
+- Optional private accounts and encrypted synchronization.
+- Remote or AI-assisted rewriting.
+- Recursive subtasks, team collaboration, public publishing, and other nonessential expansion ideas.
+
+Local-only use remains a fully supported product mode. Any future account, sync, remote, or AI capability must be optional, privacy-reviewed, and unable to remove that mode.

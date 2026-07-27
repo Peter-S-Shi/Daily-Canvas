@@ -1,5 +1,14 @@
 # Development log
 
+## Project lifecycle revision
+
+### 2026-07-27 — Feature completion and release-readiness stages
+
+- Superseded the former planned Milestone 7 PWA/reminder scope with Personal Meditations and Print Collection.
+- Distinguished Feature Complete, Feature Freeze, Product Hardening, Full Regression and Manual Acceptance, and Release Candidate as separate lifecycle stages.
+- Introduced `PROJECT_STATUS.md` as the authoritative current-state summary.
+- Changed planning documentation only; no product code, application version, Dexie schema, or backup version changed.
+
 ## Milestone 6.1: Lifecycle corrections
 
 ### 2026-07-22 — Durable milestone continuation and manual resume

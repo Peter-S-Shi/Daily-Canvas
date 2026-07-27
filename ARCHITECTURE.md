@@ -2,7 +2,7 @@
 
 ## 1. Product Boundary
 
-Daily Canvas is a local-first, single-user personal planning, habit, reflection, and insight application.
+Daily Canvas is a local-first, single-user personal planning, habit, reflection, insight, and personal-preservation application.
 
 IndexedDB is authoritative for product data. The application must remain useful without an account, server, analytics service, advertising system, or remote AI dependency.
 
@@ -17,6 +17,9 @@ Recording
 
 Understanding
   Calendar · Statistics · Plain-language insights
+
+Preservation (planned Milestone 7)
+  Personal Meditations · ordered personal collection · local document export
 ```
 
 These layers should share domain entities and services rather than creating separate feature silos.
@@ -102,6 +105,60 @@ Derived Services
 ```
 
 The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive tree.
+
+---
+
+## Planned Milestone 7 Architecture: Personal Meditations
+
+This section describes planned v0.7 boundaries only. Meditations are not part of the current v0.6 implementation, Dexie v5 schema, backup v5 payload, or current service list.
+
+Meditations preserve short personal lessons and principles independently from dated Daily Reflections and derived Reviews.
+
+```ts
+interface MeditationEntry {
+  id: string;
+  content: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+Rules:
+
+- `createdAt` is immutable after creation.
+- Content edits update `updatedAt`; reordering alone does not represent a content edit.
+- New records append after the current final item.
+- Delete and reorder operations normalize `sortOrder` transactionally.
+- Page display, Export All, Export Selected, print, and Word output use the same persisted manual order.
+- Meditation content is plain text. Rendering must preserve paragraphs without injecting HTML.
+
+### Semantic Length Service
+
+The 150-unit limit belongs in reusable domain logic rather than only in an editor component.
+
+- Each Unicode Han character counts as one unit.
+- Each non-Han word-like segment counts as one unit.
+- A continuous number is one unit.
+- A visible emoji grapheme counts as one unit.
+- Punctuation, whitespace, and paragraph breaks do not count.
+- Mixed-language content uses the combined total.
+
+Create and update operations must trim outer whitespace without destroying internal paragraphs, reject empty content, and reject content above 150 units. The UI live counter and persistence service must call the same rule.
+
+### Planned Service Boundaries
+
+`meditationService` owns CRUD, validation, timestamps, listing, deletion, ordering, and sort normalization.
+
+`meditationExportService` builds an immutable export model from all entries or a selected subset, global manual order, editable cover titles, date visibility, page style, page size, and text size. Selection order must not replace global order.
+
+The print renderer consumes the export model and produces a local print-optimized document for browser Print / Save as PDF. A separate Word renderer consumes the same model and generates a genuinely editable local `.docx`. Browser and Word output may approximate backgrounds and pagination differently; they are not required to be pixel-identical.
+
+Export output is derived. It must not become authoritative stored Meditation content or mutate source entries.
+
+Milestone 7 requires an additive Dexie table and backup-format migration when implemented. Existing databases and supported backups must upgrade without losing any current record, while older backups restore with an empty Meditation collection.
+
+Document generation remains local. It must not rely on remote APIs, remote fonts, distributed font files, or remote background assets.
 
 ---
 
@@ -708,6 +765,8 @@ This is a conceptual separation, not a requirement to create one file per line i
 
 The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, review, and backup service boundaries. `reviewService` owns range presets, structured facts, sample-size rules, source traceability, and deterministic English/Chinese review text; React components only render those models.
 
+Planned Milestone 7 adds `meditationService` and `meditationExportService`; this statement does not claim that either service exists in v0.6.
+
 The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
 
 ---
@@ -787,7 +846,7 @@ Future optional services require:
 - local-only mode preservation;
 - security and operating-cost review.
 
-Emotion records, reflections, experience notes, and local images are especially sensitive and must receive the same or stronger protection as task history.
+Emotion records, reflections, experience notes, local images, and planned personal Meditations are especially sensitive and must receive the same or stronger protection as task history. Meditation print, PDF, and Word generation must remain local and must not require remote document services or fonts.
 
 ---
 

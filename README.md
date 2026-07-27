@@ -6,11 +6,21 @@ Daily Canvas is a private, local-first personal planning, habit, and reflection 
 
 ## Milestone status
 
-**Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed**
+**Latest completed engineering work: Milestone 6.1 Lifecycle Corrections**
 
-Milestone 6 adds persistent habit lifecycles, milestone decisions, neutral pause/vacation semantics, compassionate interruption recovery, permanent personal bests, restrained celebrations, nearby rewards, and a milestone timeline. Dexie and backup format v5 migrate all prior data.
+Daily Canvas remains in **Feature Development**. Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection is the next planned feature milestone and has not been implemented. Feature Complete, Feature Freeze, Product Hardening, and Release Candidate are later, distinct stages.
 
-See [ROADMAP.md](ROADMAP.md) for the completed milestones and the planned Milestone 7 through Milestone 8 path.
+See [ROADMAP.md](ROADMAP.md) for scope and lifecycle policy, and [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state.
+
+### Planned Milestone 7
+
+Milestone 7 will add a separate private Meditations / 感悟 collection with short multiline entries, persistent manual ordering, bilingual print preview, browser Print / Save as PDF, and local editable Word export. It remains planned, not delivered.
+
+## Milestone 6.1 delivered
+
+- Continue original plan now persists a genuinely higher next milestone instead of reopening the acknowledged threshold.
+- Manual Resume closes the effective pause on the resume date while preserving the original pause record and resumed lifecycle evidence.
+- Optional lifecycle fields keep Dexie and backup format v5 compatible.
 
 ## Milestone 6 delivered
 
@@ -106,7 +116,7 @@ pnpm build
 
 The application uses React, TypeScript, Vite, Dexie/IndexedDB, i18next, date-fns, and dnd kit. A task definition is separate from its dated check-ins; recurring tasks are calculated from schedules rather than duplicated into an unlimited list of daily records.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundaries, and [ROADMAP.md](ROADMAP.md) for milestone sequencing and completion criteria.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundaries, [ROADMAP.md](ROADMAP.md) for milestone sequencing and completion criteria, and [PROJECT_STATUS.md](PROJECT_STATUS.md) for the current phase and verification state.
 
 ## Status semantics
 
@@ -117,4 +127,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.6 does not include competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management.
+Version 0.6 does not include Meditations or document export, competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management. PWA installation and reminders are deferred rather than the active next milestone.
