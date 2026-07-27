@@ -1,0 +1,460 @@
+{
+  "format": "daily-canvas-backup",
+  "version": 6,
+  "exportedAt": "2026-07-15T12:00:00.000Z",
+  "areas": [
+    {
+      "id": "area-wellbeing",
+      "name": "Wellbeing Lab",
+      "color": "#2a9d8f",
+      "icon": "W",
+      "sortOrder": 0,
+      "archived": false,
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "updatedAt": "2026-06-01T12:00:00.000Z"
+    },
+    {
+      "id": "area-learning",
+      "name": "Learning Studio",
+      "color": "#457b9d",
+      "icon": "L",
+      "sortOrder": 1,
+      "archived": false,
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "updatedAt": "2026-06-01T12:00:00.000Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-daily-water",
+      "title": "Drink a glass of water",
+      "kind": "habit",
+      "areaId": "area-wellbeing",
+      "starred": true,
+      "archived": false,
+      "startDate": "2026-07-01",
+      "schedule": {
+        "mode": "fixed",
+        "recurrence": {
+          "type": "daily"
+        }
+      },
+      "targetDays": 3,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-07-01T08:00:00.000Z",
+      "updatedAt": "2026-07-15T08:00:00.000Z"
+    },
+    {
+      "id": "task-avoid-scroll",
+      "title": "Avoid late-night scrolling",
+      "kind": "avoidance",
+      "areaId": "area-wellbeing",
+      "starred": false,
+      "archived": false,
+      "startDate": "2026-07-01",
+      "schedule": {
+        "mode": "fixed",
+        "recurrence": {
+          "type": "daily"
+        }
+      },
+      "targetDays": 3,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-07-01T08:05:00.000Z",
+      "updatedAt": "2026-07-15T08:05:00.000Z"
+    },
+    {
+      "id": "task-floating-library",
+      "title": "Return library sample book",
+      "kind": "task",
+      "areaId": "area-learning",
+      "starred": true,
+      "archived": false,
+      "startDate": "2026-07-05",
+      "schedule": {
+        "mode": "floating",
+        "availableFrom": "2026-07-05",
+        "optionalDeadline": "2026-07-20"
+      },
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-07-05T09:00:00.000Z",
+      "updatedAt": "2026-07-05T09:00:00.000Z"
+    },
+    {
+      "id": "task-quota-practice",
+      "title": "Practice a sample skill",
+      "kind": "habit",
+      "areaId": "area-learning",
+      "starred": false,
+      "archived": false,
+      "startDate": "2026-07-01",
+      "schedule": {
+        "mode": "quota",
+        "period": "week",
+        "targetCount": 2,
+        "availableFrom": "2026-07-01"
+      },
+      "targetPeriods": 2,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-07-01T09:00:00.000Z",
+      "updatedAt": "2026-07-15T09:00:00.000Z"
+    },
+    {
+      "id": "task-paused-walk",
+      "title": "Sample recovery walk",
+      "kind": "habit",
+      "areaId": "area-wellbeing",
+      "starred": false,
+      "archived": false,
+      "startDate": "2026-07-01",
+      "schedule": {
+        "mode": "fixed",
+        "recurrence": {
+          "type": "weekdays",
+          "weekdays": [1, 3, 5]
+        }
+      },
+      "targetDays": 7,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "updatedAt": "2026-07-10T10:00:00.000Z"
+    },
+    {
+      "id": "task-archived-reading",
+      "title": "Archived sample reading",
+      "kind": "habit",
+      "areaId": "area-learning",
+      "starred": false,
+      "archived": true,
+      "startDate": "2026-06-01",
+      "endDate": "2026-06-30",
+      "schedule": {
+        "mode": "fixed",
+        "recurrence": {
+          "type": "daily"
+        }
+      },
+      "targetDays": 21,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "updatedAt": "2026-07-01T10:00:00.000Z"
+    }
+  ],
+  "checkIns": [
+    {
+      "id": "check-water-0701",
+      "taskId": "task-daily-water",
+      "date": "2026-07-01",
+      "status": "done",
+      "updatedAt": "2026-07-01T18:00:00.000Z"
+    },
+    {
+      "id": "check-water-0702",
+      "taskId": "task-daily-water",
+      "date": "2026-07-02",
+      "status": "done",
+      "updatedAt": "2026-07-02T18:00:00.000Z"
+    },
+    {
+      "id": "check-water-0703",
+      "taskId": "task-daily-water",
+      "date": "2026-07-03",
+      "status": "done",
+      "updatedAt": "2026-07-03T18:00:00.000Z"
+    },
+    {
+      "id": "check-water-0704",
+      "taskId": "task-daily-water",
+      "date": "2026-07-04",
+      "status": "skipped",
+      "updatedAt": "2026-07-04T18:00:00.000Z"
+    },
+    {
+      "id": "check-avoid-0701",
+      "taskId": "task-avoid-scroll",
+      "date": "2026-07-01",
+      "status": "done",
+      "updatedAt": "2026-07-01T21:00:00.000Z"
+    },
+    {
+      "id": "check-avoid-0702",
+      "taskId": "task-avoid-scroll",
+      "date": "2026-07-02",
+      "status": "lapse",
+      "updatedAt": "2026-07-02T21:00:00.000Z"
+    },
+    {
+      "id": "check-quota-0702",
+      "taskId": "task-quota-practice",
+      "date": "2026-07-02",
+      "status": "done",
+      "updatedAt": "2026-07-02T19:00:00.000Z"
+    },
+    {
+      "id": "check-quota-0705",
+      "taskId": "task-quota-practice",
+      "date": "2026-07-05",
+      "status": "done",
+      "updatedAt": "2026-07-05T19:00:00.000Z"
+    },
+    {
+      "id": "check-floating-0708",
+      "taskId": "task-floating-library",
+      "date": "2026-07-08",
+      "status": "done",
+      "updatedAt": "2026-07-08T17:00:00.000Z"
+    },
+    {
+      "id": "check-paused-0701",
+      "taskId": "task-paused-walk",
+      "date": "2026-07-01",
+      "status": "done",
+      "updatedAt": "2026-07-01T17:00:00.000Z"
+    },
+    {
+      "id": "check-archived-0615",
+      "taskId": "task-archived-reading",
+      "date": "2026-06-15",
+      "status": "done",
+      "updatedAt": "2026-06-15T17:00:00.000Z"
+    }
+  ],
+  "experienceLogs": [
+    {
+      "id": "experience-water-0703",
+      "taskId": "task-daily-water",
+      "date": "2026-07-03",
+      "comparison": "easier",
+      "effort": 2,
+      "note": "Synthetic note: the cue was easy to notice.",
+      "updatedAt": "2026-07-03T18:05:00.000Z"
+    },
+    {
+      "id": "experience-archived-0615",
+      "taskId": "task-archived-reading",
+      "date": "2026-06-15",
+      "comparison": "similar",
+      "note": "Synthetic historical evidence.",
+      "updatedAt": "2026-06-15T17:05:00.000Z"
+    }
+  ],
+  "taskLifecycles": [
+    {
+      "taskId": "task-daily-water",
+      "state": "building",
+      "milestoneSequence": 2,
+      "nextMilestoneTarget": 6,
+      "personalBest": 3,
+      "celebrationPending": false,
+      "createdAt": "2026-07-01T08:00:00.000Z",
+      "updatedAt": "2026-07-03T18:00:00.000Z"
+    },
+    {
+      "taskId": "task-avoid-scroll",
+      "state": "building",
+      "milestoneSequence": 1,
+      "nextMilestoneTarget": 3,
+      "personalBest": 1,
+      "celebrationPending": false,
+      "createdAt": "2026-07-01T08:05:00.000Z",
+      "updatedAt": "2026-07-02T21:00:00.000Z"
+    },
+    {
+      "taskId": "task-quota-practice",
+      "state": "building",
+      "milestoneSequence": 1,
+      "nextMilestoneTarget": 2,
+      "personalBest": 1,
+      "celebrationPending": false,
+      "createdAt": "2026-07-01T09:00:00.000Z",
+      "updatedAt": "2026-07-05T19:00:00.000Z"
+    },
+    {
+      "taskId": "task-paused-walk",
+      "state": "paused",
+      "resumeState": "building",
+      "milestoneSequence": 1,
+      "nextMilestoneTarget": 7,
+      "personalBest": 1,
+      "celebrationPending": false,
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "updatedAt": "2026-07-10T10:00:00.000Z"
+    },
+    {
+      "taskId": "task-archived-reading",
+      "state": "archived",
+      "milestoneSequence": 1,
+      "nextMilestoneTarget": 21,
+      "personalBest": 8,
+      "celebrationPending": false,
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "updatedAt": "2026-07-01T10:00:00.000Z"
+    }
+  ],
+  "pausePeriods": [
+    {
+      "id": "pause-walk-0710",
+      "taskId": "task-paused-walk",
+      "startDate": "2026-07-10",
+      "endDate": "2026-07-18",
+      "type": "vacation",
+      "note": "Synthetic planned pause.",
+      "createdAt": "2026-07-09T12:00:00.000Z",
+      "updatedAt": "2026-07-09T12:00:00.000Z"
+    }
+  ],
+  "milestoneEvents": [
+    {
+      "id": "event-water-target",
+      "taskId": "task-daily-water",
+      "date": "2026-07-03",
+      "type": "target-reached",
+      "sequence": 1,
+      "targetValue": 3,
+      "createdAt": "2026-07-03T18:00:00.000Z"
+    },
+    {
+      "id": "event-water-continued",
+      "taskId": "task-daily-water",
+      "date": "2026-07-03",
+      "type": "continued",
+      "sequence": 2,
+      "targetValue": 6,
+      "createdAt": "2026-07-03T18:01:00.000Z"
+    },
+    {
+      "id": "event-walk-paused",
+      "taskId": "task-paused-walk",
+      "date": "2026-07-10",
+      "type": "paused",
+      "sequence": 1,
+      "createdAt": "2026-07-09T12:00:00.000Z"
+    },
+    {
+      "id": "event-archived",
+      "taskId": "task-archived-reading",
+      "date": "2026-07-01",
+      "type": "archived",
+      "sequence": 1,
+      "createdAt": "2026-07-01T10:00:00.000Z"
+    }
+  ],
+  "dailyOrders": [
+    {
+      "date": "2026-07-03",
+      "taskIds": [
+        "task-avoid-scroll",
+        "task-daily-water",
+        "task-quota-practice"
+      ]
+    }
+  ],
+  "dailyReflections": [
+    {
+      "date": "2026-07-03",
+      "emotionIds": ["system-calm", "custom-curious"],
+      "intensity": 3,
+      "note": "Synthetic reflection.\n\nA second paragraph verifies preserved line breaks.",
+      "promptId": "prompt-synthetic",
+      "createdAt": "2026-07-03T20:00:00.000Z",
+      "updatedAt": "2026-07-03T20:00:00.000Z"
+    }
+  ],
+  "meditationEntries": [
+    {
+      "id": "meditation-first",
+      "content": "Small steps make useful evidence.\nKeep the record kind.",
+      "sortOrder": 0,
+      "createdAt": "2026-07-02T12:00:00.000Z",
+      "updatedAt": "2026-07-02T12:00:00.000Z"
+    },
+    {
+      "id": "meditation-second",
+      "content": "留一点空白，也是一种选择。",
+      "sortOrder": 1,
+      "createdAt": "2026-07-04T12:00:00.000Z",
+      "updatedAt": "2026-07-05T12:00:00.000Z"
+    }
+  ],
+  "emotionDefinitions": [
+    {
+      "id": "system-calm",
+      "label": "Calm",
+      "normalizedLabel": "calm",
+      "systemKey": "calm",
+      "isSystem": true,
+      "archived": false,
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "updatedAt": "2026-06-01T12:00:00.000Z"
+    },
+    {
+      "id": "custom-curious",
+      "label": "Curious",
+      "normalizedLabel": "curious",
+      "isSystem": false,
+      "archived": false,
+      "createdAt": "2026-07-01T12:00:00.000Z",
+      "updatedAt": "2026-07-01T12:00:00.000Z"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "reward-sample-tea",
+      "title": "Make a sample cup of tea",
+      "taskId": "task-daily-water",
+      "trigger": "streak",
+      "streakDays": 3,
+      "createdAt": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "id": "reward-sample-date",
+      "title": "Take a quiet sample break",
+      "trigger": "date",
+      "rewardDate": "2026-07-15",
+      "createdAt": "2026-07-01T12:00:00.000Z"
+    }
+  ],
+  "appearanceAssets": [],
+  "settings": [
+    {
+      "id": "app",
+      "dataVersion": 6,
+      "language": "en",
+      "theme": "light",
+      "weekStartsOn": 1,
+      "reduceMotion": false,
+      "onboardingComplete": true,
+      "reflectionPromptsEnabled": true,
+      "backgroundPreferences": [
+        {
+          "slot": "app",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "today",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "calendar",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "reflection",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        }
+      ]
+    }
+  ]
+}

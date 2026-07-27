@@ -1,0 +1,46 @@
+{
+  "format": "daily-canvas-backup",
+  "version": 6,
+  "exportedAt": "2026-07-15T12:00:00.000Z",
+  "areas": [],
+  "tasks": [],
+  "checkIns": [],
+  "experienceLogs": [],
+  "taskLifecycles": [],
+  "pausePeriods": [],
+  "milestoneEvents": [],
+  "dailyOrders": [],
+  "dailyReflections": [],
+  "meditationEntries": [
+    {
+      "id": "invalid-meditation-a",
+      "content": "First synthetic entry.",
+      "sortOrder": 0,
+      "createdAt": "2026-07-01T12:00:00.000Z",
+      "updatedAt": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "id": "invalid-meditation-b",
+      "content": "Second synthetic entry.",
+      "sortOrder": 0,
+      "createdAt": "2026-07-02T12:00:00.000Z",
+      "updatedAt": "2026-07-02T12:00:00.000Z"
+    }
+  ],
+  "emotionDefinitions": [],
+  "rewards": [],
+  "appearanceAssets": [],
+  "settings": [
+    {
+      "id": "app",
+      "dataVersion": 6,
+      "language": "en",
+      "theme": "light",
+      "weekStartsOn": 1,
+      "reduceMotion": false,
+      "onboardingComplete": true,
+      "reflectionPromptsEnabled": true,
+      "backgroundPreferences": []
+    }
+  ]
+}

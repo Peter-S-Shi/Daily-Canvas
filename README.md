@@ -132,4 +132,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundari
 
 ## Current boundaries
 
-Version 0.6 does not include Meditations or document export, competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management. PWA installation and reminders are deferred rather than the active next milestone.
+Version 0.7 includes Meditations and local document export. It does not include competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management. PWA installation and reminders are deferred rather than the active next milestone.

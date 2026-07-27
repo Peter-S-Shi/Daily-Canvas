@@ -1,0 +1,104 @@
+{
+  "format": "daily-canvas-backup",
+  "version": 5,
+  "exportedAt": "2026-06-30T12:00:00.000Z",
+  "areas": [],
+  "tasks": [
+    {
+      "id": "legacy-v5-habit",
+      "title": "Legacy sample habit",
+      "kind": "habit",
+      "starred": false,
+      "archived": false,
+      "startDate": "2026-06-28",
+      "schedule": {
+        "mode": "fixed",
+        "recurrence": {
+          "type": "daily"
+        }
+      },
+      "targetDays": 3,
+      "stopReminderAtTarget": false,
+      "createdAt": "2026-06-28T12:00:00.000Z",
+      "updatedAt": "2026-06-30T12:00:00.000Z"
+    }
+  ],
+  "checkIns": [
+    {
+      "id": "legacy-v5-check",
+      "taskId": "legacy-v5-habit",
+      "date": "2026-06-29",
+      "status": "done",
+      "updatedAt": "2026-06-29T18:00:00.000Z"
+    }
+  ],
+  "experienceLogs": [],
+  "taskLifecycles": [
+    {
+      "taskId": "legacy-v5-habit",
+      "state": "building",
+      "milestoneSequence": 1,
+      "personalBest": 1,
+      "celebrationPending": false,
+      "createdAt": "2026-06-28T12:00:00.000Z",
+      "updatedAt": "2026-06-30T12:00:00.000Z"
+    }
+  ],
+  "pausePeriods": [],
+  "milestoneEvents": [],
+  "dailyOrders": [],
+  "dailyReflections": [
+    {
+      "date": "2026-06-29",
+      "emotionIds": [],
+      "note": "Synthetic v5 reflection.",
+      "createdAt": "2026-06-29T20:00:00.000Z",
+      "updatedAt": "2026-06-29T20:00:00.000Z"
+    }
+  ],
+  "emotionDefinitions": [],
+  "rewards": [],
+  "appearanceAssets": [],
+  "settings": [
+    {
+      "id": "app",
+      "dataVersion": 5,
+      "language": "en",
+      "theme": "light",
+      "weekStartsOn": 1,
+      "reduceMotion": false,
+      "onboardingComplete": true,
+      "reflectionPromptsEnabled": true,
+      "backgroundPreferences": [
+        {
+          "slot": "app",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "today",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "calendar",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        },
+        {
+          "slot": "reflection",
+          "fit": "cover",
+          "position": "center",
+          "overlayOpacity": 0.65,
+          "blurPx": 0
+        }
+      ]
+    }
+  ]
+}
