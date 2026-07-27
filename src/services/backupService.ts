@@ -1,5 +1,6 @@
 import { db, defaultBackgroundPreferences, defaultSettings, SYSTEM_EMOTIONS, initializeDb } from "../db";
 import type { AppSettings, AppearanceAsset, Area, BackupPayload, BackupPayloadV1, BackupPayloadV2, BackupPayloadV3, BackupPayloadV4, BackupPayloadV5, DailyReflection, EmotionDefinition, LegacyTask, RestorePreview, Task, TaskLifecycle } from "../types";
+import { validateMeditationContent } from "./meditationService";
 import { calculateTaskStats } from "./statisticsService";
 
 type UnknownRecord = Record<string, unknown>;
@@ -22,6 +23,13 @@ function validateCore(record: UnknownRecord): void {
   validateItems(areas, "Area", ["id", "name", "color"]); validateItems(tasks, "Task", ["id", "title", "kind", "startDate"]); validateItems(checkIns, "Check-in", ["id", "taskId", "date", "status"]); validateItems(dailyOrders, "Daily order", ["date"]); validateItems(reflections, "Reflection", ["date"]); validateItems(experienceLogs, "Experience", ["id", "taskId", "date"]); validateItems(meditations, "Meditation", ["id", "content", "createdAt", "updatedAt"]); validateItems(emotions, "Emotion", ["id", "label", "normalizedLabel"]); validateItems(rewards, "Reward", ["id", "title", "trigger"]); validateItems(assets, "Appearance asset", ["id", "kind", "dataUrl"]); validateItems(lifecycles, "Lifecycle", ["taskId", "state"]); validateItems(pauses, "Pause", ["id", "taskId", "startDate", "type"]); validateItems(milestones, "Milestone", ["id", "taskId", "date", "type"]); validateItems(settings, "Settings", ["id", "language", "theme"]);
   tasks.forEach((item) => { const task = item as UnknownRecord; if (!["task", "habit", "avoidance"].includes(String(task.kind))) throw new Error("A task has an unsupported type."); if (Number(record.version) >= 3) { if (!isRecord(task.schedule) || !["fixed", "floating", "quota"].includes(String(task.schedule.mode))) throw new Error("A task has an unsupported schedule."); } else if (!isRecord(task.recurrence) || !["once", "daily", "weekdays", "interval"].includes(String(task.recurrence.type))) throw new Error("A task has an unsupported schedule."); });
   checkIns.forEach((item) => { if (!["done", "lapse", "skipped"].includes(String((item as UnknownRecord).status))) throw new Error("A check-in has an unsupported status."); });
+  meditations.forEach((item, index) => {
+    const meditation = item as UnknownRecord;
+    if (typeof meditation.sortOrder !== "number" || !Number.isFinite(meditation.sortOrder) || !Number.isInteger(meditation.sortOrder) || meditation.sortOrder < 0) throw new Error(`Meditation entry ${index + 1} has an invalid sort order.`);
+    const validation = validateMeditationContent(meditation.content as string);
+    if (!validation.valid) throw new Error(`Meditation entry ${index + 1} has invalid content.`);
+  });
+  if (new Set(meditations.map((item) => (item as UnknownRecord).sortOrder)).size !== meditations.length) throw new Error("Meditation entries contain duplicate sort orders.");
   const unique = (items: unknown[], key: string) => new Set(items.map((item) => String((item as UnknownRecord)[key]))).size === items.length;
   if (![areas, tasks, checkIns, dailyOrders, reflections, experienceLogs, meditations, emotions, rewards, assets, pauses, milestones].every((items, index) => unique(items, index === 3 || index === 4 ? "date" : "id")) || !unique(lifecycles, "taskId")) throw new Error("Backup collections contain duplicate identifiers.");
 }

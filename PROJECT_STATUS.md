@@ -8,7 +8,7 @@ Feature Complete Review. The gate assessment is pending; Feature Freeze is not a
 
 ## Current Milestone
 
-Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection is implemented and validated.
+Milestone 7.1: Print and backup contract corrections is implemented and validated on top of the completed Milestone 7 scope.
 
 ## Current Release Scope
 
@@ -28,6 +28,7 @@ Not active. Feature Freeze can begin only after the Feature Complete Gate is exp
 - Milestone 5 follow-up preserved historical Calendar evidence and separated record-type filters.
 - Milestone 6.1 corrected durable milestone continuation and lifecycle-safe manual Resume behavior.
 - Milestone 7 added a private ordered Meditations collection, mixed-language length rules, selected/all print preview, browser PDF flow, editable local Word export, and additive data migration.
+- Milestone 7.1 made the selected A4/Letter size part of the actual print rule and rejects invalid Meditation content or ambiguous order before backup restore.
 
 ## Open Release Blockers
 
@@ -40,7 +41,7 @@ Not started. Product Hardening is Milestone 8 and begins only after the Feature 
 ## Verification Status
 
 - Milestone-level automated tests, type checks, production builds, and smoke checks are recorded in repository documentation.
-- Milestone 7 passed TypeScript checking, 57 automated tests, production build, live bilingual browser smoke checks, print-dialog validation, and OpenXML inspection of a generated Word file.
+- Milestone 7.1 passed TypeScript checking, 60 automated tests, production build, focused A4/Letter browser-rule checks, live print-dialog validation, and the earlier bilingual/OpenXML Milestone 7 checks.
 - Dexie migrations and backup compatibility are implemented through version 6.
 - No final project-wide regression and manual acceptance pass has occurred.
 - No release-candidate clean-environment validation has occurred.
@@ -74,5 +75,5 @@ Perform and record the Feature Complete Gate review. Only explicit acceptance ma
 - Repository: private
 - Current application version: `0.7.0`
 - Current Dexie and backup format: `v6`
-- Current verified code baseline: the repository HEAD containing this Milestone 7 delivery
+- Current verified code baseline: the repository HEAD containing the Milestone 7.1 correction
 - Independent GitHub CI evidence for that baseline: not available at the time of this review

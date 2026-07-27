@@ -36,7 +36,8 @@ function SortableMeditationCard({ entry, selected, selecting, onSelect, onEdit, 
 }
 
 export function MeditationPrintDocument({ model }: { model: MeditationExportModel }) {
-  return <div className={`meditation-print-document size-${model.pageSize} text-${model.textSize}`} style={{ "--paper": meditationPageStyles[model.pageStyle].background, "--paper-ink": meditationPageStyles[model.pageStyle].ink } as React.CSSProperties}><section className="meditation-cover"><h1>{model.chineseTitle}</h1>{model.englishTitle && <p>{model.englishTitle}</p>}</section><section className="meditation-pages">{model.entries.map((entry) => <article key={entry.id}><div>{entry.content}</div>{model.showDates && <time>{new Intl.DateTimeFormat(model.locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(entry.createdAt))}</time>}</article>)}</section></div>;
+  const printPageSize = model.pageSize === "a4" ? "A4" : "Letter";
+  return <><style data-meditation-page-size={model.pageSize}>{`@page { size: ${printPageSize}; margin: 0; }`}</style><div className={`meditation-print-document size-${model.pageSize} text-${model.textSize}`} style={{ "--paper": meditationPageStyles[model.pageStyle].background, "--paper-ink": meditationPageStyles[model.pageStyle].ink } as React.CSSProperties}><section className="meditation-cover"><h1>{model.chineseTitle}</h1>{model.englishTitle && <p>{model.englishTitle}</p>}</section><section className="meditation-pages">{model.entries.map((entry) => <article key={entry.id}><div>{entry.content}</div>{model.showDates && <time>{new Intl.DateTimeFormat(model.locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(entry.createdAt))}</time>}</article>)}</section></div></>;
 }
 
 function MeditationExportPreview({ entries, selectedIds, onClose }: { entries: MeditationEntry[]; selectedIds?: string[]; onClose: () => void }) {

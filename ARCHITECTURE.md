@@ -158,7 +158,7 @@ Create and update operations must trim outer whitespace without destroying inter
 
 `meditationExportService` builds an immutable export model from all entries or a selected subset, global manual order, editable cover titles, date visibility, page style, page size, and text size. Selection order must not replace global order.
 
-The print renderer consumes the export model and produces a local print-optimized document for browser Print / Save as PDF. A separate Word renderer consumes the same model and generates a genuinely editable local `.docx`. Browser and Word output may approximate backgrounds and pagination differently; they are not required to be pixel-identical.
+The print renderer consumes the export model and produces a local print-optimized document for browser Print / Save as PDF. It injects the active A4 or Letter value into a print `@page size` rule, so paper selection is part of the print contract rather than preview geometry alone. A separate Word renderer consumes the same model and generates a genuinely editable local `.docx`. Browser and Word output may approximate backgrounds and pagination differently; they are not required to be pixel-identical.
 
 Export output is derived. It must not become authoritative stored Meditation content or mutate source entries.
 
@@ -752,6 +752,8 @@ Run integrity checks
 A failed restore must not leave the active database partially replaced.
 
 Large appearance assets may increase backup size; the UI should report this clearly.
+
+For backup format v6, each Meditation must have valid nonempty content within the 150-unit domain limit and a unique non-negative finite integer `sortOrder`. Invalid or ambiguous ordering is rejected before the restore transaction begins.
 
 ---
 

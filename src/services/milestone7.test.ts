@@ -102,6 +102,15 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
     expect(shownMarkup.indexOf("第一条感悟")).toBeLessThan(shownMarkup.indexOf("Second"));
   });
 
+  it("writes the selected A4 or Letter size into the actual print page rule", () => {
+    const a4Markup = renderToStaticMarkup(createElement(MeditationPrintDocument, { model: buildMeditationExportModel(entries, { pageSize: "a4" }) }));
+    const letterMarkup = renderToStaticMarkup(createElement(MeditationPrintDocument, { model: buildMeditationExportModel(entries, { pageSize: "letter" }) }));
+    expect(a4Markup).toContain('data-meditation-page-size="a4"');
+    expect(a4Markup).toContain("@page { size: A4; margin: 0; }");
+    expect(letterMarkup).toContain('data-meditation-page-size="letter"');
+    expect(letterMarkup).toContain("@page { size: Letter; margin: 0; }");
+  });
+
   it("upgrades v5 backups with an empty collection and restores v6 content, order, and timestamps", async () => {
     const current = await createBackup();
     const { meditationEntries: _removed, ...v5Fields } = current;
@@ -116,5 +125,21 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
     await db.meditationEntries.clear();
     await restoreBackup(backup);
     expect(await listMeditations()).toEqual([entries[1], entries[0]]);
+  });
+
+  it("rejects v6 Meditations with missing, non-integer, negative, non-finite, or duplicate sort orders", async () => {
+    const valid = await createBackup();
+    const entry = entries[1];
+    const invalidOrders: unknown[] = [undefined, "0", 1.5, -1, Number.NaN, Number.POSITIVE_INFINITY];
+    for (const sortOrder of invalidOrders) {
+      expect(() => migrateBackup({ ...valid, meditationEntries: [{ ...entry, sortOrder }] })).toThrow(/invalid sort order/i);
+    }
+    expect(() => migrateBackup({ ...valid, meditationEntries: [{ ...entries[1], sortOrder: 0 }, { ...entries[0], sortOrder: 0 }] })).toThrow(/duplicate sort orders/i);
+  });
+
+  it("rejects empty or over-limit Meditation content before restore", async () => {
+    const valid = await createBackup();
+    expect(() => migrateBackup({ ...valid, meditationEntries: [{ ...entries[1], content: " \n " }] })).toThrow(/invalid content/i);
+    expect(() => migrateBackup({ ...valid, meditationEntries: [{ ...entries[1], content: "悟".repeat(151) }] })).toThrow(/invalid content/i);
   });
 });

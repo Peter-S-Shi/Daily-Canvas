@@ -1,5 +1,15 @@
 # Development log
 
+## Milestone 7.1: Print and backup contract corrections
+
+### 2026-07-27 — Physical page size and Meditation restore validation
+
+- Added a dynamic print `@page size` rule so choosing A4 or Letter affects the browser print contract rather than only the on-screen preview width.
+- Required every v6 Meditation backup entry to provide a non-negative finite integer `sortOrder`.
+- Rejected duplicate Meditation sort orders before restore instead of silently accepting ambiguous collection order.
+- Reused the domain length validator during backup validation so empty or over-limit Meditation content cannot enter IndexedDB through restore.
+- Added focused regressions and a live browser check for both A4 and Letter rules; TypeScript checking, 60 automated tests, and the production build passed.
+
 ## Milestone 7: Personal Meditations and Print Collection
 
 ### 2026-07-27 — Private ordered collection and local document export
