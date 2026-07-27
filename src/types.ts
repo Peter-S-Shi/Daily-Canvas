@@ -68,10 +68,11 @@ export interface AppearanceAsset { id: string; kind: "background"; mimeType: str
 export interface BackgroundPreference { slot: BackgroundSlot; assetId?: string; fit: "cover" | "contain"; position: string; overlayOpacity: number; blurPx: number }
 export type RewardTrigger = "date" | "streak";
 export interface Reward { id: string; title: string; taskId?: string; trigger: RewardTrigger; rewardDate?: string; streakDays?: number; claimedAt?: string; createdAt: string }
+export interface MeditationEntry { id: string; content: string; sortOrder: number; createdAt: string; updatedAt: string }
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 5;
+  dataVersion: 6;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
@@ -97,12 +98,13 @@ export interface BackupPayloadV1 extends BackupBase<LegacyTask, Omit<LegacySetti
 export interface BackupPayloadV2 extends BackupBase<LegacyTask, LegacySettings & { dataVersion: 2 }> { version: 2 }
 export interface BackupPayloadV3 extends BackupBase<Task, LegacySettings & { dataVersion: 3 }> { version: 3; areas: Area[] }
 export interface BackupPayloadV4 { format: "daily-canvas-backup"; version: 4; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 4 }> }
-export interface BackupPayload { format: "daily-canvas-backup"; version: 5; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; taskLifecycles: TaskLifecycle[]; pausePeriods: PausePeriod[]; milestoneEvents: MilestoneEvent[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: AppSettings[] }
+export interface BackupPayloadV5 { format: "daily-canvas-backup"; version: 5; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; taskLifecycles: TaskLifecycle[]; pausePeriods: PausePeriod[]; milestoneEvents: MilestoneEvent[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 5 }> }
+export interface BackupPayload extends Omit<BackupPayloadV5, "version" | "settings"> { version: 6; meditationEntries: MeditationEntry[]; settings: AppSettings[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2 | 3 | 4 | 5;
+  sourceVersion: 1 | 2 | 3 | 4 | 5 | 6;
   migrated: boolean;
   warnings: string[];
-  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; emotions: number; rewards: number; appearanceAssets: number };
+  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; meditations: number; emotions: number; rewards: number; appearanceAssets: number };
 }

@@ -4,13 +4,18 @@
 
 ## 当前开发阶段
 
-最近完成的工程工作是 **Milestone 6.1：生命周期修正**。项目仍处于 **Feature Development（功能开发）**；下一项计划功能是 **Milestone 7：Personal Meditations and Print Collection（个人感悟与打印合集）**，目前尚未实现。
+最近完成的工程工作是 **Milestone 7：Personal Meditations and Print Collection（个人感悟与打印合集）**。Daily Canvas v0.7 已完成 Milestone 1–7 的计划功能范围，目前等待明确执行并接受 **Feature Complete Gate（功能完整性门槛）**。Feature Freeze 尚未开始；Product Hardening 和 Release Candidate 仍是后续独立阶段。
 
 Feature Complete、Feature Freeze、Product Hardening 和 Release Candidate 是后续彼此独立的阶段。路线与边界见 [ROADMAP.md](ROADMAP.md)，当前状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)。
 
-### 计划中的 Milestone 7
+## Milestone 7：个人感悟与打印合集
 
-Milestone 7 计划增加独立的“感悟 / Meditations”页面、简短多段文字、持久化手动排序、双语打印预览、浏览器打印 / 保存 PDF，以及完全在本地生成的可编辑 Word 文档。以上内容尚未交付。
+- 独立保存简短、多段落的“感悟 / Meditations”，不与按日期记录的每日回顾混为一体。
+- 使用统一的 150 个混合语言语义单位限制，并保留原始创建时间和编辑时间。
+- 通过指针或键盘调整顺序；页面、全部/所选导出、打印和 Word 使用同一持久化顺序。
+- 导出前可编辑中英文封面、隐藏日期、选择 A4/Letter、三档字号和五种克制的纸张背景。
+- 通过浏览器打印或保存 PDF，并完全在本地生成可继续编辑的 `.docx`，不会上传私人文字。
+- Dexie 数据库与备份格式升级到 v6，迁移、验证、预览、恢复和完整性检查都包含感悟记录。
 
 ## Milestone 6.1：生命周期修正
 

@@ -4,19 +4,19 @@ Status reviewed: 2026-07-27
 
 ## Current Phase
 
-Feature Development.
+Feature Complete Review. The gate assessment is pending; Feature Freeze is not active.
 
 ## Current Milestone
 
-Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection is planned and not started.
+Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection is implemented and validated.
 
 ## Current Release Scope
 
-The current release scope consists of completed Milestones 1–6.1 plus the planned Milestone 7. PWA installation, reminders, accounts, sync, and remote AI are outside this release.
+The current release scope consists of completed Milestones 1–7, including the Milestone 5 Calendar follow-up and Milestone 6.1 lifecycle correction. PWA installation, reminders, accounts, sync, and remote AI are outside this release.
 
 ## Feature Complete Status
 
-No. Milestone 7 has not been implemented or accepted, and the Feature Complete Gate has not been performed.
+Pending review. Milestone 7 is implemented and validated, but the project-wide Feature Complete Gate has not yet been explicitly accepted.
 
 ## Feature Freeze Status
 
@@ -27,6 +27,7 @@ Not active. Feature Freeze can begin only after the Feature Complete Gate is exp
 - Milestones 1–6 delivered the local-first planning, schedule, tracking, reflection, review, calendar-evidence, lifecycle, pause, and reward systems.
 - Milestone 5 follow-up preserved historical Calendar evidence and separated record-type filters.
 - Milestone 6.1 corrected durable milestone continuation and lifecycle-safe manual Resume behavior.
+- Milestone 7 added a private ordered Meditations collection, mixed-language length rules, selected/all print preview, browser PDF flow, editable local Word export, and additive data migration.
 
 ## Open Release Blockers
 
@@ -34,12 +35,13 @@ A project-wide hardening audit has not yet established the complete release-bloc
 
 ## Hardening Progress
 
-Not started. Product Hardening is Milestone 8 and begins only after Milestone 7 acceptance, Feature Complete review, and explicit Feature Freeze.
+Not started. Product Hardening is Milestone 8 and begins only after the Feature Complete review and explicit Feature Freeze.
 
 ## Verification Status
 
 - Milestone-level automated tests, type checks, production builds, and smoke checks are recorded in repository documentation.
-- Dexie migrations and backup compatibility are implemented through version 5.
+- Milestone 7 passed TypeScript checking, 57 automated tests, production build, live bilingual browser smoke checks, print-dialog validation, and OpenXML inspection of a generated Word file.
+- Dexie migrations and backup compatibility are implemented through version 6.
 - No final project-wide regression and manual acceptance pass has occurred.
 - No release-candidate clean-environment validation has occurred.
 - GitHub exposes no independent CI status checks for the last verified code baseline.
@@ -48,14 +50,15 @@ Not started. Product Hardening is Milestone 8 and begins only after Milestone 7 
 
 - Browser IndexedDB data can be removed through browser storage clearing; regular local backup exports remain important.
 - A completed project-wide hardening pass does not yet exist.
-- Sensitive reflections, experience notes, appearance assets, and future Meditations remain local to the current browser origin unless the user exports them.
+- Sensitive reflections, experience notes, appearance assets, and Meditations remain local to the current browser origin unless the user exports them.
+- The production build reports one JavaScript chunk above Vite's 500 kB advisory threshold; Word generation is already dynamically separated, and further bundle work belongs in hardening.
 
 ## Unknown or Unverified
 
 - Large multi-year history performance has not received final release-level verification.
 - Final accessibility and clean-machine Windows-launcher behavior have not been audited.
 - The complete supported migration and restore matrix has not received final release-candidate validation.
-- Future Milestone 7 PDF/print and Word export behavior has not been implemented or verified.
+- Browser Print / Save as PDF reached the system print surface, but printer-driver- and OS-specific final PDF rendering remains part of later release-level manual acceptance.
 
 ## Deferred Features
 
@@ -63,13 +66,13 @@ PWA installation, reminders, update/offline status UX, optional private accounts
 
 ## Next Engineering Objective
 
-Implement and accept Milestone 7: Personal Meditations and Print Collection, then perform the Feature Complete review.
+Perform and record the Feature Complete Gate review. Only explicit acceptance may activate Feature Freeze and begin Milestone 8 Product Hardening.
 
 ## Repository State
 
 - Branch: `main`
 - Repository: private
-- Current application version: `0.6.0`
-- Current Dexie and backup format: `v5`
-- Last verified code baseline before this documentation revision: `7b823656a7b8d654e680f40440b1ba7b1170aee9`
-- Independent GitHub CI evidence for that baseline: not available
+- Current application version: `0.7.0`
+- Current Dexie and backup format: `v6`
+- Current verified code baseline: the repository HEAD containing this Milestone 7 delivery
+- Independent GitHub CI evidence for that baseline: not available at the time of this review

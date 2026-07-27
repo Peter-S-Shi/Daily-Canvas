@@ -1,5 +1,16 @@
 # Development log
 
+## Milestone 7: Personal Meditations and Print Collection
+
+### 2026-07-27 — Private ordered collection and local document export
+
+- Added a separate bilingual Meditations page with multiline plain-text CRUD, immutable creation time, edited state, confirmed deletion, and persisted pointer/keyboard ordering.
+- Added one reusable 150-unit mixed-language counter for Han characters, non-Han words, number runs, and emoji graphemes while excluding punctuation, whitespace, and paragraph breaks.
+- Added Select Mode plus all/selected export using global manual order, editable bilingual covers, optional localized dates, A4/Letter layouts, three text sizes, and five print-conscious backgrounds.
+- Added browser Print / Save as PDF and dynamically loaded, locally generated editable Word output without remote services or fonts.
+- Advanced Dexie and backup format to v6 with additive Meditation migration, validation, preview counts, restoration, and integrity checks.
+- Passed TypeScript checking, 57 automated tests, production build, live English/Chinese browser smoke checks, system print-dialog validation, and OpenXML inspection of the generated Word file.
+
 ## Project lifecycle revision
 
 ### 2026-07-27 — Feature completion and release-readiness stages

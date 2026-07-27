@@ -289,11 +289,11 @@ Every milestone must preserve the following principles:
 
 ---
 
-## Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection — Planned
+## Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection — Completed
 
 **Goal:** Let the user preserve short personal principles, lessons, and philosophical reflections as a private ordered collection that can become a printable personal volume.
 
-**Planned scope:**
+**Delivered scope:**
 
 - Add a separate bilingual Meditations / 感悟 page for multiline `MeditationEntry` records.
 - Limit each entry to 150 semantic units using one reusable mixed-language rule: each Han character and each non-CJK word counts as one; punctuation, whitespace, and paragraph breaks do not count.
@@ -314,6 +314,8 @@ Every milestone must preserve the following principles:
 - Automated checks and the defined live local acceptance journey pass in both content languages.
 
 **Not included:** AI generation or rewriting, automatic extraction from Daily Reflection, public sharing, cloud sync, categories, tags, chapters, full-text search, rich text, Markdown rendering, attachments, collaborative editing, or the former PWA/reminder scope.
+
+**Completion evidence:** A separate bilingual Meditations page now provides multiline CRUD, deterministic mixed-language validation, immutable creation timestamps, persisted keyboard/pointer ordering, confirmed deletion, Select Mode, and all/selected export through one shared manual order. Dexie and backup format v6 migrate older data additively and include Meditation records in validation, preview, restore, and integrity checks. The local print surface supports editable bilingual covers, optional localized dates, five restrained backgrounds, A4/Letter previews, three text sizes, and browser Print / Save as PDF. Editable Word export is generated locally and was verified at the OpenXML level for Unicode Chinese/English text, paragraph structure, order, hidden dates, and page dimensions. Type checking, 57 automated tests, production build, and the defined live browser acceptance journey passed.
 
 ---
 

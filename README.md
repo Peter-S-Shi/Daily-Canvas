@@ -6,15 +6,20 @@ Daily Canvas is a private, local-first personal planning, habit, and reflection 
 
 ## Milestone status
 
-**Latest completed engineering work: Milestone 6.1 Lifecycle Corrections**
+**Latest completed engineering work: Milestone 7 Personal Meditations and Print Collection**
 
-Daily Canvas remains in **Feature Development**. Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection is the next planned feature milestone and has not been implemented. Feature Complete, Feature Freeze, Product Hardening, and Release Candidate are later, distinct stages.
+Daily Canvas v0.7 has completed the planned Milestones 1–7 scope and is now awaiting the explicit **Feature Complete Gate** review. Feature Freeze is not active; Product Hardening and Release Candidate remain later, distinct stages.
 
 See [ROADMAP.md](ROADMAP.md) for scope and lifecycle policy, and [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state.
 
-### Planned Milestone 7
+## Milestone 7 delivered
 
-Milestone 7 will add a separate private Meditations / 感悟 collection with short multiline entries, persistent manual ordering, bilingual print preview, browser Print / Save as PDF, and local editable Word export. It remains planned, not delivered.
+- Keep short, multiline private Meditations / 感悟 as an independent collection rather than daily journal content.
+- Enforce one deterministic 150-unit mixed-language rule while preserving original creation and edited times.
+- Reorder entries with pointer or keyboard controls and reuse that order for page display, selected/all export, print, and Word.
+- Preview an editable bilingual cover, optional localized dates, A4/Letter pages, three text sizes, and five restrained backgrounds.
+- Print or save PDF through the browser and generate a locally editable `.docx` without uploading personal writing.
+- Preserve Meditations through additive Dexie and backup format v6 migration, validation, preview, restore, and integrity checks.
 
 ## Milestone 6.1 delivered
 

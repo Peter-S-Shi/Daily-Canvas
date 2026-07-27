@@ -49,6 +49,7 @@
 html, body, #root { min-height: 100%; margin: 0; overflow-x: hidden; }
 body { background: var(--page); color: var(--ink); overflow-x: hidden; }
 button, input, select, textarea { font: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(232, 121, 79, 0.35); outline-offset: 2px; }
 
@@ -518,7 +519,82 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .milestone-reward strong, .milestone-reward small { display: block; }
 .milestone-reward small { color: var(--muted); }
 
+.meditations-hero { min-height: 235px; display: flex; align-items: end; justify-content: space-between; gap: 30px; padding: clamp(30px,5vw,56px); border-radius: 26px; color: #fff; background: linear-gradient(135deg, rgba(67,73,67,.97), rgba(145,119,91,.92)); box-shadow: var(--shadow); }
+.meditations-hero h1 { margin: 8px 0; font-size: clamp(38px,6vw,64px); line-height: 1; }
+.meditations-hero p { max-width: 610px; margin: 0; line-height: 1.65; opacity: .84; }
+.meditation-hero-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.meditation-list { display: grid; gap: 12px; }
+.meditation-card { display: grid; grid-template-columns: auto auto minmax(0,1fr) auto; align-items: start; gap: 12px; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-soft); }
+.meditation-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
+.meditation-select { padding-top: 3px; }
+.meditation-select input { width: 18px; height: 18px; accent-color: var(--accent); }
+.meditation-drag { margin-top: 0; }
+.meditation-copy p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: Georgia, "Noto Serif CJK SC", "Songti SC", serif; font-size: 16px; line-height: 1.85; }
+.meditation-copy small { display: block; margin-top: 14px; color: var(--muted); }
+.meditation-actions { display: flex; gap: 9px; }
+.meditation-actions .quiet-action { padding-top: 2px; }
+.selection-bar { position: sticky; top: 10px; z-index: 4; display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: var(--shadow); }
+.selection-bar strong { margin-right: auto; }
+.meditation-empty { padding: 55px 20px; }
+.meditation-empty h2 { margin: 5px 0; }
+.meditation-empty p { margin: 0 0 18px; color: var(--muted); }
+.meditation-editor { display: grid; gap: 16px; }
+.meditation-editor textarea { width: 100%; padding: 16px; resize: vertical; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); background: var(--surface-soft); line-height: 1.7; }
+.meditation-counter { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 11px; }
+.meditation-counter.over { color: var(--danger); }
+.meditation-counter strong { white-space: nowrap; }
+.export-backdrop { place-items: center; }
+.meditation-export-modal { width: min(1180px,100%); }
+.meditation-export-layout { display: grid; grid-template-columns: minmax(230px,290px) minmax(0,1fr); gap: 24px; align-items: start; }
+.export-controls { display: grid; gap: 13px; position: sticky; top: 0; }
+.export-controls input, .export-controls select { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--surface-soft); }
+.export-styles { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 0; padding: 0; border: 0; }
+.export-styles legend { grid-column: 1 / -1; margin-bottom: 7px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.export-styles label { min-height: 46px; display: flex; align-items: center; gap: 7px; padding: 8px; border: 1px solid var(--line); border-radius: 9px; color: #30302f; font-size: 10px; cursor: pointer; }
+.export-styles label.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(232,121,79,.16); }
+.export-styles input { width: auto; min-height: 0; }
+.export-actions { display: grid; gap: 8px; }
+.meditation-print-document { width: min(100%, 760px); min-height: 980px; margin: 0 auto; overflow: hidden; color: var(--paper-ink); background: var(--paper); box-shadow: 0 18px 45px rgba(0,0,0,.18); font-family: Georgia, "Noto Serif CJK SC", "Songti SC", serif; }
+.meditation-cover { min-height: 780px; display: grid; place-content: center; padding: 50px; text-align: center; break-after: page; }
+.meditation-cover h1 { margin: 0; font-size: clamp(38px,6vw,66px); font-weight: 650; letter-spacing: .06em; }
+.meditation-cover p { margin: 20px 0 0; font-size: 22px; font-style: italic; opacity: .72; }
+.meditation-pages { padding: 60px clamp(34px,8vw,84px); }
+.meditation-pages article { break-inside: avoid; margin-bottom: 36px; padding-bottom: 25px; border-bottom: 1px solid color-mix(in srgb, var(--paper-ink) 15%, transparent); }
+.meditation-pages article > div { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; }
+.meditation-pages time { display: block; margin-top: 13px; opacity: .55; font-size: 11px; }
+.text-compact .meditation-pages article > div { font-size: 14px; }
+.text-standard .meditation-pages article > div { font-size: 17px; }
+.text-large .meditation-pages article > div { font-size: 21px; }
+
 @media (max-width: 650px) {
   .template-grid { grid-template-columns: 1fr; }
   .onboarding-actions { display: grid; }
+}
+
+@media (max-width: 860px) {
+  .meditations-hero { display: grid; }
+  .meditation-hero-actions { justify-content: flex-start; }
+  .meditation-export-layout { grid-template-columns: 1fr; }
+  .export-controls { position: static; }
+  .sidebar nav { grid-template-columns: repeat(10,1fr); }
+}
+
+@media (max-width: 600px) {
+  .meditation-card { grid-template-columns: auto auto minmax(0,1fr); padding: 16px; }
+  .meditation-actions { grid-column: 3; }
+  .selection-bar { align-items: stretch; flex-direction: column; }
+  .selection-bar strong { margin: 0; }
+  .meditation-cover { min-height: 560px; }
+}
+
+@media print {
+  @page { margin: 0; }
+  body * { visibility: hidden !important; }
+  .meditation-print-document, .meditation-print-document * { visibility: visible !important; }
+  .meditation-print-document { position: absolute; inset: 0 auto auto 0; width: 100%; min-height: 100%; box-shadow: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .meditation-print-document.size-a4 { width: 210mm; }
+  .meditation-print-document.size-letter { width: 8.5in; }
+  .meditation-cover { min-height: calc(100vh - 1px); }
+  .meditation-pages { padding: 20mm; }
+  .meditation-pages article { break-inside: avoid; }
 }

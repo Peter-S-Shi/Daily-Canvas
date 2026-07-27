@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable, type Transaction } from "dexie";
-import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, MilestoneEvent, PausePeriod, Reward, Task, TaskLifecycle } from "./types";
+import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, MeditationEntry, MilestoneEvent, PausePeriod, Reward, Task, TaskLifecycle } from "./types";
 import { calculateTaskStats } from "./services/statisticsService";
 
 export const db = new Dexie("DailyCanvas") as Dexie & {
@@ -12,6 +12,7 @@ export const db = new Dexie("DailyCanvas") as Dexie & {
   milestoneEvents: EntityTable<MilestoneEvent, "id">;
   dailyOrders: EntityTable<DailyOrder, "date">;
   dailyReflections: EntityTable<DailyReflection, "date">;
+  meditationEntries: EntityTable<MeditationEntry, "id">;
   emotionDefinitions: EntityTable<EmotionDefinition, "id">;
   appearanceAssets: EntityTable<AppearanceAsset, "id">;
   rewards: EntityTable<Reward, "id">;
@@ -44,6 +45,7 @@ export const storesV4 = {
   appearanceAssets: "id, kind, createdAt", settings: "id",
 };
 export const storesV5 = { ...storesV4, taskLifecycles: "taskId, state, celebrationPending, updatedAt", pausePeriods: "id, taskId, startDate, endDate, type, createdAt", milestoneEvents: "id, taskId, date, type, sequence, createdAt" };
+export const storesV6 = { ...storesV5, meditationEntries: "id, sortOrder, createdAt, updatedAt" };
 const lifecycleTask = (task: Task) => task.kind !== "task" && task.schedule.mode !== "floating";
 const migratedLifecycle = (task: Task, personalBest = 0, at = new Date().toISOString()): TaskLifecycle => ({ taskId: task.id, state: "building", milestoneSequence: 1, personalBest, celebrationPending: false, createdAt: at, updatedAt: at });
 
@@ -121,12 +123,18 @@ export async function upgradeDataToV5(transaction: Transaction): Promise<void> {
   const now = new Date().toISOString(); const tasks = await transaction.table<Task>("tasks").toArray(); const checkIns = await transaction.table<CheckIn>("checkIns").toArray();
   const lifecycles = tasks.filter(lifecycleTask).map((task) => migratedLifecycle(task, calculateTaskStats(task, checkIns.filter((item) => item.taskId === task.id)).personalBest, now));
   if (lifecycles.length) await transaction.table<TaskLifecycle>("taskLifecycles").bulkPut(lifecycles);
-  const settings = await transaction.table<AppSettings>("settings").get("app"); if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 5 });
+  const settings = await transaction.table<AppSettings>("settings").get("app"); if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 5 } as unknown as AppSettings);
 }
 db.version(5).stores(storesV5).upgrade(upgradeDataToV5);
 
+export async function upgradeDataToV6(transaction: Transaction): Promise<void> {
+  const settings = await transaction.table<AppSettings>("settings").get("app");
+  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 6 });
+}
+db.version(6).stores(storesV6).upgrade(upgradeDataToV6);
+
 export const defaultBackgroundPreferences = (): AppSettings["backgroundPreferences"] => (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
-export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 5, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
+export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 6, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
 
 export async function initializeDb(): Promise<void> {
   await db.open();

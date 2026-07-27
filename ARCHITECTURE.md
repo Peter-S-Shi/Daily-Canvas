@@ -18,7 +18,7 @@ Recording
 Understanding
   Calendar · Statistics · Plain-language insights
 
-Preservation (planned Milestone 7)
+Preservation
   Personal Meditations · ordered personal collection · local document export
 ```
 
@@ -69,11 +69,13 @@ Do not store a conclusion when it can be reproduced from durable facts, unless a
 
 ## 3. Target Domain Model
 
-### Current implementation through v0.6
+### Current implementation through v0.7
 
 Milestones 3 and 4 implement the current persistent model: first-class `Area` records, the fixed/floating/quota `Schedule` union, Daily Reflections, Emotion Definitions, Experience Logs, and local Appearance Assets. Dexie schema and backup format version 4 preserve and migrate every supported record from earlier releases.
 
 Milestone 5 adds no persistent tables; its reviews remain derived. Milestone 6 advances Dexie and backup format to version 5 with `TaskLifecycle`, `PausePeriod`, and append-only `MilestoneEvent` records. Existing Task and CheckIn identities remain unchanged.
+
+Milestone 7 advances Dexie and backup format to version 6 with independent `MeditationEntry` records. Export previews and document output remain derived and do not create persistent publishing records.
 
 ```text
 Area
@@ -96,21 +98,25 @@ EmotionDefinition
 AppearanceAsset
 AppSettings
 
+MeditationEntry
+
 Derived Services
   ├── Schedule Service
   ├── Quota Evaluation Service
   ├── Statistics Service
   ├── Reflection Prompt Service
-  └── Insight Engine
+  ├── Insight Engine
+  ├── Meditation Service
+  └── Meditation Export Service
 ```
 
 The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive tree.
 
 ---
 
-## Planned Milestone 7 Architecture: Personal Meditations
+## Milestone 7 Architecture: Personal Meditations
 
-This section describes planned v0.7 boundaries only. Meditations are not part of the current v0.6 implementation, Dexie v5 schema, backup v5 payload, or current service list.
+This section describes the implemented v0.7 boundaries. Meditations are part of Dexie schema v6, backup payload v6, and the current service list.
 
 Meditations preserve short personal lessons and principles independently from dated Daily Reflections and derived Reviews.
 
@@ -146,7 +152,7 @@ The 150-unit limit belongs in reusable domain logic rather than only in an edito
 
 Create and update operations must trim outer whitespace without destroying internal paragraphs, reject empty content, and reject content above 150 units. The UI live counter and persistence service must call the same rule.
 
-### Planned Service Boundaries
+### Service Boundaries
 
 `meditationService` owns CRUD, validation, timestamps, listing, deletion, ordering, and sort normalization.
 
@@ -156,7 +162,7 @@ The print renderer consumes the export model and produces a local print-optimize
 
 Export output is derived. It must not become authoritative stored Meditation content or mutate source entries.
 
-Milestone 7 requires an additive Dexie table and backup-format migration when implemented. Existing databases and supported backups must upgrade without losing any current record, while older backups restore with an empty Meditation collection.
+Milestone 7 uses an additive Dexie table and backup-format migration. Existing databases and supported backups upgrade without losing current records, while older backups restore with an empty Meditation collection.
 
 Document generation remains local. It must not rely on remote APIs, remote fonts, distributed font files, or remote background assets.
 
@@ -649,7 +655,7 @@ A future optional AI language layer may only rewrite approved structured facts. 
 
 ## 15. Database Evolution
 
-The Dexie database is currently at version 5. It contains the Milestone 3–4 planning and reflection tables plus lifecycle profiles, pause periods, and milestone events. Review output remains derived.
+The Dexie database is currently at version 6. It contains the Milestone 3–4 planning and reflection tables, lifecycle profiles, pause periods, milestone events, and ordered Meditation entries. Review and document output remain derived.
 
 Expected entity groups:
 
@@ -658,8 +664,12 @@ areas
 tasks
 checkIns
 experienceLogs
+taskLifecycles
+pausePeriods
+milestoneEvents
 dailyOrders
 dailyReflections
+meditationEntries
 emotionDefinitions
 rewards
 appearanceAssets
@@ -678,8 +688,9 @@ A safe conceptual sequence is:
 6. add Emotion Definitions;
 7. move the current background into Appearance Assets and slot preferences;
 8. update backup format and restoration validation after each schema change.
+9. add independent Meditation records and local document export.
 
-Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration. Milestone 6 adds the v4-to-v5 lifecycle migration and backup format version 5.
+Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration. Milestone 6 added the v4-to-v5 lifecycle migration and backup format version 5. Milestone 7 adds the v5-to-v6 Meditation migration and backup format version 6.
 
 The exact Dexie version numbers belong to implementation, but every version must have:
 
@@ -703,8 +714,12 @@ interface BackupPayload {
   tasks: Task[];
   checkIns: CheckIn[];
   experienceLogs: ExperienceLog[];
+  taskLifecycles: TaskLifecycle[];
+  pausePeriods: PausePeriod[];
+  milestoneEvents: MilestoneEvent[];
   dailyOrders: DailyOrder[];
   dailyReflections: DailyReflection[];
+  meditationEntries: MeditationEntry[];
   emotionDefinitions: EmotionDefinition[];
   rewards: Reward[];
   appearanceAssets: AppearanceAsset[];
@@ -763,9 +778,7 @@ services/
 
 This is a conceptual separation, not a requirement to create one file per line immediately.
 
-The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, review, and backup service boundaries. `reviewService` owns range presets, structured facts, sample-size rules, source traceability, and deterministic English/Chinese review text; React components only render those models.
-
-Planned Milestone 7 adds `meditationService` and `meditationExportService`; this statement does not claim that either service exists in v0.6.
+The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, review, backup, Meditation, and Meditation export service boundaries. `reviewService` owns range presets, structured facts, sample-size rules, source traceability, and deterministic English/Chinese review text. `meditationService` owns validation, timestamps, CRUD, and transaction-safe manual order. `meditationExportService` owns the immutable all/selected export model and local editable Word generation; React components render those models and invoke browser printing.
 
 The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
 

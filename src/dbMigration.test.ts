@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { afterEach, describe, expect, it } from "vitest";
-import { storesV2, storesV3, storesV4, storesV5, upgradeDataToV3, upgradeDataToV4, upgradeDataToV5, upgradeSettingsToV2 } from "./db";
+import { storesV2, storesV3, storesV4, storesV5, storesV6, upgradeDataToV3, upgradeDataToV4, upgradeDataToV5, upgradeDataToV6, upgradeSettingsToV2 } from "./db";
 
 const databaseName = "DailyCanvasMigrationTest";
 afterEach(async () => { await Dexie.delete(databaseName); });
@@ -47,5 +47,15 @@ describe("Dexie schema migration", () => {
     const newDb = new Dexie(databaseName); newDb.version(4).stores(storesV4); newDb.version(5).stores(storesV5).upgrade(upgradeDataToV5); await newDb.open();
     expect(await newDb.table("taskLifecycles").get("habit")).toMatchObject({ state: "building", personalBest: 2, milestoneSequence: 1 });
     expect(await newDb.table("checkIns").count()).toBe(2); expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 5 }); newDb.close();
+  });
+
+  it("adds the v6 Meditation collection without changing v5 records", async () => {
+    const oldDb = new Dexie(databaseName); oldDb.version(5).stores(storesV5);
+    await oldDb.table("tasks").put({ id: "habit", title: "Walk", kind: "habit", starred: false, archived: false, startDate: "2026-07-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
+    await oldDb.table("settings").put({ id: "app", dataVersion: 5, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }); oldDb.close();
+    const newDb = new Dexie(databaseName); newDb.version(5).stores(storesV5); newDb.version(6).stores(storesV6).upgrade(upgradeDataToV6); await newDb.open();
+    expect(await newDb.table("tasks").get("habit")).toMatchObject({ title: "Walk" });
+    expect(await newDb.table("meditationEntries").count()).toBe(0);
+    expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 6 }); newDb.close();
   });
 });
