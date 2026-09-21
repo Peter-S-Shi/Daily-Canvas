@@ -148,6 +148,12 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - Large multi-year history performance and full release-level accessibility remain to be hardened later.
 - The production build still has the previously recorded large-chunk advisory.
 
+## Milestone 8 Progress (branch `m8-desktop-foundation`, not merged)
+
+- M8-A desktop-shell feasibility spike is implemented and verified on the branch; it awaits the desktop-shell human gate.
+- Result: Tauri 2 is suitable to continue with Dexie/IndexedDB unchanged. Evidence and limits: `desktop-spike/M8A-EVIDENCE.md`.
+- Not done: CI guardrails, MSVC/CI desktop build, installer/upgrade validation. M8 is not complete and the macro phase above is unchanged.
+
 ## Next Engineering Objective
 
 Start **Milestone 8: Desktop Foundation and CI Guardrails** only after this documentation reset is merged.

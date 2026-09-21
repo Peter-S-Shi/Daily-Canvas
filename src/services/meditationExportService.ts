@@ -1,3 +1,4 @@
+import { saveBlob } from "../desktop/desktopAdapter";
 import type { MeditationEntry } from "../types";
 
 export type MeditationPageSize = "a4" | "letter";
@@ -86,12 +87,6 @@ export async function createMeditationDocx(model: MeditationExportModel): Promis
   return Packer.toBlob(doc);
 }
 
-export async function downloadMeditationDocx(model: MeditationExportModel): Promise<void> {
-  const blob = await createMeditationDocx(model);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `daily-canvas-meditations-${new Date().toISOString().slice(0, 10)}.docx`;
-  link.click();
-  URL.revokeObjectURL(url);
+export async function downloadMeditationDocx(model: MeditationExportModel): Promise<boolean> {
+  return saveBlob(await createMeditationDocx(model), `daily-canvas-meditations-${new Date().toISOString().slice(0, 10)}.docx`);
 }
