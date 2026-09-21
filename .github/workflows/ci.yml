@@ -134,7 +134,9 @@ jobs:
       - name: Packaged-app smoke
         run: node desktop-verify/desktop-smoke.mjs src-tauri/target/release/daily-canvas-desktop.exe "$RUNNER_TEMP/fixture" "$RUNNER_TEMP/smoke"
 
+      # Installer steps still run when the smoke above failed, so one CI run reports every desktop signal.
       - name: Build two test-only installers (same identifier, no public version)
+        if: ${{ !cancelled() }}
         run: |
           mkdir -p "$RUNNER_TEMP/installers"
           for n in 1 2; do
@@ -144,6 +146,7 @@ jobs:
           ls -l "$RUNNER_TEMP/installers"
 
       - name: Installer, upgrade and data-location smoke
+        if: ${{ !cancelled() }}
         env:
           DC_INSTALLER_TEST: "1"
         run: |
