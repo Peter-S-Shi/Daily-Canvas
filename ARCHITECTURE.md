@@ -2,80 +2,95 @@
 
 ## 1. Product Boundary
 
-Daily Canvas is a local-first, single-user personal planning, habit, reflection, insight, and personal-preservation application.
+Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-IndexedDB is authoritative for product data. The application must remain useful without an account, server, analytics service, advertising system, or remote AI dependency.
+The current implementation is v0.7.0 and runs as a React/Vite application using Dexie/IndexedDB. The v1.0 target is a real desktop application that preserves the existing domain model first, then adds approved planning/execution and desktop-native capabilities.
 
-The architecture must support three connected product layers:
+The architecture supports five connected layers:
 
 ```text
-Planning
-  Fixed schedules · Floating tasks · Quota goals · Mainline Areas
+Plan
+  Areas · Fixed schedules · Floating tasks · Quota goals · Inbox · optional Timeline
 
-Recording
-  Check-ins · Experience logs · Daily reflections · Emotions
+Act / Track
+  Check-ins · Replan · optional Time Blocks · local reminders
 
-Understanding
-  Calendar · Statistics · Plain-language insights
+Reflect
+  Experience logs · Daily Reflections · Emotions · Templates
 
-Preservation
-  Personal Meditations · ordered personal collection · local document export
+Review
+  Calendar · Statistics · deterministic plain-language Reviews · Search
+
+Preserve
+  Meditations · local export · versioned backup · automatic local backup
 ```
 
-These layers should share domain entities and services rather than creating separate feature silos.
+These layers share domain entities and services rather than becoming isolated feature silos.
 
 ## 2. Architectural Principles
 
-### 2.1 Local-First by Default
+### 2.1 Local-First and Account-Free
 
-- Core data remains on the current device and application origin.
-- Exports and restores are initiated explicitly by the user.
-- Local images remain local.
-- Any future remote sync, account, AI, or cloud capability must be opt-in and must not remove the local-only mode.
+- Core personal data remains on the user's device.
+- The complete product must remain usable without an account, cloud database, analytics system, advertising system, or remote AI dependency.
+- Manual export remains available even after automatic local backups are introduced.
+- Local images and personal documents remain local unless the user explicitly exports them.
+- Any future sync or remote capability requires separate product planning and must not remove local-only mode.
 
-### 2.2 Domain Rules Outside UI Components
+### 2.2 Narrow Network Exception for Update Awareness
 
-React components should render state, gather input, and call application services.
+v1.0 may make a narrow outbound request to GitHub Releases for stable-version metadata.
 
-Business rules for scheduling, quota evaluation, check-ins, statistics, prompts, reflection, backups, migrations, and insight generation must live in reusable modules.
+That request must:
 
-The UI must not become the only place where product semantics exist.
+- carry no Task, CheckIn, Reflection, Meditation, ExperienceLog, Area, reward, or other personal content;
+- not become analytics or usage telemetry;
+- not be required for normal app operation;
+- degrade safely while offline;
+- only support update awareness and release-page navigation in v1.0.
 
-### 2.3 Additive, Versioned Evolution
+### 2.3 Domain Rules Outside UI Components
+
+React components render state, gather user input, and call application services.
+
+Business rules for schedules, quota evaluation, check-ins, lifecycle, statistics, prompts, reflection, search behavior, backups, migrations, review generation, and desktop-native adapters must live behind reusable boundaries.
+
+The UI must never be the only place where product semantics exist.
+
+### 2.4 Additive, Versioned Evolution
 
 - Dexie schema changes require explicit versioned migrations.
 - Backup formats require explicit version numbers and migration logic.
 - Existing records must remain meaningful after upgrades.
-- Destructive replacement must be preceded by validation and a safety backup.
-- Unknown or newer backup versions must fail safely with an actionable message.
+- Destructive restore must be preceded by validation and a safety backup.
+- Unknown or newer backup versions must fail safely.
+- Desktop migration is not permission to rewrite storage without evidence.
 
-### 2.4 Derived Information Should Stay Derived
+### 2.5 Derived Information Should Stay Derived
 
-Calendar states, streaks, quota progress, summaries, and most insights should be derived from stable source records.
+Calendar states, streaks, quota progress, review sentences, search indexes, and On This Day candidate sets should remain derived where practical.
 
 Do not materialize unlimited future task occurrences.
 
-Do not store a conclusion when it can be reproduced from durable facts, unless a future feature explicitly introduces a frozen review snapshot.
+Do not store a conclusion when it can be reproduced from durable facts unless a later feature explicitly requires a frozen snapshot.
 
-### 2.5 Compassionate and Non-Diagnostic Semantics
+### 2.6 Compassionate and Non-Diagnostic Semantics
 
 - Missing reflection data is simply missing.
-- Missing avoidance-habit check-ins are never treated as success.
-- Reflection prompts are optional.
-- Statistics may describe patterns but must not diagnose, infer personality, or claim causation.
-- Recovery flows preserve previous progress rather than erasing history.
+- Missing avoidance-habit check-ins are never success.
+- Reflection prompts and templates are optional.
+- Statistics may describe patterns but must not diagnose, infer personality, claim causation, or predict mental state.
+- Recovery and replanning preserve history rather than rewriting it.
+
+### 2.7 Optional Structure Must Stay Optional
+
+Timeline and Time Blocking help users who want clock-based planning, but they must not become prerequisites for using Today, Floating Tasks, Quota Goals, Calendar, Reflection, or Review.
 
 ---
 
-## 3. Target Domain Model
+## 3. Current Persistent Model Through v0.7
 
-### Current implementation through v0.7
-
-Milestones 3 and 4 implement the current persistent model: first-class `Area` records, the fixed/floating/quota `Schedule` union, Daily Reflections, Emotion Definitions, Experience Logs, and local Appearance Assets. Dexie schema and backup format version 4 preserve and migrate every supported record from earlier releases.
-
-Milestone 5 adds no persistent tables; its reviews remain derived. Milestone 6 advances Dexie and backup format to version 5 with `TaskLifecycle`, `PausePeriod`, and append-only `MilestoneEvent` records. Existing Task and CheckIn identities remain unchanged.
-
-Milestone 7 advances Dexie and backup format to version 6 with independent `MeditationEntry` records. Export previews and document output remain derived and do not create persistent publishing records.
+The current authoritative persistent model is Dexie schema / backup format v6.
 
 ```text
 Area
@@ -83,6 +98,9 @@ Area
        ├── Schedule
        ├── CheckIn[taskId + date]
        ├── ExperienceLog[taskId + date]
+       ├── TaskLifecycle
+       ├── PausePeriod[]
+       ├── MilestoneEvent[]
        └── Reward[taskId?]
 
 DailyOrder[date]
@@ -94,533 +112,248 @@ DailyReflection[date]
   └── promptId
 
 EmotionDefinition
-
 AppearanceAsset
 AppSettings
-
 MeditationEntry
-
-Derived Services
-  ├── Schedule Service
-  ├── Quota Evaluation Service
-  ├── Statistics Service
-  ├── Reflection Prompt Service
-  ├── Insight Engine
-  ├── Meditation Service
-  └── Meditation Export Service
 ```
 
-The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive tree.
+Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, and backup/migration logic.
+
+Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations.
+
+The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive hierarchy.
 
 ---
 
-## Milestone 7 Architecture: Personal Meditations
+## 4. Desktop Boundary for v1.0
 
-This section describes the implemented v0.7 boundaries. Meditations are part of Dexie schema v6, backup payload v6, and the current service list.
+### 4.1 Thin Desktop Shell First
 
-Meditations preserve short personal lessons and principles independently from dated Daily Reflections and derived Reviews.
+The desktop transition wraps and adapts the existing application before broad feature expansion.
 
-```ts
-interface MeditationEntry {
-  id: string;
-  content: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-Rules:
-
-- `createdAt` is immutable after creation.
-- Content edits update `updatedAt`; reordering alone does not represent a content edit.
-- New records append after the current final item.
-- Delete and reorder operations normalize `sortOrder` transactionally.
-- Page display, Export All, Export Selected, print, and Word output use the same persisted manual order.
-- Meditation content is plain text. Rendering must preserve paragraphs without injecting HTML.
-
-### Semantic Length Service
-
-The 150-unit limit belongs in reusable domain logic rather than only in an editor component.
-
-- Each Unicode Han character counts as one unit.
-- Each non-Han word-like segment counts as one unit.
-- A continuous number is one unit.
-- A visible emoji grapheme counts as one unit.
-- Punctuation, whitespace, and paragraph breaks do not count.
-- Mixed-language content uses the combined total.
-
-Create and update operations must trim outer whitespace without destroying internal paragraphs, reject empty content, and reject content above 150 units. The UI live counter and persistence service must call the same rule.
-
-### Service Boundaries
-
-`meditationService` owns CRUD, validation, timestamps, listing, deletion, ordering, and sort normalization.
-
-`meditationExportService` builds an immutable export model from all entries or a selected subset, global manual order, editable cover titles, date visibility, page style, page size, and text size. Selection order must not replace global order.
-
-The print renderer consumes the export model and produces a local print-optimized document for browser Print / Save as PDF. It injects the active A4 or Letter value into a print `@page size` rule, so paper selection is part of the print contract rather than preview geometry alone. A separate Word renderer consumes the same model and generates a genuinely editable local `.docx`. Browser and Word output may approximate backgrounds and pagination differently; they are not required to be pixel-identical.
-
-Export output is derived. It must not become authoritative stored Meditation content or mutate source entries.
-
-Milestone 7 uses an additive Dexie table and backup-format migration. Existing databases and supported backups upgrade without losing current records, while older backups restore with an empty Meditation collection.
-
-Document generation remains local. It must not rely on remote APIs, remote fonts, distributed font files, or remote background assets.
-
----
-
-## 4. Area / Mainline
-
-### Purpose
-
-An `Area` represents a durable life domain such as French, Job Search, Piano, Health, or Personal Administration.
-
-It is not itself a task and does not create check-ins.
-
-### Suggested Shape
-
-```ts
-interface Area {
-  id: string;
-  name: string;
-  color: string;
-  icon?: string;
-  sortOrder: number;
-  archived: boolean;
-  backgroundAssetId?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Task Relationship
-
-```ts
-interface Task {
-  id: string;
-  title: string;
-  kind: TaskKind;
-  areaId?: string;
-  colorOverride?: string;
-  starred: boolean;
-  archived: boolean;
-  startDate: string;
-  endDate?: string;
-  schedule: Schedule;
-  targetDays?: number;
-  stopReminderAtTarget: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-The display color resolves as:
+The shell should provide native capabilities through narrow adapters such as:
 
 ```text
-task.colorOverride
-    else area.color
-    else application default
+Desktop App
+   │
+   ├── React / Vite UI
+   │      ↓
+   ├── existing domain services
+   │      ↓
+   ├── Dexie / IndexedDB
+   │
+   └── desktop adapters
+          ├── local file / backup adapter
+          ├── notification adapter
+          ├── release-awareness adapter
+          └── packaging / app metadata adapter
 ```
 
-### Migration from Existing Categories
+Domain services should not depend directly on shell-specific APIs when an adapter boundary can isolate them.
 
-- Each unique non-empty existing category should become one Area.
-- Existing tasks should receive the matching `areaId`.
-- Existing task colors should be preserved as explicit overrides when needed to avoid unexpected visual changes.
-- Empty categories may remain without an Area.
-- Migration must not alter check-ins, rewards, journal history, or task identity.
+### 4.2 Storage Decision
 
-### Boundary
+Dexie/IndexedDB remains the default v1.0 storage direction during the desktop migration.
 
-One optional Area per Task is sufficient for the planned product. Tags or many-to-many classification can be considered later, but unlimited nested projects and subtasks are outside the current architecture.
+A storage rewrite to SQLite or another engine requires evidence from the Milestone 8 feasibility spike showing that the current store creates a meaningful blocker in persistence, upgrade, backup, performance, or packaged-app reliability.
+
+“Desktop app” by itself is not sufficient justification for a database rewrite.
+
+### 4.3 Desktop Data Ownership
+
+The desktop implementation must make the following understandable and testable:
+
+- where application-owned local data resides;
+- what survives restart;
+- what survives application upgrade;
+- what uninstall does or does not remove;
+- where automatic backups reside;
+- how a user restores a manual or automatic backup;
+- how browser-era v1–v6 backups migrate into desktop releases.
 
 ---
 
-## 5. Schedule Model
+## 5. Area, Task, and Checklist Boundary
 
-The existing recurrence model must evolve into an explicit schedule union.
+### 5.1 Area
 
-```ts
-type Schedule =
-  | FixedSchedule
-  | FloatingSchedule
-  | QuotaSchedule;
-```
+An `Area` is a durable life domain such as French, Job Search, Health, or Personal Administration. It is not itself a Task and does not create check-ins.
 
-### 5.1 Fixed Schedule
+A Task may belong to one optional Area.
 
-```ts
-interface FixedSchedule {
-  mode: "fixed";
-  recurrence:
-    | { type: "once" }
-    | { type: "daily" }
-    | { type: "weekdays"; weekdays: number[] }
-    | { type: "interval"; intervalDays: number };
-}
-```
+### 5.2 Task
 
-Fixed schedules preserve the existing semantics:
+Current Task semantics remain authoritative: task kind, Area ownership, color, schedule, lifecycle, check-ins, rewards, and history belong to the Task layer.
 
-- an occurrence is calculated for a date;
-- past unrecorded scheduled dates may count as missed;
-- skipped dates are neutral according to the existing statistics rules;
-- no future occurrence rows are materialized.
+v1.0 may extend Task detail with fields such as notes and estimated duration, but those additions must preserve existing identity and history.
 
-### 5.2 Floating Schedule
+### 5.3 One-Level Checklist
 
-```ts
-interface FloatingSchedule {
-  mode: "floating";
-  availableFrom: string;
-  optionalDeadline?: string;
-}
-```
-
-A Floating Task is a one-time item that can be chosen on any suitable date.
-
-Semantics:
-
-- it is available rather than automatically due every day;
-- not choosing it today is not a daily failure;
-- completion is represented by a successful dated check-in;
-- an optional deadline may make it overdue, but overdue is not the same as a failed habit day;
-- the Today view may surface or pin floating items without changing their schedule definition.
-
-### 5.3 Quota Schedule
-
-```ts
-interface QuotaSchedule {
-  mode: "quota";
-  period: "week" | "month";
-  targetCount: number;
-  availableFrom: string;
-  optionalEndDate?: string;
-}
-```
-
-Examples:
-
-- one vegetarian day per week;
-- four gym visits per month.
-
-Semantics:
-
-- successful dated check-ins count toward the active period;
-- one task can receive at most one credited completion per calendar date in the planned v0.x model;
-- individual uncompleted dates are not failures;
-- the period result is derived as achieved, partial, or not achieved;
-- quota streaks count consecutive successful periods, not consecutive days;
-- the configured first day of the week must control weekly period boundaries;
-- current-period progress remains provisional until the period closes.
-
-### Schedule Service Boundary
-
-All schedule decisions belong in a date-domain service:
+The v1.0 hierarchy is:
 
 ```text
-isAvailableOn(task, date)
-isFixedOccurrenceOn(task, date)
-getQuotaPeriod(task, date, weekStartsOn)
-getQuotaProgress(task, period, checkIns)
-getPeriodOutcome(task, completedPeriod, checkIns)
+Area
+  └── Task
+       └── ChecklistItem[]
 ```
 
-UI components should not duplicate these rules.
+Checklist items are intentionally limited local steps.
+
+They must not independently own:
+
+- Area;
+- recurrence or schedule;
+- quota semantics;
+- streaks;
+- lifecycle;
+- rewards;
+- Reflection/Experience history;
+- recursive child items.
+
+If a step requires those semantics, it should be promoted into a real Task.
 
 ---
 
-## 6. Check-In
+## 6. Inbox / Quick Capture Boundary
 
-The stable identifier remains:
+Inbox is a capture state, not a schedule mode.
 
 ```text
-taskId:date
+Capture thought
+      ↓
+    Inbox
+      ↓ triage
+Fixed Task / Floating Task / Quota Goal
 ```
 
-### Suggested Shape
+Inbox must not silently become another name for Floating Task.
+
+A captured item may remain intentionally lightweight until triage. The exact storage shape may be a dedicated entity or an equivalent service-owned representation, but unresolved capture data must not masquerade as a fully classified scheduled Task.
+
+---
+
+## 7. Schedule Model
+
+The current schedule union remains the base model:
 
 ```ts
-type CheckInStatus = "done" | "lapse" | "skipped";
+type Schedule = FixedSchedule | FloatingSchedule | QuotaSchedule;
+```
 
-interface CheckIn {
+### Fixed
+
+Current v0.7 recurrence supports once, daily, selected weekdays, and every-N-days interval rules.
+
+v1.0 will add richer recurrence while preserving the rule that recurrence describes when a Task is scheduled or available; it does not materialize unlimited future rows.
+
+### Floating
+
+A Floating Task is intentionally flexible one-time work. Not choosing it today is neutral. An optional deadline may make it overdue without turning every earlier date into a failure.
+
+### Quota
+
+A Quota Goal expresses a weekly or monthly completion target. Individual uncompleted dates are neutral; the period result is evaluated at the period level.
+
+### Replan
+
+Replan is a forward-looking action. It may change what should happen next, but it must not rewrite historical evidence or convert an earlier miss into a success.
+
+---
+
+## 8. Timeline and Time Block Model
+
+Timeline is an optional execution-planning layer and is distinct from schedule semantics.
+
+Conceptually:
+
+```ts
+interface TimeBlock {
   id: string;
-  taskId: string;
+  taskId?: string;
   date: string;
-  status: CheckInStatus;
-  note?: string;
-  updatedAt: string;
+  startTime: string;
+  durationMinutes: number;
 }
 ```
 
-### Semantics by Task Kind
+The exact implementation may evolve, but these rules are stable:
 
-- `task` or positive `habit`
-  - `done`: completed
-  - `skipped`: neutral
-  - missing: unrecorded
-- `avoidance`
-  - `done`: explicitly confirmed safe day
-  - `lapse`: explicit lapse
-  - `skipped`: neutral
-  - missing: never treated as success
+- a Time Block says when the user plans to act;
+- it does not redefine a Task's fixed/floating/quota schedule;
+- removing a Time Block does not delete the Task;
+- completing a Task remains a domain action, not an automatic consequence of a block ending;
+- Timeline use is optional;
+- task duration estimates may assist placement but are not proof of actual time spent.
 
-### Semantics by Schedule Mode
+External calendar-provider synchronization is outside v1.0.
+
+---
+
+## 9. Check-In and Habit Semantics
+
+The stable CheckIn identifier remains `taskId:date` unless a later approved feature explicitly changes the one-credit-per-day model.
+
+### Positive task / habit
+
+- `done`: completed
+- `skipped`: neutral
+- missing: unrecorded
+
+### Avoidance habit
+
+- `done`: explicitly confirmed safe day
+- `lapse`: explicit lapse
+- `skipped`: neutral
+- missing: never success
+
+### By schedule mode
 
 - fixed: evaluated against scheduled dates;
-- floating: completion closes the item; absence on other dates is neutral;
+- floating: successful completion closes the item; absence on other dates is neutral;
 - quota: successful dated check-ins count toward the period target; individual missing dates are neutral.
 
-The same CheckIn table can therefore support all schedule modes as long as schedule evaluation is handled by services rather than embedded in record shape.
+Quantitative habits with multiple units per day are intentionally deferred beyond v1.0 because they would change this model.
 
 ---
 
-## 7. Experience Log
+## 10. Reflection, Experience, and Templates
 
-A CheckIn records what happened. An `ExperienceLog` records how it felt.
+A CheckIn records what happened. An ExperienceLog records how it felt. A DailyReflection records broader daily reflection. These layers remain separate.
 
-These must remain separate so subjective reflection never corrupts completion semantics.
+v1.0 Reflection Templates must remain optional and lightweight.
 
-### Suggested Shape
+Templates may prefill or structure a reflection session, but they must not:
 
-```ts
-type ExperienceComparison = "easier" | "similar" | "harder";
+- make free-form writing second-class;
+- force completion of every field;
+- become clinical questionnaires;
+- convert missing answers into negative evidence.
 
-interface ExperienceLog {
-  id: string;              // taskId:date
-  taskId: string;
-  date: string;
-  comparison?: ExperienceComparison;
-  effort?: number;         // 1–5
-  urgeIntensity?: number;  // 1–5, especially useful for avoidance habits
-  note?: string;
-  updatedAt: string;
-}
-```
-
-### Rules
-
-- Optional at all times.
-- Usually offered after a check-in as a compact micro-reflection.
-- Comparison should refer to the previous recorded experience for that task, not automatically to yesterday.
-- Empty Experience Logs should not be created.
-- Values outside supported ranges must be rejected by the service layer.
-- Experience data may support later summaries but must not be presented as diagnosis or proof of cause.
+On This Day is a derived resurfacing feature. It should select from appropriate historical records without mutating them or creating duplicate authoritative copies.
 
 ---
 
-## 8. Daily Reflection and Emotions
+## 11. Search Architecture
 
-The existing one-note-per-day journal evolves into a structured `DailyReflection`.
+Global Search should operate locally.
 
-### Suggested Shape
-
-```ts
-interface DailyReflection {
-  date: string;
-  emotionIds: string[];
-  intensity?: number;   // optional overall intensity, 1–5
-  note: string;
-  promptId?: string;
-  updatedAt: string;
-}
-```
-
-### Emotion Definition
-
-```ts
-interface EmotionDefinition {
-  id: string;
-  label: string;
-  normalizedLabel: string;
-  isSystem: boolean;
-  archived: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Rules
-
-- Several emotions may be selected on one date.
-- Users may create their own labels.
-- Normalized labels prevent accidental duplicates while preserving the user's display text.
-- System emotion labels may be localized; user-created labels are authored content and must not be auto-translated.
-- An empty emotion list is valid.
-- The note remains optional and supports complete free-form, multi-paragraph writing without an application-imposed diary-length limit.
-- Existing `JournalEntry.content` migrates into `DailyReflection.note` without alteration.
-
----
-
-## 9. Reflection Prompt Service
-
-Prompt content should be stored as versioned local resources, not fetched remotely.
-
-### Prompt Requirements
-
-- warm but not overly cheerful;
-- non-judgmental;
-- non-diagnostic;
-- useful even on difficult days;
-- skippable and disableable;
-- complete in both supported interface languages.
-
-### Shuffle-Bag Behavior
-
-The prompt service should:
-
-1. build the active prompt-id set;
-2. remove prompt ids already used in the current rotation;
-3. choose from the remaining ids;
-4. begin a new shuffled rotation only after the current set is exhausted;
-5. persist enough rotation state to prevent repetition after reload.
-
-The selected `promptId` should be stored with the Daily Reflection when the user writes a reflection.
-
-Prompt selection is a service concern; React components should not implement randomization rules independently.
-
----
-
-## 10. Rewards
-
-Rewards remain independent entities and may optionally refer to a Task.
-
-```ts
-type RewardTrigger = "date" | "streak" | "quota_periods" | "milestone";
-
-interface Reward {
-  id: string;
-  title: string;
-  taskId?: string;
-  trigger: RewardTrigger;
-  rewardDate?: string;
-  streakDays?: number;
-  quotaPeriods?: number;
-  milestoneId?: string;
-  claimedAt?: string;
-  createdAt: string;
-}
-```
-
-Reward expansion should occur only when the corresponding lifecycle milestone requires it.
-
-Rewards must support motivation without becoming a points economy or punitive mechanism.
-
----
-
-## 11. Daily Order
-
-`DailyOrder[date]` remains a presentation concern.
-
-```ts
-interface DailyOrder {
-  date: string;
-  taskIds: string[];
-}
-```
+Search may cover approved sources such as Task titles/notes, Area names, Reflection text, Meditations, and other explicitly supported local records.
 
 Rules:
 
-- ordering must not change task schedule or Area ownership;
-- scheduled, floating, and quota items may appear together;
-- Area grouping and manual ordering must have deterministic conflict rules;
-- archived or unavailable tasks should be ignored safely when old order arrays are read;
-- normalization should be handled by a service.
+- search must not upload content;
+- derived indexes must be rebuildable from authoritative records;
+- indexing must not create a second unsynchronized source of truth;
+- archived/completed history should remain discoverable when the user explicitly searches for it;
+- privacy-sensitive content must not be sent to remote search services.
 
 ---
 
-## 12. Appearance Assets and Background Slots
-
-The existing single `backgroundDataUrl` setting should evolve into local appearance assets rather than growing one settings record indefinitely.
-
-### Suggested Shape
-
-```ts
-type BackgroundSlot = "app" | "today" | "calendar" | "reflection";
-
-interface AppearanceAsset {
-  id: string;
-  kind: "background";
-  mimeType: string;
-  dataUrl: string;
-  createdAt: string;
-}
-
-interface BackgroundPreference {
-  slot: BackgroundSlot;
-  assetId?: string;
-  fit: "cover" | "contain";
-  position: string;
-  overlayOpacity: number;
-  blurPx: number;
-}
-```
-
-### Rules
-
-- Files must be validated by type and size before storage.
-- Assets remain in IndexedDB and are included in compatible backups.
-- Deleting an asset must clear or repair references safely.
-- Readability overlays and contrast protections are mandatory.
-- The initial implementation should use a small, supported set of slots rather than arbitrary DOM-level customization.
-- Area-specific background references may be added later through `Area.backgroundAssetId`.
-
----
-
-## 13. App Settings
-
-`AppSettings` should hold global preferences and small configuration values, not large binary-like data or domain history.
-
-```ts
-interface AppSettings {
-  id: "app";
-  language: Language;
-  theme: Theme;
-  weekStartsOn: 0 | 1;
-  reduceMotion: boolean;
-  reflectionPromptsEnabled: boolean;
-  promptRotationState?: {
-    remainingPromptIds: string[];
-    promptSetVersion: number;
-  };
-  backgroundPreferences: BackgroundPreference[];
-}
-```
-
-Large local images belong in `AppearanceAsset`.
-
-Authorship rule:
-
-- interface language may change system labels;
-- user-authored task titles, Area names, emotion labels, notes, and rewards must not be auto-translated.
-
----
-
-## 14. Statistics and Insight Architecture
-
-### 14.1 Statistics Service
+## 12. Statistics and Review Architecture
 
 The Statistics Service produces structured facts from stable records.
 
-Examples:
-
-```text
-Task completion facts
-Quota-period outcomes
-Area activity distribution
-Experience comparison counts
-Emotion recording frequencies
-Milestone progress
-Active-day counts
-Missing-data counts
-```
-
-The service must return plain data structures and must not depend on React.
-
-### 14.2 Review Service
-
-The Review Service converts structured facts into cautious, plain-language review models. It accepts any inclusive valid date range plus Area, task, task-kind, and schedule-mode filters. It preserves source record ids and dates so every completion statement can open supporting Calendar evidence.
-
-Recommended pipeline:
+The Review Service converts those facts into cautious bilingual review models.
 
 ```text
 Source records
@@ -629,116 +362,63 @@ Statistics service
     ↓
 Structured facts
     ↓
-Eligibility and sample-size rules
+Eligibility / sample rules
     ↓
-Prioritized insight candidates
+Prioritized review candidates
     ↓
 Localized sentence templates
     ↓
-Localized period review
+Review model
 ```
 
-### Guardrails
+Guardrails remain unchanged:
 
-- Every statement must be traceable to structured facts.
-- Minimum sample sizes should prevent fragile statements.
-- Missing data should be acknowledged when relevant.
-- The service may report counts, distributions, and sufficiently supported recorded frequencies.
-- The service must not prescribe actions or say “caused,” “proves,” “you are,” or diagnose a condition.
-- Summaries must not punish low activity or difficult periods.
-- The user should be able to inspect the underlying dates and records.
-- AI rewriting is not part of the default architecture.
+- every statement must be traceable to facts;
+- weak samples should suppress fragile claims;
+- missing data is acknowledged when relevant;
+- the product may describe counts, distributions, and supported recorded patterns;
+- it must not diagnose, prescribe, claim causation, or predict mental state.
 
-A future optional AI language layer may only rewrite approved structured facts. It must not invent findings, change numerical meaning, or operate without explicit privacy review and user consent.
+Local Reflection / Review export is derived output and must not mutate source records.
 
 ---
 
-## 15. Database Evolution
+## 13. Meditations and Personal Preservation
 
-The Dexie database is currently at version 6. It contains the Milestone 3–4 planning and reflection tables, lifecycle profiles, pause periods, milestone events, and ordered Meditation entries. Review and document output remain derived.
+Meditations remain independent from dated Reflections and derived Reviews.
 
-Expected entity groups:
+Current v0.7 rules remain authoritative:
 
-```text
-areas
-tasks
-checkIns
-experienceLogs
-taskLifecycles
-pausePeriods
-milestoneEvents
-dailyOrders
-dailyReflections
-meditationEntries
-emotionDefinitions
-rewards
-appearanceAssets
-settings
-```
+- content is multiline plain text;
+- creation time is immutable;
+- edit time changes only on content edit;
+- manual ordering is persisted and reused by display/export;
+- the 150-unit mixed-language rule is enforced in reusable domain logic;
+- print/PDF and editable Word generation remain local;
+- export output is derived and does not mutate source entries.
 
-### Migration Order
-
-A safe conceptual sequence is:
-
-1. introduce service boundaries and migration infrastructure;
-2. add Areas and migrate categories;
-3. migrate recurrence into the Schedule union;
-4. add Experience Logs;
-5. migrate Journal Entries into Daily Reflections;
-6. add Emotion Definitions;
-7. move the current background into Appearance Assets and slot preferences;
-8. update backup format and restoration validation after each schema change.
-9. add independent Meditation records and local document export.
-
-Milestone 2 completed step 1 with a Dexie v1-to-v2 upgrade and reusable services. Milestone 3 completed steps 2 and 3 with the v2-to-v3 Area and Schedule migration. Milestone 4 completed steps 4 through 7 with the v3-to-v4 reflection and appearance migration. Milestone 6 added the v4-to-v5 lifecycle migration and backup format version 5. Milestone 7 adds the v5-to-v6 Meditation migration and backup format version 6.
-
-The exact Dexie version numbers belong to implementation, but every version must have:
-
-- an explicit upgrade function when data transformation is needed;
-- tests using representative old records;
-- backup compatibility rules;
-- a documented rollback or recovery approach where practical.
+Global Search and On This Day may surface Meditations only if the approved product design explicitly includes them; they must never rewrite or duplicate the source collection.
 
 ---
 
-## 16. Backup and Restore
+## 14. Backup, Restore, and Automatic Backup
 
-The backup payload must remain versioned.
+The manual backup payload remains versioned and portable.
 
-```ts
-interface BackupPayload {
-  format: "daily-canvas-backup";
-  version: number;
-  exportedAt: string;
-  areas: Area[];
-  tasks: Task[];
-  checkIns: CheckIn[];
-  experienceLogs: ExperienceLog[];
-  taskLifecycles: TaskLifecycle[];
-  pausePeriods: PausePeriod[];
-  milestoneEvents: MilestoneEvent[];
-  dailyOrders: DailyOrder[];
-  dailyReflections: DailyReflection[];
-  meditationEntries: MeditationEntry[];
-  emotionDefinitions: EmotionDefinition[];
-  rewards: Reward[];
-  appearanceAssets: AppearanceAsset[];
-  settings: AppSettings[];
-}
-```
+Current v6 includes Areas, Tasks, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings.
 
-### Restore Workflow
+Restore remains:
 
 ```text
 Choose file
     ↓
 Parse safely
     ↓
-Validate format and version
+Validate format/version
     ↓
 Migrate in memory if supported
     ↓
-Show summary and warnings
+Show summary/warnings
     ↓
 Create safety backup
     ↓
@@ -749,134 +429,149 @@ Restore transactionally
 Run integrity checks
 ```
 
-A failed restore must not leave the active database partially replaced.
+v1.0 Automatic Local Backup extends this contract rather than replacing it.
 
-Large appearance assets may increase backup size; the UI should report this clearly.
+Rules:
 
-For backup format v6, each Meditation must have valid nonempty content within the 150-unit domain limit and a unique non-negative finite integer `sortOrder`. Invalid or ambiguous ordering is rejected before the restore transaction begins.
+- automatic backups remain local;
+- retention is bounded and understandable;
+- backup files use a recoverable documented location;
+- manual export remains available;
+- restore uses the same validation/migration guarantees as manual backups where practical;
+- failures must not corrupt the active store;
+- personal data must not be uploaded merely to implement backup convenience.
 
 ---
 
-## 17. Service Boundaries
+## 15. Reminders and Desktop Shortcuts
 
-Recommended reusable modules include:
+### Reminders
+
+Basic reminders are local, user-controlled desktop notifications tied to explicit user-configured product events.
+
+They must not require a backend or account.
+
+Reminder scheduling logic should remain separate from UI components and shell APIs should be isolated behind an adapter.
+
+### Keyboard shortcuts
+
+v1.0 should prioritize a small set of high-value shortcuts such as Quick Capture, Global Search, Today navigation, New Task, and closing transient surfaces.
+
+Do not create a large shortcut-customization subsystem unless later evidence justifies it.
+
+---
+
+## 16. Update Awareness
+
+v1.0 update awareness follows a simple release-detection model:
 
 ```text
-services/
-  areaService
-  taskService
-  scheduleService
-  checkInService
-  quotaService
-  dailyOrderService
-  reflectionService
-  experienceService
-  promptService
-  statisticsService
-  reviewService
-  appearanceService
-  backupService
+Installed version
+      ↓
+query stable GitHub Release metadata
+      ↓
+compare semantic versions
+      ↓
+Up to date / Update available
+      ↓
+View Release
 ```
 
-This is a conceptual separation, not a requirement to create one file per line immediately.
+Boundaries:
 
-The current implementation provides task, schedule, check-in, daily-order, reflection, emotion, experience, prompt, appearance, reward, settings, statistics, review, backup, Meditation, and Meditation export service boundaries. `reviewService` owns range presets, structured facts, sample-size rules, source traceability, and deterministic English/Chinese review text. `meditationService` owns validation, timestamps, CRUD, and transaction-safe manual order. `meditationExportService` owns the immutable all/selected export model and local editable Word generation; React components render those models and invoke browser printing.
+- no silent auto-download;
+- no silent application replacement;
+- no automatic restart to finish an update;
+- no custom update backend;
+- no account requirement;
+- offline failure must be non-blocking.
 
-The important rule is that components call stable domain operations instead of manipulating Dexie tables and date rules directly.
+A full self-updater is post-v1.
 
 ---
 
-## 18. Testing Boundaries
+## 17. Appearance and Settings
 
-### Schedule Tests
+Current local appearance assets and App/Today/Calendar/Reflection background preferences remain supported.
 
-- fixed once/daily/weekday/interval behavior;
-- floating availability and optional deadline;
-- weekly and monthly quota boundaries;
-- configurable first day of week;
-- leap years, month length, and timezone/date transitions;
-- quota progress and completed-period outcome;
-- no daily-failure semantics for floating or quota schedules.
+AppSettings should continue to hold small global preferences, not large binary-like history.
 
-### Migration Tests
+User-authored content must never be auto-translated merely because interface language changes.
 
-- existing categories become Areas;
-- existing task colors remain visually stable;
-- existing recurrence becomes fixed schedule;
-- journal text survives Daily Reflection migration;
-- existing background survives Appearance Asset migration;
-- old backups migrate or fail safely.
+The desktop redesign may reorganize settings presentation, but should not silently change stored semantics.
 
-### Reflection Tests
+---
 
-- custom emotion normalization;
-- optional fields remain optional;
-- prompt shuffle-bag does not repeat prematurely;
-- disabled prompts stay disabled;
-- Experience Logs compare against prior records correctly.
+## 18. Testing and CI Boundaries
 
-### Insight Tests
+Tests should be proportional to risk and aligned with domain boundaries.
 
-- each summary sentence maps to reproducible facts;
-- low sample size suppresses fragile conclusions;
-- templates avoid causal and diagnostic language;
-- bilingual output is complete;
-- missing data is represented honestly.
+### Core domain coverage
 
-### End-to-End Tests
+- recurrence and date boundaries;
+- floating/quota semantics;
+- avoidance/missing-data semantics;
+- lifecycle, pause, resume, replan;
+- reflection/experience separation;
+- search result correctness;
+- Timeline/schedule separation;
+- backup/migration integrity;
+- update-version comparison logic.
 
-Critical journeys should eventually include:
+### Desktop-specific coverage
 
-- create Area and task;
-- complete fixed habit;
-- choose and complete floating task;
-- progress and complete a quota period;
-- record an experience;
-- write a daily reflection with emotions;
-- inspect calendar details;
-- read a weekly summary;
-- export, validate, and restore a backup.
+- packaged startup and restart persistence;
+- local data location behavior;
+- automatic backup creation and restoration;
+- local notification adapter behavior where automation is practical;
+- packaged local export;
+- installer/upgrade behavior at RC time.
+
+### CI topology
+
+A cheap classifier should determine which expensive jobs are relevant.
+
+- docs-only: no Node install or global test run;
+- ordinary app code: typecheck + tests + build;
+- migration/backup: core + targeted migration regressions;
+- desktop/packaging: core + relevant Windows smoke;
+- RC/release: installer + clean install + upgrade + artifact checks.
+
+A stable final PR Gate should remain visible even when expensive jobs are skipped conditionally.
 
 ---
 
 ## 19. Privacy Boundary
 
-No application data leaves the browser in the local-first product mode.
-
-The application must not make runtime requests to:
+Core product data must not be sent to:
 
 - analytics services;
 - advertising services;
-- remote fonts;
 - account systems;
 - cloud databases;
 - remote image storage;
-- AI services.
+- remote AI services;
+- remote search/indexing services.
 
-Future optional services require:
+The only approved v1.0 routine network exception is narrow GitHub Release metadata access for update awareness.
 
-- explicit opt-in;
-- a documented data-flow explanation;
-- clear deletion behavior;
-- local-only mode preservation;
-- security and operating-cost review.
-
-Emotion records, reflections, experience notes, local images, and planned personal Meditations are especially sensitive and must receive the same or stronger protection as task history. Meditation print, PDF, and Word generation must remain local and must not require remote document services or fonts.
+Emotion records, Reflections, Experience Logs, local images, Meditations, search content, and backup files are especially sensitive and must remain local by default.
 
 ---
 
 ## 20. Explicit Non-Goals
 
-The current architecture does not aim to become:
+The v1.0 architecture does not aim to become:
 
 - a clinical mental-health application;
-- an AI therapist;
+- an AI therapist or predictive coach;
 - a team project-management platform;
 - an unlimited hierarchical task tree;
 - a social network;
 - a competitive habit leaderboard;
-- a punitive streak system;
-- an opaque predictive coach;
-- a mandatory cloud service.
+- a complex points/levels economy;
+- a mandatory cloud service;
+- a PWA-first release;
+- a full automatic self-updating platform.
 
-These boundaries protect the product's coherence: private planning, compassionate tracking, structured reflection, and understandable self-review.
+These boundaries protect the product's coherence: private planning, flexible execution, compassionate tracking, structured reflection, understandable self-review, and durable personal ownership.

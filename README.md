@@ -1,115 +1,154 @@
 # Daily Canvas
 
-Daily Canvas is a private, local-first personal planning, habit, and reflection tracker built around a vivid calendar. It combines flexible planning, full daily reflections, optional habit experience notes, personal backgrounds, rewards, and editable history in one responsive interface.
+Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
+
+The current codebase is **v0.7.0**, a React/Vite browser-served application backed by Dexie/IndexedDB. Milestones 1–7 are complete. The next approved program is **Daily Canvas v1.0.0**, which will turn the product into a real desktop application while preserving the current local-first data model and expanding the planning-to-execution workflow.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
-## Milestone status
+## Current development state
 
-**Latest completed engineering work: Milestone 7 Personal Meditations and Print Collection**
+The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope and approved a larger v1.0 desktop program.
 
-Daily Canvas v0.7 has completed the planned Milestones 1–7 scope and is now awaiting the explicit **Feature Complete Gate** review. Feature Freeze is not active; Product Hardening and Release Candidate remain later, distinct stages.
+Completed work remains valid and is not being discarded. The v0.7 application is the engineering baseline for the desktop transition.
 
-See [ROADMAP.md](ROADMAP.md) for scope and lifecycle policy, and [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state.
+See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
 
-## Milestone 7 delivered
+## What Daily Canvas already does
 
-- Keep short, multiline private Meditations / 感悟 as an independent collection rather than daily journal content.
-- Enforce one deterministic 150-unit mixed-language rule while preserving original creation and edited times.
-- Reorder entries with pointer or keyboard controls and reuse that order for page display, selected/all export, print, and Word.
-- Preview an editable bilingual cover, optional localized dates, A4/Letter pages, three text sizes, and five restrained backgrounds.
-- Print or save PDF through the browser and generate a locally editable `.docx` without uploading personal writing.
-- Preserve Meditations through additive Dexie and backup format v6 migration, validation, preview, restore, and integrity checks.
+### Planning and task semantics
 
-## Milestone 6.1 delivered
+- Create, edit, archive, restore, star, organize, and delete tasks.
+- Track ordinary tasks, positive habits, and habits to avoid with distinct completion semantics.
+- Use fixed schedules, undated Floating Tasks, and weekly/monthly Quota Goals.
+- Organize work under one optional Area / Mainline.
+- Reorder Today's work without changing schedule semantics.
+- Distinguish completed, safe, lapsed, skipped, and unrecorded days.
+- Preserve the rule that missing data is never silently treated as success.
 
-- Continue original plan now persists a genuinely higher next milestone instead of reopening the acknowledged threshold.
-- Manual Resume closes the effective pause on the resume date while preserving the original pause record and resumed lifecycle evidence.
-- Optional lifecycle fields keep Dexie and backup format v5 compatible.
+### Habit lifecycle
 
-## Milestone 6 delivered
+- Track starting, building, milestone reached, maintenance, paused, completed, and archived lifecycle states.
+- Continue, extend, maintain, complete, or archive after a milestone.
+- Record planned breaks, vacations, retroactive pauses, and manual resume without deleting history.
+- Preserve cumulative completion facts, personal bests, pause evidence, and milestone events.
 
-- Celebrate a reached milestone first, then choose to continue, enter maintenance, extend the target, complete, or archive.
-- Pause with a planned break, vacation, or retroactive record; paused dates count as neither completed nor failed.
-- Freeze current streaks across planned pauses while permanently retaining total completions, personal bests, and milestone history.
-- Prevent retroactive pauses from repairing misses that occurred before the pause was created.
-- Handle interruptions factually without “total reset” language and offer Continue original plan, Adjust plan, or Pause.
-- Track starting/building, milestone reached, maintenance, paused, completed, and archived lifecycle states for habits and Quota Goals.
-- Show a local milestone timeline and claim eligible task rewards directly from the restrained celebration surface.
+### Reflection and review
 
-## Milestone 5 delivered
+- Write one editable Daily Reflection per date with optional emotions, intensity, prompts, and free-form text.
+- Add optional Experience Logs after check-ins without mixing subjective experience with completion truth.
+- Review inclusive weekly, monthly, and custom ranges through deterministic local statistics and plain-language bilingual summaries.
+- Inspect Calendar evidence behind review statements.
+- Avoid diagnostic, causal, or predictive claims.
 
-- Review this week, last week, this month, last month, or any valid custom date range with inclusive date semantics.
-- Read concise English or Chinese summaries centered on completed work, never coaching or prescriptions.
-- Inspect repeated task completions by source date, with distinct fixed, Floating Task, and Quota Goal counts.
-- Review Area and schedule-type distributions, completed quota periods, and optional reflection, emotion, and experience context.
-- Filter Calendar evidence by task, Area, task kind, schedule type, and record type; use aggregate, single-task, or single-Area mode.
-- Read Calendar cells without color alone through labels, shapes, counts, a full legend, keyboard navigation, and a date-detail evidence view.
-- Copy a readable local review without uploading it.
+### Personal preservation
 
-## Milestone 4 delivered
+- Keep an independent ordered Meditations / 感悟 collection.
+- Export selected or all Meditations using the persisted manual order.
+- Print / Save as PDF locally and generate an editable local `.docx`.
+- Keep personal writing local.
 
-- Begin a reflection with several built-in or user-authored emotions, then move into an unrestricted, multi-paragraph journal editor.
-- Reopen and edit one reflection per date from Reflection or Calendar without duplicating records.
-- Rotate optional bilingual prompts locally with a persisted shuffle bag; prompts can be skipped or disabled.
-- Add an optional, dismissible micro-reflection after a check-in, separate from completion data.
-- Assign local images to App, Today, Calendar, or Reflection with fit, position, overlay, blur, replace, and clear controls.
-- Preserve old journal text and the previous global background through Dexie v4 and backup format v4 migrations.
+### Data ownership and personalization
 
-## Milestone 3 delivered
+- Store product data locally in Dexie/IndexedDB.
+- Export and restore versioned JSON backups with migration and validation.
+- Preserve backup compatibility through format v6.
+- Keep local appearance assets on-device.
+- Switch between English and Chinese, light/dark/system themes, week-start preferences, and reduced motion.
 
-- Create, edit, order, archive, restore, and safely delete Mainline Areas without deleting their tasks or history.
-- Assign a task to one optional Area and inherit its color, with an optional task-level color override.
-- Keep fixed schedules compatible with existing once, daily, weekday, and interval recurrence.
-- Keep undated Floating Tasks in a dedicated list; optional deadlines indicate overdue state without creating missed days.
-- Track weekly or monthly Quota Goals by completion count, with current progress and successful-period streaks.
-- Respect Monday or Sunday week starts in quota boundaries and calendar layout.
-- Preserve supported older data through Dexie schema version 3 and backup format version 3 migrations.
+## Approved v1.0 direction
 
-## Milestone 1 delivered
+v1.0 keeps the existing product philosophy and expands the missing bridge between planning and execution.
 
-- Create, edit, archive, restore, star, categorize, and delete tasks.
-- Track one-time tasks, positive habits, and habits to avoid with distinct language and outcomes.
-- Repeat daily, on selected weekdays, or every N days, with optional end dates.
-- Set a milestone length such as 7, 21, 30, 66, 90, or a custom number of days.
-- Reorder today's items with pointer, touch, or keyboard drag and drop.
-- Review a color-filled monthly calendar and a per-task history heatmap.
-- Edit past check-ins and distinguish completed, safe, lapsed, skipped, and unrecorded days.
-- See current streak, personal best, and completion rate.
-- Write a complete local daily reflection with preserved paragraphs.
-- Plan rewards for dates or streak milestones.
-- Switch between Chinese and English, light and dark themes, and reduced motion.
-- Start in English by default while retaining the complete Chinese interface.
-- Use private local background images for supported product surfaces.
-- Export and restore a JSON backup.
+Approved capabilities include:
 
-## Privacy model
+- Quick Capture / Inbox.
+- Global Search.
+- Task Notes.
+- One-level Checklist items only; no recursive task tree.
+- Richer recurrence rules.
+- Task duration estimates.
+- Explicit replanning of unfinished work.
+- Optional Day / Week Timeline.
+- Optional simple Time Blocking on that Timeline.
+- Automatic rotating local backups.
+- Basic local reminders.
+- Lightweight Reflection Templates.
+- On This Day / historical resurfacing.
+- Local Reflection / Review export.
+- Desktop keyboard shortcuts.
+- GitHub Release update awareness with manual release-page handoff rather than silent self-update.
 
-Daily Canvas has no account, analytics, advertising, cloud database, or remote font dependency. Product data is stored in the browser's IndexedDB database on the current device and origin. A locally selected background is saved in the same database.
+The Timeline and Time Blocking layer is optional. Users who prefer flexible planning can continue using Today, Floating Tasks, Quota Goals, and Calendar without scheduling every task to a clock time.
 
-Browser data can be cleared by browser settings, so regular JSON exports are recommended. A future sync feature should be opt-in and designed separately rather than silently changing this local-first model.
+## v1.0 product boundaries
 
-Do not commit personal backup exports, screenshots containing real data, `.env` files, databases, logs, or credentials. The included `.gitignore` blocks common local-only files.
+Daily Canvas does **not** aim to become:
+
+- an account-driven SaaS product;
+- a team or collaboration platform;
+- a recursive project-management system;
+- a social network or competitive habit leaderboard;
+- a clinical mental-health tool or AI therapist;
+- a mandatory cloud-sync product;
+- a PWA-first release;
+- a remote-AI-dependent application.
+
+The intended structural hierarchy remains deliberately shallow:
+
+```text
+Area
+  └── Task
+       └── optional one-level Checklist items
+```
+
+If a checklist item needs its own schedule, lifecycle, Area, quota, reward, or history, it should become a real Task rather than another recursive level.
+
+## Desktop transition principles
+
+The desktop program starts with a thin foundation rather than a rewrite.
+
+- Preserve React, TypeScript, Vite, services, and existing domain semantics.
+- Preserve Dexie/IndexedDB initially; do not rewrite the database to SQLite without evidence that the desktop spike requires it.
+- Evaluate a lightweight desktop shell first, with an alternative retained if the feasibility spike exposes blockers.
+- Prove persistence, backup/restore, local document export, and upgrade safety before feature expansion.
+- Separate desktop-native adapters such as local files, notifications, and release awareness from domain services.
+
+## UI transition principles
+
+The v1.0 desktop UI will be designed before broad implementation through an explicit blueprint process:
+
+```text
+Product semantics
+    ↓
+Information architecture
+    ↓
+Wireframes
+    ↓
+Behavior specification (Markdown)
+    ↓
+Interactive / visual HTML blueprint
+    ↓
+Frozen PDF design snapshot
+    ↓
+Engineering implementation
+```
+
+Visual design tools may be used to explore alternatives, but they do not replace the approved information architecture or product semantics.
 
 ## Development
 
-Requirements:
+Current v0.7 requirements:
 
 - Node.js 20.19 or newer
 - pnpm
-
-### Windows quick start
-
-Double-click `start-daily-canvas.cmd`. It locates either a normal Node.js installation or the bundled Codex runtime, installs dependencies when needed, starts the local server, and opens Daily Canvas in the default browser.
-
-Opening `index.html` directly is not supported because this is a Vite application; use the launcher or development command instead.
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Quality checks:
+Current quality commands:
 
 ```bash
 pnpm typecheck
@@ -117,19 +156,12 @@ pnpm test
 pnpm build
 ```
 
-## Architecture
+The v1.0 roadmap adds risk-scaled GitHub Actions rather than running the full suite for every documentation change. See [ROADMAP.md](ROADMAP.md).
 
-The application uses React, TypeScript, Vite, Dexie/IndexedDB, i18next, date-fns, and dnd kit. A task definition is separate from its dated check-ins; recurring tasks are calculated from schedules rather than duplicated into an unlimited list of daily records.
+## Privacy model
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model and extension boundaries, [ROADMAP.md](ROADMAP.md) for milestone sequencing and completion criteria, and [PROJECT_STATUS.md](PROJECT_STATUS.md) for the current phase and verification state.
+Core personal data remains local and the application must remain fully usable without an account or cloud service.
 
-## Status semantics
+The planned update-awareness feature may make a narrow, non-personal request to GitHub Releases to compare application versions. It must not upload tasks, habits, reflections, Meditations, usage analytics, or other personal content.
 
-- Positive habit or task: `done`, `skipped`, or unrecorded.
-- Habit to avoid: explicit safe day (`done` internally), `lapse`, `skipped`, or unrecorded.
-- A missing check-in is never treated as a successful avoidance day.
-- Skipped scheduled days neither increase nor break a streak and are excluded from completion-rate denominators.
-
-## Current boundaries
-
-Version 0.7 includes Meditations and local document export. It does not include competitive scoring, punitive streaks, notifications, PWA installation, accounts, cloud sync, remote AI, recursive subtasks, or team project management. PWA installation and reminders are deferred rather than the active next milestone.
+Any future remote, sync, or AI capability would require separate explicit planning and must not silently remove local-only use.
