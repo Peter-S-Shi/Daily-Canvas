@@ -1,442 +1,437 @@
 # Daily Canvas Milestone Roadmap
 
-Daily Canvas is developed through outcome-based milestones. A milestone is complete only when its user-facing outcome, engineering safeguards, documentation, migration path, and validation criteria are all satisfied.
+Daily Canvas is developed through outcome-based milestones. A milestone is complete only when its user-facing outcome, engineering safeguards, documentation, migration path, and validation criteria are satisfied.
 
-This roadmap is intentionally architectural rather than procedural. It defines what each milestone must accomplish and what it must not accidentally become. Detailed implementation choices should remain with the codebase and the Codex development session unless a decision affects product semantics, privacy, data compatibility, or future extension boundaries.
+This roadmap records the **approved v1.0 desktop program** as of 2026-09-21. It supersedes the former plan that moved directly from Milestone 7 to browser-oriented Product Hardening and a browser/launcher v1.0 candidate.
+
+The completed Milestones 1–7 remain valid engineering history. Only the future release path has been replaced.
 
 ## Product Direction
 
-Daily Canvas is evolving from a local task-and-habit tracker into a private personal rhythm, action, and reflection system.
-
-The product should help a user:
-
-1. decide what matters across several life areas;
-2. act through fixed, flexible, and quota-based plans;
-3. record outcomes and subjective experience without turning daily use into paperwork;
-4. understand longer-term patterns through calendars, structured statistics, and plain-language summaries;
-5. preserve ownership of private data through a local-first architecture.
-
-The intended progression is:
+Daily Canvas is a free, account-free, local-first personal system for:
 
 ```text
-Flexible Planning
-        ↓
-Structured Reflection
-        ↓
-Human-Friendly Insights
-        ↓
-Personal Preservation
+Plan
+  ↓
+Act / Track
+  ↓
+Reflect
+  ↓
+Review
+  ↓
+Preserve
 ```
+
+The existing product is already strong in habit semantics, lifecycle, reflection, review, and personal preservation. The v1.0 expansion therefore concentrates on the weaker bridge between planning and execution while turning the application into a real desktop product.
 
 ## Cross-Cutting Principles
 
-Every milestone must preserve the following principles:
+Every milestone must preserve these rules:
 
-- **Local-first remains the default.** Core product data stays on the user's device unless a later milestone explicitly introduces an opt-in alternative.
-- **Existing history must survive upgrades.** Schema changes require explicit migrations and backup-version compatibility.
-- **Domain rules must not live only in UI components.** Scheduling, quota evaluation, statistics, reflection, and backup behavior belong in reusable application services.
-- **Missing data is not success.** This remains especially important for avoidance habits, quota goals, and emotional or experience records.
-- **Statistics must not overclaim.** The product may describe patterns and correlations, but it must not present simple data as diagnosis, causation, or predictive certainty.
-- **Reflection must remain optional and compassionate.** No prompt, questionnaire, streak, or recovery flow should shame the user.
-- **Color is never the only carrier of meaning.** Labels, shapes, icons, and accessible text must remain available.
-- **Milestones should add coherent capabilities, not isolated widgets.**
-
----
-
-## Milestone 1: Daily Canvas v0.1 Foundation — Completed
-
-**Goal:** Establish a usable, private, local-first foundation for daily tasks, habits, reflection, and calendar tracking.
-
-**Delivered:**
-
-- One-time tasks, positive habits, and habits to avoid.
-- Daily, selected-weekday, and every-N-days schedules with optional end dates.
-- Categories, colors, stars, archiving, deletion, and per-day drag-and-drop ordering.
-- Explicit check-in semantics for completed, safe, lapsed, skipped, and unrecorded days.
-- Monthly calendar, editable historical check-ins, per-task heatmap, current streak, personal best, and completion rate.
-- Daily journal entries.
-- Date-based and streak-based rewards.
-- English-first interface with a complete Chinese interface, themes, reduced motion, and a local background image.
-- IndexedDB persistence, JSON backup and restore, privacy-oriented ignore rules, bilingual documentation, tests, production builds, and a Windows launcher.
-
-**Completion evidence:** The application builds successfully, its core tests pass, the local launcher opens a working browser experience, and the source is synchronized to the private GitHub repository.
+- **Local-first is the default and local-only use remains complete.**
+- **No account system is required.**
+- **Existing history must survive upgrades.** Schema and backup changes require versioned migration and validation.
+- **Domain rules stay outside React components.** UI renders and delegates; services own semantics.
+- **Missing data is not success.** This remains especially important for avoidance habits, quota goals, reflection, and experience records.
+- **Reflection remains optional and non-diagnostic.**
+- **Statistics remain traceable and cautious.** No causal, predictive, or clinical overclaiming.
+- **Color is never the sole carrier of meaning.**
+- **Optional structure must remain optional.** Timeline and Time Blocking must not punish users who prefer flexible planning.
+- **Milestones add coherent capability, not isolated feature clutter.**
+- **The v1.0 desktop migration must not become a database rewrite without evidence.**
 
 ---
 
-## Milestone 2: Daily Canvas v0.2 Trustworthy Daily Core — Completed
+# Completed Baseline
 
-**Goal:** Make the existing daily workflow and data layer dependable enough for long-term personal use before expanding the product model.
+## Milestone 1 — v0.1 Foundation — Completed
 
-**Delivered scope:**
+Delivered the initial React/TypeScript application, fixed recurrence, task/habit/avoidance semantics, Today, Calendar/history, streaks, rewards, daily journal, bilingual UI, local appearance, IndexedDB persistence, JSON backup/restore, tests, and Windows browser launcher.
 
-- Introduce application services for tasks, check-ins, schedules, statistics, settings, and backups so UI components no longer own business rules.
-- Add explicit Dexie database migrations and versioned backup migrations.
-- Validate imports before replacing data, show a restoration summary, and create a safety backup before destructive restore.
-- Add an application error boundary, database initialization recovery, visible save states, and actionable failure messages.
-- Expand recurrence, timezone, date-boundary, avoidance, skipped-day, milestone, archive, and backup tests.
-- Respect the configured first day of the week throughout all date and calendar calculations.
-- Replace the dense task form with a progressive creation flow and optional advanced settings.
-- Add first-run onboarding, editable starter examples, and clear empty states.
-- Add automated browser smoke coverage for launch, task creation, check-in, history editing, backup, restoration, and language switching.
-- Establish clean extension seams for future Areas, flexible schedules, quota evaluation, reflection records, and insight generation without implementing those full feature sets prematurely.
+## Milestone 2 — v0.2 Trustworthy Daily Core — Completed
 
-**Exit criteria:**
+Added reusable domain services, explicit Dexie and backup migrations, restore validation and safety backup, startup recovery, onboarding, progressive task creation, week-start correctness, and broader automated coverage.
 
-- No silent blank-screen failure.
-- Existing data survives schema and backup-format upgrades.
-- Core date rules have boundary coverage.
-- A new user can create and complete a habit without instruction.
-- Later milestones can extend domain entities through services and migrations rather than rewriting page components.
+## Milestone 3 — v0.3 Flexible Planning and Mainlines — Completed
 
-**Not included:** Mainlines/Areas, floating tasks, quota goals, emotion tracking, experience questionnaires, advanced insights, cloud accounts, cross-device sync, or public deployment.
+Added first-class Areas, Floating Tasks, weekly/monthly Quota Goals, explicit fixed/floating/quota schedule semantics, quota-period streaks, and compatible v3 migrations/backups.
 
-**Completion evidence:** Dexie and backup migrations are versioned and tested; imports are previewed before a transactional restore and current data is exported first; first-run and failure recovery screens replace silent loading; task creation is progressive; calendar layout follows the week-start setting; and an automated browser-like smoke test covers launch, creation, check-in, history editing, backup/restore, and language switching. Type checking, 14 automated tests, production build, and a live local-browser smoke pass succeeded.
+## Milestone 4 — v0.4 Reflection and Personalization — Completed
 
----
+Added Daily Reflections, emotions, local prompt rotation, separate Experience Logs, local appearance assets and background slots, and v4 data migration.
 
-## Milestone 3: Daily Canvas v0.3 Flexible Planning and Mainlines — Completed
+## Milestone 5 — v0.5 Calendar and Human-Friendly Reviews — Completed
 
-**Goal:** Support real-life plans that do not always belong to a predetermined date, while organizing daily action around meaningful life areas.
+Added evidence-oriented Calendar modes and filters, arbitrary inclusive review ranges, deterministic local review facts, bilingual plain-language summaries, and drill-down to source dates.
 
-**Delivered scope:**
+## Milestone 6 / 6.1 — v0.6 Habit Lifecycle and Corrections — Completed
 
-### Mainlines / Areas
+Added lifecycle states, milestone decisions, pause/vacation/recovery semantics, milestone events, preserved personal bests, reward integration, and corrective continuation/resume behavior with v5 migration compatibility.
 
-- Replace the current free-text category concept with a first-class `Area` model.
-- Migrate existing category values into Areas without losing task history.
-- Allow tasks and habits to belong to one optional Area such as French, Job Search, Piano, Health, or Personal Administration.
-- Give each Area a name, color, icon, sort order, and archive state.
-- Let tasks inherit an Area color while allowing an explicit task-level override.
-- Group and filter the Today, Tasks, Calendar, and later Insights views by Area.
+## Milestone 7 / 7.1 — v0.7 Personal Meditations and Print Collection — Completed
 
-### Flexible Schedule Model
+Added independent ordered Meditations, deterministic mixed-language length rules, all/selected export, print/PDF, editable local Word generation, v6 migration/backup support, and print/restore contract corrections.
 
-- Preserve existing fixed schedule behavior for once, daily, selected weekdays, and every-N-days recurrence.
-- Add **Floating Tasks** for one-time work that has no predetermined completion date.
-- Add **Quota Goals** for requirements such as “once per week” or “four times per month.”
-- Model weekly and monthly quota periods explicitly rather than pretending every day is a scheduled day.
-- Show clear progress such as `0 / 1 this week` or `2 / 4 this month`.
-- Evaluate quota success only when enough of the period has elapsed to make the result meaningful.
-- Define period-based streaks for quota goals, such as consecutive successful weeks or months.
-- Preserve the existing deterministic one-check-in-per-task-per-date rule for this release.
-
-### Daily Workflow
-
-- Present fixed scheduled items and relevant quota progress without making the Today view feel crowded.
-- Keep Floating Tasks in a dedicated discoverable list where they can be completed without converting them into fixed schedules.
-- Keep drag-and-drop ordering compatible with Area grouping and mixed schedule types.
-- Provide clear wording for due, available, completed, skipped, partial quota, and expired states.
-
-### Statistics Semantics
-
-- Separate daily completion statistics from quota-period success statistics.
-- Ensure an unchosen floating task is not counted as a daily failure.
-- Ensure quota goals are not penalized on individual dates before their period closes.
-- Add tests for week boundaries, month boundaries, first-day-of-week settings, leap dates, and timezone transitions.
-
-**Exit criteria:**
-
-- A user can represent “eat vegetarian once this week” and “go to the gym four times this month” without choosing dates in advance.
-- A user can organize daily work under several Areas and understand each Area through consistent colors and labels.
-- Fixed, floating, and quota-based plans produce correct and distinct completion semantics.
-- Existing Milestone 1 tasks and check-ins remain valid after migration.
-
-**Not included:** Unlimited nested subtasks, project-management dependencies, kanban boards, team collaboration, or arbitrary multi-level task trees.
-
-**Completion evidence:** The v2-to-v3 Dexie migration converts unique categories into editable Areas, preserves task and history identities, and converts recurrence into the fixed schedule union. Dedicated services implement Area color resolution, Floating Task availability and overdue semantics, weekly/monthly quota periods, progress, outcomes, and period streaks. Backup format v3 migrates supported older exports. Today, Floating Tasks, Tasks, Calendar, history, and statistics distinguish schedule modes. Type checking, 21 automated tests, production build, and a live local-browser smoke check passed.
+The detailed historical evidence remains in repository history and `DEVLOG.md`.
 
 ---
 
-## Milestone 4: Daily Canvas v0.4 Reflection and Personalization — Completed
+# v1.0 Approved Scope
 
-**Goal:** Turn daily notes and habit check-ins into a lightweight, warm, and structured reflection practice without increasing daily friction.
+## Planning and execution capabilities
 
-**Delivered scope:**
+The following are approved for v1.0:
 
-### Daily Reflection
+- Quick Capture / Inbox.
+- Global Search.
+- Task Notes.
+- One-level Checklist items.
+- Richer recurrence rules.
+- Task duration estimates.
+- Explicit Replan for unfinished work.
+- Optional Day / Week Timeline.
+- Optional simple Time Blocking on that Timeline.
 
-- Evolve the existing one-note-per-day journal into a `DailyReflection`.
-- Allow several emotion selections per day.
-- Provide reusable built-in emotion labels and user-created emotion labels.
-- Support an optional intensity value and a short free-text reflection.
-- Preserve all existing journal text during migration.
-- Keep reflection optional; an empty day must never be treated as a negative outcome.
+### Hierarchy boundary
 
-### Warm Reflection Prompts
+Daily Canvas remains intentionally shallow:
 
-- Provide bilingual, locally stored prompt templates that invite self-expression without diagnosing, pressuring, or forcing positivity.
-- Use a persisted shuffle-bag strategy so prompts do not repeat until the current prompt set has been exhausted.
-- Allow prompts to be skipped or disabled.
-- Record the prompt identifier used for a reflection so later review remains understandable.
+```text
+Area
+  └── Task
+       └── Checklist item
+```
 
-### Habit Experience Micro-Reflection
+Checklist items are local steps, not miniature Tasks. They do not receive independent Area ownership, schedule, quota, streak, lifecycle, reward, reflection history, or recursive children. If a step needs those semantics, it becomes a real Task.
 
-- After a task or habit check-in, optionally ask one brief question rather than opening a mandatory form.
-- Support a compact comparison such as easier, similar, or harder than the previous recorded experience.
-- Support optional effort and, for avoidance habits, urge-intensity ratings.
-- Support an optional short note about what helped or what made the action difficult.
-- Compare with the previous relevant record, not automatically with yesterday.
+### Timeline boundary
 
-### Background and Visual Personalization
+Timeline and Time Blocking are optional planning layers. They must not replace fixed/floating/quota semantics and must not require users to schedule every task to a specific clock time.
 
-- Extend the existing global background feature into a limited set of supported background slots such as App, Today, Calendar, and Reflection.
-- Keep imported images local.
-- Add controls for overlay strength, positioning, fit, and readability.
-- Protect contrast and interaction clarity regardless of the selected image.
-- Leave Area-specific backgrounds as an optional extension if the base slot system proves useful.
+External Google/Outlook calendar integration is not part of v1.0.
 
-**Exit criteria:**
+## Reflection and preservation capabilities
 
-- A user can record emotions and a short daily reflection in less than a minute.
-- A user can optionally add structured experience data after a habit check-in without being blocked from completing the check-in.
-- Prompt rotation avoids immediate repetition and remains fully local.
-- Existing journal entries and the current background survive migration.
-- Reflection and appearance features remain usable with keyboard navigation, reduced motion, and high-contrast needs.
+Approved for v1.0:
 
-**Not included:** Mental-health diagnosis, clinical screening, mandatory mood scoring, AI therapy, or remote image storage.
+- Lightweight reusable Reflection Templates.
+- On This Day / historical resurfacing.
+- Local Reflection / Review export.
 
-**Completion evidence:** Existing journals migrate without text changes into one editable `DailyReflection` per date, and the prior app background becomes a local appearance asset. Built-in and custom emotions, optional persisted prompt rotation, separate Experience Logs, and App/Today/Calendar/Reflection background slots are implemented through reusable services. Backup format v4 migrates all supported older versions and includes every Milestone 4 entity. Type checking, 27 automated tests, and a production build passed; the English and Chinese critical reflection flow is covered by browser-like automation.
+Free-form reflection remains first-class. Templates must not turn Reflection into a mandatory questionnaire system.
 
----
+## Desktop-native and reliability capabilities
 
-## Milestone 5: Daily Canvas v0.5 Calendar and Human-Friendly Reviews — Completed
+Approved for v1.0:
 
-**Goal:** Help the user clearly understand what they completed during a user-selected period, with Calendar as the inspectable evidence surface.
+- Automatic rotating local backups.
+- Basic local reminders.
+- Desktop keyboard shortcuts.
+- GitHub Release update awareness.
 
-**Delivered scope:**
-
-### Calendar
-
-- Add a clear legend for complete, partial, missed, skipped, safe, lapsed, quota-progress, and unrecorded states.
-- Separate aggregate calendar mode from single-task and single-Area history modes.
-- Add a date-detail drawer for check-ins, quota progress, experience notes, daily reflections, edits, and later backfills.
-- Add task, Area, schedule-type, and record-type filters.
-- Keep a focused monthly evidence grid with direct multi-year month navigation; arbitrary week, month, quarter, year, and custom periods are handled by the shared Review range model.
-- Use labels, shapes, and patterns in addition to color.
-- Improve keyboard navigation, touch interaction, performance, and multi-year queries.
-
-### Structured Reviews
-
-- Add weekly, monthly, and first-class custom-range reviews for task completion, quota achievement, Area distribution, experience records, reflections, and recorded emotions.
-- Distinguish facts from interpretation.
-- Show sample size and missing-data context when a conclusion would otherwise look stronger than the underlying evidence.
-- Allow the user to move from a summary statement to the underlying dates and records.
-
-### Plain-Language Review Engine
-
-- Build insights from deterministic local statistics and rule-based templates.
-- Generate concise, pleasant, bilingual summaries rather than presenting only technical dashboards.
-- Center summaries on what was completed, using calm factual language without recommendations or next-step prescriptions.
-- Describe associations cautiously and never present correlation as causation.
-- Avoid mental-health diagnosis, personality labeling, or predictive coaching.
-- Keep AI or LLM rewriting outside the default engine. Any future AI-assisted language layer must be explicit, optional, privacy-reviewed, and unable to alter the underlying facts.
-
-**Exit criteria:**
-
-- A user can understand any calendar cell without guessing.
-- A user can review a week or month in one place and inspect the records behind each summary.
-- Plain-language summaries remain grounded in reproducible structured facts.
-- The experience remains useful even for users who dislike dense charts or professional analytics terminology.
-- Several years of records remain responsive.
-
-**Not included:** Claims of causation, clinical interpretation, automated life decisions, or opaque AI-generated conclusions.
-
-**Completion evidence:** Arbitrary inclusive ranges and Monday/Sunday week presets feed a deterministic `reviewService` that separates fixed completions, Floating Tasks, Quota credits and period outcomes, Areas, active days, and optional reflection/emotion/experience context. Review statements retain source ids and dates for Calendar drill-down and suppress weak emotion or Area claims. Calendar supplies aggregate, single-task, and single-Area modes; filters; a color-independent legend; keyboard navigation; and a source-record detail surface. Application version is v0.5.0; Dexie and backup format remain at v4 because reviews are derived.
+Update awareness may compare the installed version with stable GitHub Release metadata and open the release page. v1.0 does not silently download, replace, or restart the application to self-update.
 
 ---
 
-## Milestone 6: Daily Canvas v0.6 Habit Lifecycle and Rewards — Completed
+# Deferred and Rejected Scope
 
-**Goal:** Support the full lifecycle of starting, building, maintaining, pausing, recovering, and completing a habit.
+## Post-v1 / Re-evaluate Later
 
-**Delivered scope:**
+These may be useful later but are intentionally outside v1.0:
 
-- Model lifecycle states such as starting, building, milestone reached, maintenance, paused, completed, and archived.
-- Replace silent disappearance after a target with a milestone-completion decision.
-- Offer continue, switch to maintenance, extend the target, complete, or archive actions.
-- Add pause, vacation, and planned-break handling without corrupting statistics.
-- Add a compassionate lapse-recovery flow that preserves previous progress and personal bests.
-- Move rewards closer to task milestones and add restrained, reduced-motion-aware celebrations.
-- Add a milestone timeline.
-- Reuse Experience Logs and Daily Reflections for structured notes about what helped, what became easier, and what remained difficult.
-- Support lifecycle behavior for both daily habits and quota goals.
+- Focus Timer / Pomodoro.
+- External calendar integration.
+- App Lock / product-managed encryption.
+- Quantitative habits with multiple daily units.
+- Generic personal metrics such as arbitrary health/self-tracking fields.
+- Desktop widgets or tray mini-UI.
+- Full automatic self-updater.
+- Cross-device/cloud sync, which would require a separate privacy and ownership design.
 
-**Exit criteria:**
+## Not Planned Product Directions
 
-- Reaching or missing a milestone always leads to a clear next action.
-- No lifecycle transition deletes valid history.
-- A lapse or difficult period can be acknowledged without resetting the user's entire identity or previous progress.
-- Rewards support motivation without becoming a separate points economy.
-
-**Not included:** Competitive leaderboards, punitive streak mechanics, public social comparison, or gambling-like reward systems.
-
-**Completion evidence:** Dexie and backup format v5 add one lifecycle profile per supported task, neutral pause periods, and append-only milestone events while preserving v1–v4 data. Reaching fixed-habit or Quota milestones opens a restrained bilingual celebration followed by continue, maintenance, extend, complete, or archive choices. Planned breaks and vacations freeze streak calculations; retroactive pauses take effect no earlier than their creation date and cannot repair earlier misses. Personal best is monotonic, interruption recovery retains cumulative facts and history, Calendar shows pause evidence, and eligible task rewards appear beside milestone choices.
-
----
-
-## Milestone 6.1: Lifecycle Corrections — Completed
-
-**Goal:** Correct two lifecycle transitions without redesigning the completed Milestone 6 model.
-
-**Delivered scope:**
-
-- Persist a genuinely higher `nextMilestoneTarget` after Continue original plan so an acknowledged threshold cannot immediately reopen.
-- Close the effective active pause on manual Resume while preserving the original `PausePeriod` as inspectable history.
-- Record resumed lifecycle evidence and make the resume date immediately eligible for schedule and statistics evaluation.
-- Keep backup format v5 compatible through optional lifecycle fields.
-
-**Completion evidence:** Focused regressions cover continued milestones, open-ended pauses, and dated pauses resumed before their planned end. Type checking, 47 automated tests, and a production build passed.
+- Accounts or user-management infrastructure.
+- Team collaboration or shared workspaces.
+- Recursive project/task trees.
+- Social feeds or competitive leaderboards.
+- Complex points/levels/virtual-economy gamification.
+- Remote AI coach / AI therapist behavior.
+- Automated diagnosis or prediction from personal data.
+- Mandatory cloud backup.
+- PWA-first v1.0 release delivery.
 
 ---
 
-## Milestone 7: Daily Canvas v0.7 Personal Meditations and Print Collection — Completed
+# v1.0 Milestone Sequence
 
-**Goal:** Let the user preserve short personal principles, lessons, and philosophical reflections as a private ordered collection that can become a printable personal volume.
+## Milestone 8: Desktop Foundation and CI Guardrails
 
-**Delivered scope:**
+**Goal:** Prove that the existing v0.7 application can become a reliable desktop product without prematurely rewriting its data model or expanding feature scope.
 
-- Add a separate bilingual Meditations / 感悟 page for multiline `MeditationEntry` records.
-- Limit each entry to 150 semantic units using one reusable mixed-language rule: each Han character and each non-CJK word counts as one; punctuation, whitespace, and paragraph breaks do not count.
-- Support create, edit, confirmed delete, persisted manual ordering, immutable creation time, and separate edited time.
-- Add Select Mode, Export All, and Export Selected while preserving the global manual order.
-- Build a deterministic export model with editable default cover titles `我的感悟` and `Meditations`, dates visible by default, restrained page backgrounds, A4/Letter layouts, and compact/standard/large text.
-- Add a local print view for browser Print / Save as PDF and a locally generated editable `.docx` file.
-- Add Meditations through an additive Dexie and backup migration while preserving every existing record.
-- Keep the full workflow local, bilingual, keyboard accessible, touch friendly, and compatible with reduced motion.
+### Planned scope
 
-**Exit criteria:**
+- Run a bounded desktop-shell feasibility spike using the existing React/Vite application.
+- Evaluate the preferred lightweight shell first and retain a practical fallback if application-specific blockers appear.
+- Preserve current service boundaries and Dexie/IndexedDB unless evidence shows a release-blocking limitation.
+- Establish desktop adapters for native concerns rather than leaking shell APIs through domain logic.
+- Verify packaged-app startup, restart persistence, current v6 data access, backup/restore, appearance assets, Meditation print/PDF/Word paths, and clean failure handling.
+- Define the desktop user-data boundary and confirm that uninstall/reinstall/upgrade behavior can be made predictable.
+- Establish short-lived milestone branches and PR-based integration.
+- Add risk-scaled GitHub Actions.
 
-- The user can create, edit, delete, reorder, reload, and inspect multiline Meditations without losing content, timestamps, or order.
-- The 150-unit rule is deterministic and enforced by both reusable domain logic and the editor.
-- All and selected exports use the persisted manual order and never mutate source entries.
-- Print/PDF and Word output preserve requested content, paragraphs, dates, Unicode text, and reasonable page layout.
-- Existing databases and supported backups migrate safely; new backups restore Meditations with content, order, and timestamps intact.
-- Automated checks and the defined live local acceptance journey pass in both content languages.
+### CI policy
 
-**Not included:** AI generation or rewriting, automatic extraction from Daily Reflection, public sharing, cloud sync, categories, tags, chapters, full-text search, rich text, Markdown rendering, attachments, collaborative editing, or the former PWA/reminder scope.
+The CI topology should scale with change risk rather than run the same expensive workflow for every commit.
 
-**Completion evidence:** A separate bilingual Meditations page now provides multiline CRUD, deterministic mixed-language validation, immutable creation timestamps, persisted keyboard/pointer ordering, confirmed deletion, Select Mode, and all/selected export through one shared manual order. Dexie and backup format v6 migrate older data additively and include Meditation records in validation, preview, restore, and integrity checks. Milestone 7.1 requires a non-negative finite integer `sortOrder`, rejects duplicate order values and invalid content before restore, and writes the selected A4 or Letter value into the actual print `@page size` rule. The local print surface supports editable bilingual covers, optional localized dates, five restrained backgrounds, three text sizes, and browser Print / Save as PDF. Editable Word export is generated locally and was verified at the OpenXML level for Unicode Chinese/English text, paragraph structure, order, hidden dates, and page dimensions. Type checking, 60 automated tests, production build, and the defined live browser acceptance journey passed.
+```text
+Cheap change classification
+        ↓
+Docs only ───────────────→ stable PR Gate passes without Node install
+Core app ────────────────→ typecheck + tests + production build
+Data/migration/backup ───→ core + targeted migration/restore regressions
+Desktop/packaging ───────→ core + relevant Windows desktop smoke
+RC/release ──────────────→ installer + clean install + upgrade + artifact validation
+```
+
+Requirements:
+
+- avoid whole-workflow skip patterns that make required-check behavior ambiguous;
+- keep a stable final PR Gate while expensive jobs are conditional;
+- use concurrency cancellation so obsolete runs do not consume time;
+- do not upload heavy artifacts for ordinary PRs unless they are needed for inspection;
+- documentation-only macro edits must not install the full JavaScript toolchain merely to pass CI.
+
+### Exit criteria
+
+- A desktop shell choice is evidence-backed for Daily Canvas rather than selected by fashion.
+- Existing v0.7 user data remains readable and persistent across restart.
+- Current backup/restore and Meditation document flows remain functional in the desktop environment or have explicit adapter plans.
+- No database rewrite has occurred without a documented blocker and explicit approval.
+- GitHub Actions provide proportionate independent verification.
+- The next milestone can design the desktop UI against a stable technical boundary.
+
+**Not included:** new v1.0 product features, broad UI redesign, cloud sync, final installer polish, or release-candidate packaging.
 
 ---
 
-## Feature Complete Gate
+## Milestone 9: Desktop Information Architecture and UI Blueprint
 
-The current release becomes feature-complete only when:
+**Goal:** Freeze the desktop product structure and visual/interaction contract before broad UI implementation.
 
-- Milestone 7 is implemented and accepted.
-- The planned Milestones 1–7 user-facing scope is present.
-- Migrations and backups cover the complete current-release data model.
-- Required documentation, versions, and validation records are synchronized.
-- No known missing capability prevents the product from fulfilling the current release promise.
+### Planned scope
 
-Feature Complete does not mean Release Ready. It closes planned feature development and creates the entry condition for Feature Freeze and Product Hardening.
+- Re-evaluate navigation and surface responsibilities across Today, Floating, Calendar, Review, Lifecycle, Reflection, Meditations, Tasks, Rewards, Settings, and the approved new capabilities.
+- Decide where Inbox, Search, Timeline, Replan, notes, checklist editing, reminders, and desktop utilities belong.
+- Produce low-fidelity wireframes.
+- Produce Markdown behavior/state specifications.
+- Produce HTML visual/interaction blueprints for key surfaces.
+- Freeze approved visual snapshots as PDF for stable review reference.
+- Use visual design tools for constrained exploration where useful, without allowing them to redefine product semantics or information architecture.
+
+### Exit criteria
+
+- Every major surface has an explicit responsibility.
+- New capabilities have a home without bloating the primary navigation.
+- The optional Timeline path remains optional.
+- Task editing does not become an uncontrolled monolithic form.
+- English/Chinese layout, accessibility, keyboard use, reduced motion, and local personalization are represented in the blueprint.
+- The blueprint is sufficiently concrete that implementation agents do not need to invent product structure.
+
+**Not included:** broad implementation of the redesigned desktop UI.
 
 ---
 
-## Feature Freeze Policy
+## Milestone 10: Desktop UI Migration
 
-Feature Freeze begins only after the Feature Complete Gate is explicitly accepted and recorded in both this roadmap and `PROJECT_STATUS.md`.
+**Goal:** Implement the approved desktop information architecture and visual system while preserving all completed v0.7 behavior.
+
+### Planned scope
+
+- Migrate navigation, shell layout, primary surfaces, dialogs, and responsive desktop behavior to the approved blueprint.
+- Preserve current task, schedule, lifecycle, reflection, review, Meditation, reward, backup, and appearance semantics.
+- Introduce desktop-appropriate keyboard/focus behavior where it is part of shell usability, without yet implementing the full shortcut feature set.
+- Keep the UI implementation downstream of domain services.
+
+### Exit criteria
+
+- All Milestones 1–7 workflows remain reachable and semantically unchanged unless the approved blueprint explicitly changes presentation only.
+- No data-model migration is introduced solely for visual redesign.
+- The application can proceed to new feature work without another major shell rewrite.
+
+---
+
+## Milestone 11: Capture and Task Enrichment
+
+**Goal:** Make it fast to capture work, find history, and add useful task detail without turning Daily Canvas into a recursive project manager.
+
+### Planned scope
+
+- Quick Capture / Inbox with explicit triage into real task semantics.
+- Global Search across appropriate local content.
+- Task Notes.
+- One-level Checklist items.
+- Richer recurrence rules.
+- Task duration estimates.
+- Explicit Replan flow for unfinished work.
+
+### Product rules
+
+- Inbox means “captured but not yet classified”; Floating means “intentionally flexible one-time work.” They are not the same concept.
+- Search indexes or derived search structures must not become a second authoritative copy of user data.
+- Checklist items remain one level deep.
+- Replan must preserve historical truth; it must not rewrite a missed occurrence into a success.
+
+### Exit criteria
+
+- Capture is materially faster than opening the full Task Editor.
+- Users can find accumulated Tasks, Reflections, Meditations, and other approved searchable history without weakening privacy.
+- New task detail survives backup/migration correctly.
+- Current Fixed/Floating/Quota and lifecycle semantics remain intact.
+
+---
+
+## Milestone 12: Timeline and Optional Execution Planning
+
+**Goal:** Bridge planning and execution for users who want clock-based structure without forcing time blocking on everyone.
+
+### Planned scope
+
+- Day Timeline.
+- Week Timeline.
+- Optional Time Blocks referencing tasks.
+- Task-duration-aware placement.
+- Clear rescheduling/replanning interaction.
+- Basic local reminders.
+- High-value desktop keyboard shortcuts, including quick capture and search.
+
+### Product rules
+
+- Schedule semantics and Time Blocks are separate concepts.
+- A Time Block says when the user plans to act; it does not redefine the task's recurrence or quota rules.
+- Users may ignore Timeline entirely.
+- Reminders are local and user-controlled.
+- External calendar providers are outside this milestone.
+
+### Exit criteria
+
+- Structured users can place work into a day/week plan.
+- Flexible users retain the existing Today/Floating/Quota workflow without additional required steps.
+- Reminder and shortcut behavior works without an account or backend.
+
+---
+
+## Milestone 13: Reflection, Preservation, and Desktop Utilities
+
+**Goal:** Strengthen long-term personal value and desktop reliability without turning the product into a cloud journal or self-tracking platform.
+
+### Planned scope
+
+- Lightweight Reflection Templates while preserving unrestricted free-form Reflection.
+- On This Day / historical resurfacing from appropriate local history.
+- Local Reflection / Review export.
+- Automatic rotating local backups.
+- GitHub Release update awareness.
+
+### Product rules
+
+- Historical resurfacing is optional and non-judgmental.
+- Export remains local.
+- Automatic backup does not replace manual portable export.
+- Backup retention and location must be understandable and recoverable.
+- Update awareness may retrieve version metadata only; no personal content is sent.
+- v1.0 update awareness does not silently download or self-install releases.
+
+### Exit criteria
+
+- A user can recover from ordinary local data-loss scenarios using understandable automatic backup history.
+- Reflection/Review material can be preserved locally without remote services.
+- Update availability is visible without introducing an account or custom update server.
+
+---
+
+# Feature Complete Gate
+
+The v1.0 program becomes feature-complete only when Milestones 8–13 are implemented and explicitly accepted.
+
+The gate requires:
+
+- every approved v1.0 feature is present or explicitly removed from scope by recorded decision;
+- all Milestones 1–7 capabilities still satisfy their product contracts;
+- desktop persistence and native adapters are stable enough for hardening;
+- migrations/backups cover the actual v1.0 data model;
+- UI blueprint and implementation agree materially;
+- documentation describes the post-merge product accurately;
+- no known missing capability prevents the v1.0 release promise.
+
+Feature Complete does not mean Release Ready.
+
+# Feature Freeze Policy
+
+Feature Freeze begins only after the v1.0 Feature Complete Gate is explicitly accepted and recorded in both `ROADMAP.md` and `PROJECT_STATUS.md`.
 
 During freeze:
 
 - release-blocking defects must be fixed;
-- data-integrity, privacy, security, migration, backup, and core-workflow defects must be fixed;
-- severe UX failures in promised workflows must be fixed;
-- nonessential new functionality moves to Deferred Features / Next Version;
-- any intentional scope reopening must be explicitly recorded in `ROADMAP.md` and `PROJECT_STATUS.md`.
+- data-integrity, privacy, security, migration, backup, desktop-persistence, and core-workflow defects must be fixed;
+- severe accessibility or UX failures in promised workflows must be fixed;
+- nonessential new functionality moves to later-version planning;
+- reopening product scope requires an explicit recorded decision.
 
 ---
 
-## Milestone 8: Product Hardening
+## Milestone 14: Product Hardening and Full Regression
 
-**Goal:** Converge the complete Daily Canvas system on release-level correctness, resilience, usability, privacy, and evidence rather than adding another feature set.
+**Goal:** Converge the complete desktop v1.0 system on release-level correctness, resilience, accessibility, privacy, performance, and evidence.
 
-### 1. System Audit and Defect Inventory
+### Planned scope
 
-- Audit the current release promise against implementation, documentation, migrations, backups, and known validation evidence.
-- Build a prioritized defect inventory only from reproduced or clearly evidenced findings.
-- Create `HARDENING_BACKLOG.md` after the audit only if the number or complexity of findings justifies a separate ledger.
+- Audit the complete v1.0 promise against implementation and documentation.
+- Exercise all supported migrations and backup/restore paths.
+- Test large histories and representative local assets.
+- Verify accessibility, keyboard navigation, focus behavior, contrast, color independence, and reduced motion.
+- Verify desktop persistence, automatic backups, reminders, shortcuts, local exports, update awareness, and failure recovery.
+- Run the complete automated suite and production/desktop builds.
+- Execute the defined manual acceptance journeys across all major product surfaces.
 
-### 2. Correctness and Data Integrity
+### Exit criteria
 
-- Verify fixed, Floating, and Quota semantics across Today, Calendar, Review, Lifecycle, and historical evidence.
-- Verify lifecycle continuation, pause, resume, recovery, completion, archive, and preserved history.
-- Verify Daily Reflection, emotions, Experience Logs, Meditations, rewards, and appearance assets remain distinct and correctly linked.
-- Exercise Dexie migrations and backup/restore compatibility across every supported source version.
-
-### 3. Workflow and UX Consistency
-
-- Review creation, editing, cancellation, deletion, repeated clicks, reload, partial failure, and interrupted-operation behavior.
-- Verify promised journeys use consistent bilingual language, date semantics, empty states, confirmations, focus management, and recovery guidance.
-- Confirm archived, completed, and paused records retain inspectable evidence without reappearing as ordinary active work.
-
-### 4. Robustness, Privacy, Accessibility, and Performance
-
-- Test large multi-year histories, larger local image assets, and representative collection sizes.
-- Audit keyboard use, screen-reader semantics, touch targets, contrast, color independence, and reduced motion.
-- Review local data boundaries, export behavior, secret safety, and all sensitive reflection and Meditation content paths.
-- Verify Windows launcher and production-build behavior without assuming developer tooling is already configured.
-- Exercise Meditations selection, ordering, print/PDF, Word export, Unicode, pagination, and local-only document generation.
-
-### 5. Full Regression and Manual Acceptance
-
-- Run the complete automated suite and production build.
-- Execute defined manual journeys for daily action, Floating Tasks, Quota Goals, Calendar evidence, Review, Reflection, Lifecycle, backup/restore, Meditations, print/PDF, and Word export.
-- Record the environment, result, and verification method for critical paths that cannot be fully automated.
-
-**Exit criteria:**
-
-- No known release-blocking defect remains.
-- No known high-risk data-integrity, privacy, security, or migration defect remains.
-- Every defined core journey passes manual acceptance.
+- No known release blocker remains.
+- No known high-risk data-integrity, privacy, security, migration, backup, or desktop-persistence defect remains.
 - Automated checks pass.
-- Critical fixes have regression coverage or a documented repeatable verification procedure.
-- Deferred issues and features are documented.
-- Privacy and secret-safety checks pass.
-- `ROADMAP.md`, `PROJECT_STATUS.md`, both READMEs, `ARCHITECTURE.md`, and release notes agree.
+- Every defined core journey passes manual acceptance.
+- Critical fixes have regression coverage or a repeatable documented verification procedure.
+- Deferred issues are recorded.
+- README files, `ROADMAP.md`, `PROJECT_STATUS.md`, `ARCHITECTURE.md`, and release notes agree.
 
 ---
 
-## Milestone 9: Daily Canvas v1.0 Release Candidate and Delivery
+## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery
 
-**Goal:** Produce and verify a release candidate for the current local React/Vite application without making PWA installation a release requirement.
+**Goal:** Produce, verify, and release the first accepted desktop v1.0.0 candidate.
 
-**Planned scope:**
+### Planned scope
 
-- Produce the final production build and verify a clean-environment start through the Windows launcher.
-- Verify empty-database and migrated-database startup behavior.
-- Verify backup/export and restore using supported representative source versions.
-- Finalize release notes, known limitations, data-ownership explanation, and user documentation.
-- Confirm package, UI, documentation, database, and backup version consistency.
-- Complete final accessibility, privacy, and secret-safety reviews.
-- Verify local and remote commits agree and prepare a release/tag where appropriate.
+- Build the final desktop artifact and installer for the supported release environment.
+- Verify clean install, first run, normal restart, uninstall/reinstall expectations, and upgrade from representative prior desktop candidates where applicable.
+- Verify import of supported browser-era backups into the desktop release.
+- Verify automatic backup and manual restore on a clean environment.
+- Verify Meditation, Reflection, and Review local export paths.
+- Verify local reminders and keyboard shortcuts in the packaged application.
+- Verify GitHub Release update awareness against release metadata.
+- Finalize release notes, known limitations, privacy/data-ownership explanation, and end-user documentation.
+- Confirm package version, UI version, docs, schema version, backup version, repository commit, tag, and published artifact all identify the same accepted candidate.
 
-**Exit criteria:**
+### Exit criteria
 
-- All release-candidate checks pass with recorded evidence.
+- All RC checks pass with recorded evidence.
 - No release blocker remains open.
-- The candidate can start, preserve, export, restore, and present the current release scope without developer intervention.
+- The candidate can start, preserve data, export, restore, upgrade safely within the supported contract, and perform every promised v1.0 workflow without developer tooling.
 - Release documentation and repository state identify the same accepted candidate.
 
-Any release-blocking finding returns the project to Product Hardening. A new candidate must be produced and accepted after the fix.
+Any release-blocking finding returns the project to Milestone 14 hardening. A new candidate must be produced after the fix.
 
 ---
 
-## Current Version Complete / Maintenance
+# After v1.0.0
 
-Daily Canvas v1.0 becomes complete only when the accepted release candidate satisfies every Milestone 9 exit criterion. Later maintenance fixes preserve the accepted release scope. New capabilities require explicit next-version planning rather than silently reopening the completed release.
-
----
-
-## Deferred Features / Next Version
-
-The following ideas are not part of the current v1.0 release path:
-
-- PWA installation and offline application shell.
-- Local reminders, quiet hours, notification permissions, quota reminders, and backup reminders.
-- Update and offline-status UX associated with the former Milestone 7.
-- Optional private accounts and encrypted synchronization.
-- Remote or AI-assisted rewriting.
-- Recursive subtasks, team collaboration, public publishing, and other nonessential expansion ideas.
-
-Local-only use remains a fully supported product mode. Any future account, sync, remote, or AI capability must be optional, privacy-reviewed, and unable to remove that mode.
+The accepted v1.0.0 scope becomes the maintenance baseline. Bug fixes should preserve it. New capability requires explicit later-version planning rather than silently reopening the completed release.
