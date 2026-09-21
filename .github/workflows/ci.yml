@@ -165,12 +165,19 @@ jobs:
           ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
           "--- session"
           query session 2>&1
-          "--- processes"
-          Get-Process | Where-Object { $_.Name -match 'daily|msedge|webview' } | Select-Object Name, Id, SessionId, MainWindowTitle | Format-Table -AutoSize | Out-String
+          "--- launch the exe by hand with the debug port and observe it"
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9333'
+          $p = Start-Process -FilePath "src-tauri/target/release/daily-canvas-desktop.exe" -PassThru
+          Start-Sleep -Seconds 12
+          $p.Refresh(); "app HasExited=$($p.HasExited) ExitCode=$(if ($p.HasExited) { $p.ExitCode })"
+          "--- processes (with command lines)"
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'daily|msedgewebview2' } | ForEach-Object { "{0} pid={1} ppid={2} :: {3}" -f $_.Name, $_.ProcessId, $_.ParentProcessId, ($_.CommandLine -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($_.CommandLine -replace '\s+', ' ').Length)) }
           "--- debug port"
           netstat -ano | Select-String ':9333'
+          try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:9333/json/version -TimeoutSec 5).Content } catch { "debug endpoint: $($_.Exception.Message)" }
           "--- recent application errors"
-          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=2; StartTime=(Get-Date).AddMinutes(-20)} -ErrorAction SilentlyContinue | Select-Object -First 5 | ForEach-Object { $_.Message.Substring(0, [Math]::Min(400, $_.Message.Length)) }
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-3)} -ErrorAction SilentlyContinue | Where-Object { $_.ProviderName -match 'Application Error|Windows Error Reporting|\.NET|Edge|WebView' } | Select-Object -First 5 | ForEach-Object { $_.Message.Substring(0, [Math]::Min(500, $_.Message.Length)) }
+          Get-Process daily-canvas-desktop -ErrorAction SilentlyContinue | Stop-Process -Force
 
       - name: Summarize
         if: always()
