@@ -156,7 +156,16 @@ pnpm test
 pnpm build
 ```
 
-The v1.0 roadmap adds risk-scaled GitHub Actions rather than running the full suite for every documentation change. See [ROADMAP.md](ROADMAP.md).
+Desktop shell (Tauri 2, Windows; MSVC is the authoritative build environment, in CI):
+
+```bash
+pnpm desktop:build     # release build without an installer
+pnpm desktop:bundle    # per-user NSIS installer (test-only versions are supplied by CI)
+```
+
+Packaged-app verification lives in `desktop-verify/` (see `desktop-verify/M8B-EVIDENCE.md`). It uses synthetic data only and refuses to wipe an existing user data folder it did not create.
+
+Continuous integration is risk-scaled (`.github/workflows/ci.yml`): documentation-only changes install no toolchains, app changes run typecheck/tests/build, data and backup changes add targeted regression, and shell or CI changes add the Windows/MSVC desktop build and smoke checks. A stable `PR Gate` job summarizes the result. See [ROADMAP.md](ROADMAP.md).
 
 ## Privacy model
 

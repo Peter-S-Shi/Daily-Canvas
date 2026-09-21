@@ -1,4 +1,4 @@
-# PROTOTYPE (M8-A spike): completes the native Save dialog that belongs to ONE given app process.
+# Completes the native Save dialog that belongs to ONE given app process.
 # Finds the dialog by owning process id + class #32770, then talks only to that dialog's own child controls
 # (reads its pre-filled file name via WM_GETTEXT, then presses Save; the dialog itself decides directory + name). No screen coordinates, no keystrokes, no other windows.
 param([Parameter(Mandatory)][int]$ProcessId, [Parameter(Mandatory)][string]$ExpectedDir, [int]$TimeoutSeconds = 20)

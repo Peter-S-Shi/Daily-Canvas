@@ -1,44 +1,20 @@
-// PROTOTYPE (M8-A spike): end-to-end evidence run against the PACKAGED Daily Canvas desktop exe.
-// Usage: node desktop-spike/desktop-smoke.mjs <exe> <fixtureDir> <outDir>
-// Uses only synthetic data. Deletes the app's own data folder first, so it never touches real data
-// (the exe is the spike build and only this script has ever written to its identifier folder).
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync, readdirSync, copyFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+// End-to-end evidence run against the PACKAGED Daily Canvas desktop exe (Windows).
+// Usage: node desktop-verify/desktop-smoke.mjs <exe> <fixtureDir> <outDir>
+// Synthetic data only. Wipes the identifier data folder only when it is absent or was created by desktop-verify.
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launchApp, closeApp, sleep } from "./cdp.mjs";
+import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, wipeAppDataSafely } from "./lib.mjs";
 
 const [exe, fixtureDir, outDir] = process.argv.slice(2).map((p) => resolve(p));
 mkdirSync(outDir, { recursive: true });
-const here = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
-const IDENT = "app.dailycanvas.desktop";
-const dataRoot = join(process.env.LOCALAPPDATA, IDENT);
-const results = []; const t0 = Date.now();
-const check = (name, ok, detail = "") => { results.push({ name, ok: Boolean(ok), detail }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`); };
-const sha = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 16);
-const idbCounts = (cdp) => cdp.evaluate(`new Promise((res)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const d=r.result;const out={};const names=[...d.objectStoreNames];let n=names.length;names.forEach(nm=>{const q=d.transaction(nm).objectStore(nm).count();q.onsuccess=()=>{out[nm]=q.result;if(--n===0){d.close();res(out)}}})}})`);
-const nav = (cdp, i) => cdp.evaluate(`(()=>{const b=document.querySelectorAll('.sidebar nav button')[${i}];if(!b)return false;b.click();return true})()`);
-const clickText = (cdp, text) => cdp.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&!b.disabled);if(!b)return false;b.click();return true})()`);
-const setSelect = (cdp, sel, value) => cdp.evaluate(`(()=>{const s=${sel};const set=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set;set.call(s,${JSON.stringify(value)});s.dispatchEvent(new Event('change',{bubbles:true}));return s.value})()`);
+const { results, check } = createReporter(); const t0 = Date.now();
 const shot = async (app, name) => writeFileSync(join(outDir, `${name}.png`), await app.cdp.screenshot());
-const ps = (script, ...args) => spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(here, script), ...args], { encoding: "utf8" });
-const downloads = join(process.env.USERPROFILE, "Downloads");
-/** Click a button that opens the native Save dialog, accept its pre-filled name (default dir = Downloads), then move the file to `target`. */
-async function saveVia(app, clickExpr, target) {
-  rmSync(target, { force: true });
-  if (!(await app.cdp.evaluate(clickExpr))) throw new Error("trigger button not found");
-  const r = ps("native-save-dialog.ps1", "-ProcessId", String(app.pid), "-ExpectedDir", downloads);
-  console.log("   dialog:", r.stdout.trim().split(/\s*[\r\n]+\s*/).join(" | "));
-  const name = (r.stdout.match(/PREFILLED_NAME=(.*)/) ?? [])[1]?.trim(); const landed = name && join(downloads, name);
-  for (let i = 0; i < 60 && !(landed && existsSync(landed)); i++) await sleep(250);
-  console.log("   expected file:", landed); const exists = Boolean(landed && existsSync(landed)); const size = exists ? statSync(landed).size : 0;
-  if (exists) { copyFileSync(landed, target); rmSync(landed, { force: true }); }
-  return { dialog: r.stdout, name, exists, size };
-}
 const pdfInfo = (b64) => { const raw = Buffer.from(b64, "base64").toString("latin1"); const m = raw.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/); return { width: m && Math.round(Number(m[1])), height: m && Math.round(Number(m[2])), pages: (raw.match(/\/Type\s*\/Page[^s]/g) ?? []).length, bytes: raw.length }; };
 
 if (!existsSync(exe)) throw new Error(`exe not found: ${exe}`);
-rmSync(dataRoot, { recursive: true, force: true });
+wipeAppDataSafely();
 const fixturePath = join(fixtureDir, "synthetic-v6-backup.json");
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
 const expected = { areas: fixture.areas.length, tasks: fixture.tasks.length, checkIns: fixture.checkIns.length, dailyReflections: fixture.dailyReflections.length, meditationEntries: fixture.meditationEntries.length, appearanceAssets: fixture.appearanceAssets.length, experienceLogs: fixture.experienceLogs.length };

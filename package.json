@@ -11,8 +11,10 @@
     "preview": "vite preview",
     "desktop:build": "tauri build --no-bundle",
     "desktop:dev": "tauri dev",
-    "desktop:fixture": "vitest run --config desktop-spike/vitest.fixture.config.ts",
-    "desktop:smoke": "node desktop-spike/desktop-smoke.mjs"
+    "desktop:fixture": "vitest run --config desktop-verify/vitest.fixture.config.ts",
+    "desktop:smoke": "node desktop-verify/desktop-smoke.mjs",
+    "desktop:bundle": "tauri build --bundles nsis",
+    "desktop:installer": "node desktop-verify/installer-smoke.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

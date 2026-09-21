@@ -1,5 +1,11 @@
 # M8-A Desktop Shell Feasibility Spike — Evidence
 
+> Historical record of the accepted M8-A result. Two things changed afterwards in M8-B: the provisional identifier
+> `app.dailycanvas.desktop` used below was replaced by the stable `io.github.peter-s-shi.dailycanvas` (the
+> `https://tauri.localhost` origin is unchanged; M8-A test data was synthetic and not migrated), and the throwaway
+> tooling moved from `desktop-spike/` to `desktop-verify/`. Current commands and evidence:
+> `desktop-verify/M8B-EVIDENCE.md`.
+
 Question: can Tauri 2 be a thin desktop shell around the existing React/Vite app while keeping the current
 services and Dexie/IndexedDB storage unchanged?
 

@@ -151,7 +151,16 @@ pnpm test
 pnpm build
 ```
 
-v1.0 路线会建立按风险分层的 GitHub Actions，而不是让纯文档修改也触发完整依赖安装和全量测试。详见 [ROADMAP.md](ROADMAP.md)。
+桌面壳（Tauri 2，Windows；权威构建环境是 CI 中的 MSVC）：
+
+```bash
+pnpm desktop:build     # 不带安装包的 release 构建
+pnpm desktop:bundle    # 按用户安装的 NSIS 安装包（测试版本号由 CI 提供）
+```
+
+打包后的应用验证位于 `desktop-verify/`（见 `desktop-verify/M8B-EVIDENCE.md`），只使用合成数据，并且不会清除它没有创建过的现有用户数据目录。
+
+持续集成按风险分层（`.github/workflows/ci.yml`）：纯文档修改不安装任何工具链；应用代码修改运行类型检查、测试与构建；数据与备份修改额外运行定向回归；桌面壳或 CI 修改额外运行 Windows/MSVC 的桌面构建与冒烟检查。稳定的 `PR Gate` 任务汇总结果。详见 [ROADMAP.md](ROADMAP.md)。
 
 ## 隐私模式
 

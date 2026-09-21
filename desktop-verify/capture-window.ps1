@@ -1,4 +1,4 @@
-# PROTOTYPE (M8-A spike): captures ONE process's main window by handle using PrintWindow.
+# Captures ONE process's main window by handle using PrintWindow.
 # PrintWindow reads that window's own content, never screen pixels, so it cannot capture another app.
 param([Parameter(Mandatory)][int]$ProcessId, [Parameter(Mandatory)][string]$Out)
 Add-Type -AssemblyName System.Drawing

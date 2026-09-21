@@ -1,4 +1,4 @@
-// PROTOTYPE (M8-A spike): tiny CDP helper to drive the packaged Tauri/WebView2 app.
+// Tiny CDP helper to drive the packaged Tauri/WebView2 app (Windows).
 // Only talks to 127.0.0.1 and only to the app process this script launched.
 import { spawn, execFileSync } from "node:child_process";
 
