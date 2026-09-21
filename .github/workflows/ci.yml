@@ -108,6 +108,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
       - name: Assert the MSVC toolchain
         run: |
           rustc -vV
@@ -150,6 +151,23 @@ jobs:
             "$(ls "$RUNNER_TEMP"/installers/*installer-test.1*setup.exe)" \
             "$(ls "$RUNNER_TEMP"/installers/*installer-test.2*setup.exe)" \
             "$RUNNER_TEMP/fixture" "$RUNNER_TEMP/installer-smoke"
+
+      - name: Diagnose the runner (only on failure)
+        if: failure()
+        shell: pwsh
+        run: |
+          "--- WebView2 runtime"
+          Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' -ErrorAction SilentlyContinue | Select-Object pv
+          "--- elevated?"
+          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          "--- session"
+          query session 2>&1
+          "--- processes"
+          Get-Process | Where-Object { $_.Name -match 'daily|msedge|webview' } | Select-Object Name, Id, SessionId, MainWindowTitle | Format-Table -AutoSize | Out-String
+          "--- debug port"
+          netstat -ano | Select-String ':9333'
+          "--- recent application errors"
+          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=2; StartTime=(Get-Date).AddMinutes(-20)} -ErrorAction SilentlyContinue | Select-Object -First 5 | ForEach-Object { $_.Message.Substring(0, [Math]::Min(400, $_.Message.Length)) }
 
       - name: Summarize
         if: always()
