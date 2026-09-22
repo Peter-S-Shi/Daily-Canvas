@@ -1,0 +1,242 @@
+name: CI
+
+# Risk-scaled verification. A cheap classifier decides which expensive jobs are relevant; a stable
+# "PR Gate" job always runs and is the only check a branch-protection rule needs to require.
+#
+#   docs only ........ classify + PR Gate (no Node, pnpm or Rust installed)
+#   app code ......... + core   (typecheck, tests, production build)
+#   data / backup .... + core   (+ targeted migration/backup regression and fixture validation)
+#   shell / CI / deps  + desktop (Windows, MSVC: Tauri build, packaged-app smoke, installer/upgrade smoke)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.19.0"
+
+jobs:
+  classify:
+    name: Classify changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.route.outputs.docs_only }}
+      core: ${{ steps.route.outputs.core }}
+      migration: ${{ steps.route.outputs.migration }}
+      desktop: ${{ steps.route.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Self-test routing rules
+        run: bash .github/scripts/classify-selftest.sh
+      - name: Route
+        id: route
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          files=""
+          if [ "$EVENT" = "pull_request" ]; then
+            files="$(git diff --name-only "$PR_BASE...$PR_HEAD")"
+          elif [ "$EVENT" = "push" ] && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            files="$(git diff --name-only "$PUSH_BEFORE" "$PUSH_AFTER")"
+          fi
+          echo "Changed paths:"; echo "${files:-<none: treated as a full run>}"
+          printf '%s\n' "$files" | bash .github/scripts/classify.sh | tee -a "$GITHUB_OUTPUT"
+          { echo "### Routing"; printf '%s\n' "$files" | bash .github/scripts/classify.sh | sed 's/^/- /'; } >> "$GITHUB_STEP_SUMMARY"
+
+  core:
+    name: Core (typecheck, tests, build)
+    needs: classify
+    if: needs.classify.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm exec vite build
+      - name: Migration and backup regression (targeted, verbose)
+        if: needs.classify.outputs.migration == 'true'
+        run: |
+          pnpm exec vitest run src/dbMigration.test.ts src/services/backupService.test.ts src/services/milestone7.test.ts --reporter=verbose
+          FIXTURE_DIR="$RUNNER_TEMP/fixture" pnpm desktop:fixture
+
+  desktop:
+    name: Desktop (Windows, MSVC)
+    needs: [classify, core]
+    if: needs.classify.outputs.desktop == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          cache-on-failure: true
+      - name: Assert the MSVC toolchain
+        run: |
+          rustc -vV
+          rustc -vV | grep -q '^host: x86_64-pc-windows-msvc$'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the desktop shell (release config, no bundle)
+        run: pnpm desktop:build
+
+      - name: Assert the exe has no non-OS runtime dependencies
+        env:
+          MSYS_NO_PATHCONV: "1"
+        run: |
+          vs="$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' -property installationPath)"
+          dumpbin="$(find "$(cygpath -u "$vs")/VC/Tools/MSVC" -path '*Hostx64/x64/dumpbin.exe' | head -1)"
+          "$dumpbin" /dependents src-tauri/target/release/daily-canvas-desktop.exe | tee "$RUNNER_TEMP/deps.txt"
+          # a GNU-style build would import libgcc/winpthread and a dynamic WebView2Loader.dll; MSVC + crt-static must not
+          if grep -Ei 'vcruntime|msvcp|webview2loader|libgcc|libwinpthread|libstdc' "$RUNNER_TEMP/deps.txt"; then echo "::error::unexpected runtime dependency"; exit 1; fi
+
+      # On the (elevated) runner WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the local debug port
+      # used by desktop-verify is enabled through the documented per-executable registry policy instead. CI only.
+      - name: Enable the WebView2 debug port for the test executable
+        shell: pwsh
+        run: |
+          foreach ($hive in 'HKLM', 'HKCU') {
+            $key = "${hive}:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
+            New-Item -Path $key -Force | Out-Null
+            New-ItemProperty -Path $key -Name 'daily-canvas-desktop.exe' -Value '--remote-debugging-port=9333' -PropertyType String -Force | Out-Null
+          }
+
+      - name: Generate the synthetic fixture
+        run: FIXTURE_DIR="$RUNNER_TEMP/fixture" pnpm desktop:fixture
+
+      - name: Packaged-app smoke
+        run: node desktop-verify/desktop-smoke.mjs src-tauri/target/release/daily-canvas-desktop.exe "$RUNNER_TEMP/fixture" "$RUNNER_TEMP/smoke"
+
+      # Installer steps still run when the smoke above failed, so one CI run reports every desktop signal.
+      - name: Build two test-only installers (same identifier, no public version)
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/installers"
+          for n in 1 2; do
+            pnpm exec tauri build --bundles nsis --config "{\"version\":\"0.7.0-installer-test.$n\"}"
+            cp src-tauri/target/release/bundle/nsis/*"installer-test.$n"*setup.exe "$RUNNER_TEMP/installers/"
+          done
+          ls -l "$RUNNER_TEMP/installers"
+
+      - name: Installer, upgrade and data-location smoke
+        if: ${{ !cancelled() }}
+        env:
+          DC_INSTALLER_TEST: "1"
+        run: |
+          node desktop-verify/installer-smoke.mjs \
+            "$(ls "$RUNNER_TEMP"/installers/*installer-test.1*setup.exe)" \
+            "$(ls "$RUNNER_TEMP"/installers/*installer-test.2*setup.exe)" \
+            "$RUNNER_TEMP/fixture" "$RUNNER_TEMP/installer-smoke"
+
+      - name: Diagnose the runner (only on failure)
+        if: failure()
+        shell: pwsh
+        run: |
+          "--- WebView2 runtime"
+          Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' -ErrorAction SilentlyContinue | Select-Object pv
+          "--- elevated?"
+          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          "--- session"
+          query session 2>&1
+          "--- launch the exe by hand with the debug port and observe it"
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9333'
+          $p = Start-Process -FilePath "src-tauri/target/release/daily-canvas-desktop.exe" -PassThru
+          Start-Sleep -Seconds 12
+          $p.Refresh(); "app HasExited=$($p.HasExited) ExitCode=$(if ($p.HasExited) { $p.ExitCode })"
+          "--- browser process arguments (looking for the debug port)"
+          $browser = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'msedgewebview2.exe' -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
+          if ($browser) { "browser pid=$($browser.ProcessId)"; ($browser.CommandLine -split ' --') | ForEach-Object { '  --' + $_ } }
+          "--- DevToolsActivePort file"
+          $dt = Get-ChildItem "$env:LOCALAPPDATA\io.github.peter-s-shi.dailycanvas\EBWebView" -Filter DevToolsActivePort -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dt) { Get-Content $dt.FullName } else { "none (remote debugging is not active)" }
+          "--- listeners owned by the webview processes"
+          $ids = (Get-Process msedgewebview2 -ErrorAction SilentlyContinue).Id; netstat -ano | Select-String 'LISTENING' | Where-Object { $line = $_.ToString(); $ids | Where-Object { $line -match "\s$_$" } }
+          "--- debug endpoint"
+          try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:9333/json/version -TimeoutSec 5).Content } catch { "debug endpoint: $($_.Exception.Message)" }
+          "--- edge policies that could block remote debugging"
+          Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Edge','HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2','HKCU:\SOFTWARE\Policies\Microsoft\Edge' -ErrorAction SilentlyContinue | Format-List | Out-String
+          "--- recent application errors"
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-3)} -ErrorAction SilentlyContinue | Where-Object { $_.ProviderName -match 'Application Error|Windows Error Reporting|\.NET|Edge|WebView' } | Select-Object -First 5 | ForEach-Object { $_.Message.Substring(0, [Math]::Min(500, $_.Message.Length)) }
+          Get-Process daily-canvas-desktop -ErrorAction SilentlyContinue | Stop-Process -Force
+
+      - name: Summarize
+        if: always()
+        run: |
+          for f in "$RUNNER_TEMP/smoke/results.json" "$RUNNER_TEMP/installer-smoke/installer-results.json"; do
+            [ -f "$f" ] && node -e 'const r=require(process.argv[1]).results;const bad=r.filter(x=>!x.ok);console.log(`- ${process.argv[1].split(/[\\/]/).pop()}: ${r.length-bad.length}/${r.length} passed`+(bad.length?"\n"+bad.map(b=>`  - FAIL ${b.name}: ${b.detail}`).join("\n"):""))' "$f" >> "$GITHUB_STEP_SUMMARY" || true
+          done
+
+      - name: Upload desktop evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-evidence
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/installers/*.exe
+            ${{ runner.temp }}/smoke/results.json
+            ${{ runner.temp }}/installer-smoke/installer-results.json
+            ${{ runner.temp }}/smoke/0[1-4]-*.png
+
+  pr-gate:
+    name: PR Gate
+    needs: [classify, core, desktop]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Decide
+        env:
+          CLASSIFY: ${{ needs.classify.result }}
+          CORE: ${{ needs.core.result }}
+          DESKTOP: ${{ needs.desktop.result }}
+          NEED_CORE: ${{ needs.classify.outputs.core }}
+          NEED_DESKTOP: ${{ needs.classify.outputs.desktop }}
+          DOCS_ONLY: ${{ needs.classify.outputs.docs_only }}
+        run: |
+          echo "classify=$CLASSIFY core=$CORE (needed: $NEED_CORE) desktop=$DESKTOP (needed: $NEED_DESKTOP) docs_only=$DOCS_ONLY"
+          [ "$CLASSIFY" = "success" ] || { echo "::error::classification did not succeed"; exit 1; }
+          # a needed job must have succeeded; an unneeded job must have been skipped (never run by accident, never failed)
+          if [ "$NEED_CORE" = "true" ]; then [ "$CORE" = "success" ] || { echo "::error::core is required and finished as: $CORE"; exit 1; }; else [ "$CORE" = "skipped" ] || { echo "::error::core should have been skipped, was: $CORE"; exit 1; }; fi
+          if [ "$NEED_DESKTOP" = "true" ]; then [ "$DESKTOP" = "success" ] || { echo "::error::desktop is required and finished as: $DESKTOP"; exit 1; }; else [ "$DESKTOP" = "skipped" ] || { echo "::error::desktop should have been skipped, was: $DESKTOP"; exit 1; }; fi
+          if [ "$DOCS_ONLY" = "true" ]; then echo "Docs-only change: expensive jobs correctly skipped."; fi
+          echo "PR Gate passed."

@@ -4,7 +4,7 @@
 
 Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-The current implementation is v0.7.0 and runs as a React/Vite application using Dexie/IndexedDB. The v1.0 target is a real desktop application that preserves the existing domain model first, then adds approved planning/execution and desktop-native capabilities.
+The current implementation is v0.7.0: the same React/Vite application and Dexie/IndexedDB domain model, now also packaged as a Tauri 2 Windows desktop application (Milestone 8) alongside its existing browser-served form. The v1.0 target adds the approved planning/execution and desktop-native capabilities (Milestones 9–13) on top of this accepted desktop foundation.
 
 The architecture supports five connected layers:
 
@@ -127,11 +127,13 @@ The model remains intentionally shallow. An Area contains Tasks; Tasks do not fo
 
 ## 4. Desktop Boundary for v1.0
 
-### 4.1 Thin Desktop Shell First
+Milestone 8 resolved the desktop shell, identity, storage, and CI questions below. Milestones 9 and onward build the approved v1.0 product surface on top of this accepted foundation; they do not reopen it.
 
-The desktop transition wraps and adapts the existing application before broad feature expansion.
+### 4.1 Thin Desktop Shell First — Accepted: Tauri 2
 
-The shell should provide native capabilities through narrow adapters such as:
+The desktop transition wraps and adapts the existing application before broad feature expansion. The M8-A feasibility spike evaluated Tauri 2 against the actual application (packaged-app smoke, restart and forced-kill persistence, v6 backup restore/export, Meditation print/PDF/Word paths, bilingual operation) and found no blocker; it is the accepted shell.
+
+The shell provides native capabilities through narrow adapters:
 
 ```text
 Desktop App
@@ -143,33 +145,40 @@ Desktop App
    ├── Dexie / IndexedDB
    │
    └── desktop adapters
-          ├── local file / backup adapter
-          ├── notification adapter
-          ├── release-awareness adapter
-          └── packaging / app metadata adapter
+          ├── local file / backup adapter    (M8: save-file dialog + print surface — src/desktop/desktopAdapter.ts)
+          ├── notification adapter           (planned: Milestone 12, local reminders)
+          ├── release-awareness adapter      (planned: Milestone 13, GitHub Release update awareness)
+          └── packaging / app metadata adapter (M8: desktop_info command — version, identifier, data paths)
 ```
 
-Domain services should not depend directly on shell-specific APIs when an adapter boundary can isolate them.
+Domain services do not depend directly on shell-specific APIs: `src/desktop/desktopAdapter.ts` and three narrow Rust commands (`save_export`, `print_page`, `desktop_info`) are the only points where the web layer talks to the shell. In a plain browser the same call sites keep their original behavior (anchor download, `window.print()`). No filesystem, shell, or network capability is granted to the web layer beyond these commands (`src-tauri/capabilities/default.json` declares no permissions), and the packaged app's Content-Security-Policy disallows outbound network requests from page script.
 
-### 4.2 Storage Decision
+### 4.2 Desktop Identity — Frozen
 
-Dexie/IndexedDB remains the default v1.0 storage direction during the desktop migration.
+The desktop application identifier is `io.github.peter-s-shi.dailycanvas`, and the packaged app runs at the fixed origin `https://tauri.localhost` (`useHttpsScheme: true`). Both are permanent: IndexedDB is keyed by origin inside the identifier's WebView2 profile, so changing either after release would orphan existing installed users' data. Any future change to identifier or origin requires an explicit, evidence-reviewed migration plan, not a routine edit.
 
-A storage rewrite to SQLite or another engine requires evidence from the Milestone 8 feasibility spike showing that the current store creates a meaningful blocker in persistence, upgrade, backup, performance, or packaged-app reliability.
+### 4.3 Storage Decision — Retained: Dexie/IndexedDB
 
-“Desktop app” by itself is not sufficient justification for a database rewrite.
+Dexie/IndexedDB is the v1.0 storage direction. The Milestone 8 feasibility spike found no evidence that the current store creates a meaningful blocker in persistence, upgrade, backup, performance, or packaged-app reliability — restart persistence, forced-process-kill durability, an 11 MB synthetic v6 restore/export round-trip, and a same-identifier installer upgrade all passed without data loss.
 
-### 4.3 Desktop Data Ownership
+“Desktop app” by itself remains insufficient justification for a database rewrite. A rewrite to SQLite or another engine still requires new evidence of a real blocker.
 
-The desktop implementation must make the following understandable and testable:
+### 4.4 Windows Build and Packaging Foundation
 
-- where application-owned local data resides;
-- what survives restart;
-- what survives application upgrade;
-- what uninstall does or does not remove;
-- where automatic backups reside;
-- how a user restores a manual or automatic backup;
-- how browser-era v1–v6 backups migrate into desktop releases.
+- **Authoritative build:** Windows, Rust `stable` targeting `x86_64-pc-windows-msvc`, with a statically linked C runtime (`src-tauri/.cargo/config.toml`) so the shipped executable does not depend on the VC++ redistributable. CI asserts (via `dumpbin /dependents`) that the built executable imports only OS-owned DLLs.
+- **Packaging foundation:** a current-user NSIS installer (`tauri.conf.json` → `bundle`) is enabled to answer install/upgrade/uninstall questions, not to produce a release-ready artifact. Code signing, an updater, and installer branding/polish are explicitly deferred to Milestones 14–15.
+
+### 4.5 Desktop Data Ownership — Established
+
+The following are understandable and were tested end to end (Windows/MSVC, GitHub Actions, synthetic data — see `desktop-verify/M8B-EVIDENCE.md`):
+
+- application-owned local data resides under `%LOCALAPPDATA%\io.github.peter-s-shi.dailycanvas\EBWebView\...\IndexedDB`; nothing is written under `%APPDATA%` (Roaming);
+- all data survives a graceful restart and a forced process kill;
+- a same-identifier installer upgrade does not orphan IndexedDB (same origin, same identifier, data unchanged);
+- a silent per-user uninstall removes the application files but currently leaves IndexedDB in place (the NSIS default; whether to add an explicit data-delete uninstall option is an open product decision, not yet built);
+- a reinstall after uninstall re-attaches to any data that uninstall left behind;
+- how browser-era v1–v6 backups migrate into a desktop install: unchanged from the existing `backupService` migration path (only v6 was driven end to end in M8; v1–v6 migration itself has its own unit tests, unaffected by the desktop shell);
+- automatic backups do not exist yet (Milestone 13); today, manual export/import through Settings is the same in the browser and the desktop build, routed through the local-file adapter.
 
 ---
 
@@ -520,24 +529,27 @@ Tests should be proportional to risk and aligned with domain boundaries.
 
 ### Desktop-specific coverage
 
-- packaged startup and restart persistence;
-- local data location behavior;
-- automatic backup creation and restoration;
-- local notification adapter behavior where automation is practical;
-- packaged local export;
-- installer/upgrade behavior at RC time.
+Established by Milestone 8, exercised on Windows/MSVC through synthetic data in GitHub Actions
+(`desktop-verify/`, evidence in `desktop-verify/M8B-EVIDENCE.md`):
 
-### CI topology
+- packaged startup and restart persistence — verified (graceful restart and forced process kill);
+- local data location behavior — verified (`%LOCALAPPDATA%\<identifier>\EBWebView\...\IndexedDB`; nothing under `%APPDATA%`);
+- packaged local export — verified (JSON backup and Meditation `.docx` export through the native save dialog);
+- installer/upgrade/uninstall behavior — verified at the foundation level (same-identifier upgrade without orphaning data, silent uninstall/reinstall); RC-level installer polish remains for Milestone 15;
+- automatic backup creation and restoration — not yet implemented (Milestone 13);
+- local notification adapter behavior — not yet implemented (Milestone 12).
 
-A cheap classifier should determine which expensive jobs are relevant.
+### CI topology — established (`.github/workflows/ci.yml`)
 
-- docs-only: no Node install or global test run;
+A cheap classifier (`.github/scripts/classify.sh`, self-tested on every run) determines which expensive jobs are relevant:
+
+- docs-only: no Node, pnpm, or Rust install, no test run;
 - ordinary app code: typecheck + tests + build;
-- migration/backup: core + targeted migration regressions;
-- desktop/packaging: core + relevant Windows smoke;
-- RC/release: installer + clean install + upgrade + artifact checks.
+- migration/backup: core + targeted migration regressions + fixture validation;
+- desktop/CI/dependency changes: core + Windows/MSVC Tauri build + runtime-dependency check + packaged-app smoke + NSIS installer/upgrade smoke;
+- RC/release installer/clean-install/upgrade/artifact checks remain for Milestone 15.
 
-A stable final PR Gate should remain visible even when expensive jobs are skipped conditionally.
+A stable final `PR Gate` job always runs and fails closed: it requires every job the classifier marked as needed to have succeeded, and every job it marked as unneeded to have been skipped — never silently run, never silently failed. Superseded runs are cancelled (`concurrency: cancel-in-progress`).
 
 ---
 

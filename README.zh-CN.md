@@ -2,13 +2,13 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-当前代码版本为 **v0.7.0**，仍然是基于 React/Vite、Dexie/IndexedDB 的浏览器运行版本。Milestone 1–7 已完成。下一阶段已经正式改为 **Daily Canvas v1.0.0 桌面版计划**：在保留现有数据模型与产品语义的基础上，把产品迁移成真正的桌面应用，并补强“计划 → 执行”之间目前最明显的能力缺口。
+当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–7（产品功能）与 Milestone 8（Tauri 2 桌面基础，已通过独立 CI 验证）均已完成。应用现在既能以浏览器方式运行，也已打包为 Windows 桌面应用。**Daily Canvas v1.0.0** 计划下一步在这个桌面基础之上继续构建"计划 → 执行"的能力（Milestone 9–13）。
 
 ## 当前开发状态
 
-此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，并重新规划了更完整的 v1.0 桌面版。
+此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的 Milestone 1–7 不作废。当前 v0.7 是后续桌面迁移的工程基线。
+已经完成的 Milestone 1–7 不作废。当前已完成桌面打包的 v0.7 应用，是下一个里程碑——**Milestone 9：桌面信息架构与 UI 蓝图**——的工程基线。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -102,15 +102,15 @@ Area
 
 如果某个 Checklist item 已经需要独立的计划、Area、生命周期、Quota、奖励或历史，它就应该升级成真正的 Task，而不是继续向下生成“子任务的子任务”。
 
-## 桌面迁移原则
+## 桌面迁移原则 —— 已由 Milestone 8 落实
 
-v1.0 桌面化先建立一个薄的 Desktop Foundation，而不是大规模重写。
+v1.0 桌面化先建立了一个薄的 Desktop Foundation，而不是大规模重写。Milestone 8 已经用证据回答了以下每一个问题：
 
-- 保留 React、TypeScript、Vite、现有 service layer 和领域语义。
-- 初期继续使用 Dexie/IndexedDB；除非桌面可行性验证证明它成为 blocker，否则不主动改写成 SQLite。
-- 先验证轻量桌面壳，同时保留替代方案以应对可行性问题。
-- 在功能扩展前先证明数据持久化、备份恢复、本地文档输出和升级安全。
-- 文件系统、系统通知、版本检查等桌面能力通过明确的 adapter 与领域服务分离。
+- React、TypeScript、Vite、现有 service layer 和领域语义保持不变。
+- 继续使用 Dexie/IndexedDB；可行性验证没有发现需要改写成 SQLite 的证据。
+- **Tauri 2** 经评估后被采纳为桌面壳。桌面标识符 `io.github.peter-s-shi.dailycanvas` 与打包来源 `https://tauri.localhost` 已冻结。
+- 在扩展功能之前，已经在 Windows/MSVC 上验证了数据持久化（包括强制杀进程后的持久性）、备份恢复、本地文档输出与安装包升级安全。
+- 本地文件、打印等桌面能力已通过 `src/desktop/desktopAdapter.ts` 与领域服务分离；系统通知与版本检查适配层将随 Milestone 12–13 的对应功能一并建立。
 
 ## UI 迁移原则
 
@@ -151,7 +151,16 @@ pnpm test
 pnpm build
 ```
 
-v1.0 路线会建立按风险分层的 GitHub Actions，而不是让纯文档修改也触发完整依赖安装和全量测试。详见 [ROADMAP.md](ROADMAP.md)。
+桌面壳（Tauri 2，Windows；权威构建环境是 CI 中的 MSVC）：
+
+```bash
+pnpm desktop:build     # 不带安装包的 release 构建
+pnpm desktop:bundle    # 按用户安装的 NSIS 安装包（测试版本号由 CI 提供）
+```
+
+打包后的应用验证位于 `desktop-verify/`（见 `desktop-verify/M8B-EVIDENCE.md`），只使用合成数据，并且不会清除它没有创建过的现有用户数据目录。
+
+持续集成按风险分层（`.github/workflows/ci.yml`）：纯文档修改不安装任何工具链；应用代码修改运行类型检查、测试与构建；数据与备份修改额外运行定向回归；桌面壳或 CI 修改额外运行 Windows/MSVC 的桌面构建与冒烟检查。稳定的 `PR Gate` 任务汇总结果。详见 [ROADMAP.md](ROADMAP.md)。
 
 ## 隐私模式
 
