@@ -55,13 +55,15 @@ describe("Milestone 4 critical browser flow", () => {
     await click(document.querySelector('button[aria-label="Done"]') as HTMLButtonElement);
     expect(await db.checkIns.count()).toBe(1);
 
+    await click(button("Plan"));
     await click(button("Calendar"));
     const dayCell = [...document.querySelectorAll(".calendar-cell:not(.outside)")].find((cell) => cell.querySelector("span")?.textContent === String(yesterday.getDate())) as HTMLButtonElement;
     await click(dayCell);
     await click(button("Skip"));
     expect(await db.checkIns.where("date").equals(toDateKey(yesterday)).first()).toMatchObject({ status: "skipped" });
 
-    await click(button("Tasks & habits"));
+    await click(button("Tasks"));
+    await click(button("Areas"));
     await click(button("New Area"));
     await change(document.querySelector('.area-form input[maxlength="40"]') as HTMLInputElement, "Wellbeing");
     await click(document.querySelector('.area-form button[type="submit"]') as HTMLButtonElement);
@@ -75,6 +77,7 @@ describe("Milestone 4 critical browser flow", () => {
     await change(document.querySelector('.task-form select') as HTMLSelectElement, area!.id);
     await click(button("Save"));
     expect((await db.tasks.toArray()).find((item) => item.title === "Flexible errand")).toMatchObject({ areaId: area!.id, schedule: { mode: "floating" } });
+    await click(button("Plan"));
     await click(button("Floating"));
     await click(button("Complete today"));
     expect(await db.checkIns.get(`${(await db.tasks.filter((item) => item.title === "Flexible errand").first())!.id}:${toDateKey(new Date())}`)).toMatchObject({ status: "done" });
@@ -98,7 +101,7 @@ describe("Milestone 4 critical browser flow", () => {
     await restoreBackup(backup);
     expect((await db.tasks.toArray()).filter((item) => item.title === "Smoke-test habit")).toHaveLength(1);
 
-    await click(button("Reflection"));
+    await click(button("Reflect"));
     await click(button("Calm"));
     await click(button("Continue to journal"));
     await click(button("Skip prompt"));

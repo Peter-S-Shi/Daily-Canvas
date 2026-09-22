@@ -17,6 +17,7 @@
   --danger: #d75b56;
   --shadow: 0 18px 50px rgba(79, 62, 43, 0.1);
   --sidebar: rgba(40, 37, 33, 0.94);
+  --sidebar-w: 224px;
 }
 
 :root[data-theme="dark"] {
@@ -53,47 +54,69 @@ button, input, select, textarea { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(232, 121, 79, 0.35); outline-offset: 2px; }
 
-.app-shell {
-  min-height: 100vh;
+/* Desktop shell — frozen M9 blueprint §2: persistent sidebar, workspace header,
+   workspace content. Viable at the M8 window contract (default 1280x820,
+   minimum 900x600). */
+.desktop-shell {
+  height: 100vh;
+  min-height: 600px;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   background-color: var(--page);
-  background-image:
-    radial-gradient(circle at 76% 8%, rgba(244, 162, 97, 0.16), transparent 26%),
-    radial-gradient(circle at 42% 82%, rgba(42, 157, 143, 0.1), transparent 24%);
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
 }
 
-.sidebar {
-  position: sticky;
-  top: 0;
+.shell-sidebar {
   height: 100vh;
-  padding: 28px 20px 22px;
+  padding: 22px 14px 16px;
   background: var(--sidebar);
   color: #fff8ef;
   display: flex;
   flex-direction: column;
+  gap: 16px;
   z-index: 20;
   box-shadow: 8px 0 32px rgba(22, 18, 14, 0.12);
 }
 
-.brand { display: flex; align-items: center; gap: 12px; background: none; border: 0; text-align: left; padding: 0 8px 30px; cursor: pointer; color: inherit; }
+.brand { display: flex; align-items: center; gap: 12px; background: none; border: 0; text-align: left; padding: 0 6px 6px; cursor: pointer; color: inherit; }
 .brand strong { display: block; font-size: 17px; letter-spacing: .01em; }
 .brand small { display: block; color: rgba(255,255,255,.48); font-size: 11px; margin-top: 2px; text-transform: uppercase; letter-spacing: .12em; }
-.logo-mark { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: -.04em; background: linear-gradient(145deg, #f4a261, #e76f51); box-shadow: 0 8px 22px rgba(231,111,81,.28); }
-.sidebar nav { display: grid; gap: 6px; }
-.sidebar nav button { height: 48px; border: 0; border-radius: 13px; padding: 0 14px; background: transparent; color: rgba(255,255,255,.62); display: flex; gap: 13px; align-items: center; cursor: pointer; transition: .2s ease; }
-.sidebar nav button > span { width: 24px; font-size: 18px; text-align: center; }
-.sidebar nav button em { font-style: normal; font-weight: 600; }
-.sidebar nav button:hover { background: rgba(255,255,255,.06); color: #fff; transform: translateX(2px); }
-.sidebar nav button.active { background: rgba(244,162,97,.16); color: #ffd7b9; box-shadow: inset 3px 0 #f4a261; }
-.sidebar-add { margin-top: 24px; border: 1px dashed rgba(255,255,255,.22); background: rgba(255,255,255,.05); color: #fff; min-height: 46px; border-radius: 13px; cursor: pointer; font-weight: 600; }
-.sidebar-add:hover { background: rgba(255,255,255,.1); }
-.privacy-note { margin: auto 8px 0; color: rgba(255,255,255,.32); font-size: 11px; letter-spacing: .03em; }
+.logo-mark { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: -.04em; background: linear-gradient(145deg, #f4a261, #e76f51); box-shadow: 0 8px 22px rgba(231,111,81,.28); flex: none; }
+.shell-nav { display: grid; gap: 5px; }
+.shell-nav button { min-height: 44px; border: 0; border-radius: 12px; padding: 0 12px; background: transparent; color: rgba(255,255,255,.62); display: flex; gap: 12px; align-items: center; cursor: pointer; transition: .2s ease; text-align: left; }
+.shell-nav button > span { width: 22px; font-size: 17px; text-align: center; flex: none; }
+.shell-nav button em { font-style: normal; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+.shell-nav button.active { background: rgba(244,162,97,.16); color: #ffd7b9; box-shadow: inset 3px 0 var(--accent); font-weight: 700; }
+.shell-sidebar-bottom { margin-top: auto; display: grid; gap: 10px; }
+.privacy-note { margin: 0 6px; color: rgba(255,255,255,.32); font-size: 11px; letter-spacing: .03em; }
 
-.main-content { min-width: 0; padding: 42px clamp(24px, 4vw, 66px) 80px; }
+.shell-main { min-width: 0; height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.workspace-topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 18px clamp(18px, 3vw, 44px) 0; border-bottom: 1px solid var(--line); background: var(--surface); }
+.workspace-identity { display: flex; align-items: baseline; gap: clamp(12px, 2vw, 26px); min-width: 0; flex-wrap: wrap; }
+.workspace-identity h1 { margin: 0 0 12px; font-size: clamp(19px, 2vw, 23px); letter-spacing: .01em; }
+.workspace-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.workspace-tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 12px; border-radius: 10px 10px 0 0; cursor: pointer; font-weight: 600; font-size: 13px; }
+.workspace-tabs button:hover { background: var(--surface-soft); color: var(--ink); }
+.workspace-tabs button.active { color: var(--ink); background: var(--surface-soft); box-shadow: inset 0 -3px var(--accent); }
+.workspace-actions { display: flex; gap: 8px; margin-bottom: 12px; flex: none; }
+.workspace-content { min-width: 0; overflow: auto; padding: 26px clamp(18px, 3vw, 44px) 64px; }
+
+/* Read-first Tasks master/detail (frozen M9 behavior spec §8.3). */
+.tasks-split { width: min(1280px, 100%); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; animation: view-in .35s ease both; }
+.tasks-master { min-width: 0; }
+.task-detail { position: sticky; top: 0; min-width: 0; display: grid; gap: 16px; align-content: start; padding: 20px; border: 1px solid var(--line); border-top: 3px solid var(--task-color, var(--accent)); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+.task-detail.empty { place-items: center; min-height: 150px; text-align: center; color: var(--muted); border-top-color: var(--line); }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.detail-head h2 { margin: 5px 0 9px; font-size: 19px; }
+.detail-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.detail-facts { margin: 0; display: grid; gap: 9px; }
+.detail-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.detail-facts dt { color: var(--muted); font-size: 12px; }
+.detail-facts dd { margin: 0; font-size: 13px; font-weight: 600; text-align: right; }
+.detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.task-tile.selected { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
 .view-stack { width: min(1120px, 100%); margin: 0 auto; display: grid; gap: 22px; animation: view-in .35s ease both; }
 @keyframes view-in { from { opacity: 0; transform: translateY(7px); } }
 
@@ -323,16 +346,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 7px; }
 .loading-screen { min-height: 100vh; display: grid; place-items: center; align-content: center; gap: 12px; background: var(--page); color: var(--muted); }
 
+/* Below ~1180px the detail pane stops being a comfortable second column, so the
+   Tasks workspace stacks instead of squeezing. Still master/detail, still read-first. */
+@media (max-width: 1180px) {
+  .tasks-split { grid-template-columns: minmax(0, 1fr); }
+  .task-detail { position: static; }
+}
+
+/* Narrower than the 900px desktop minimum (browser-served use only): the sidebar
+   becomes an icon rail rather than a top bar — frozen M9 behavior spec §16.1. */
+@media (max-width: 899px) {
+  .desktop-shell { grid-template-columns: 64px minmax(0, 1fr); }
+  .shell-sidebar { padding: 16px 10px 12px; }
+  .brand span:last-child, .shell-nav button em, .privacy-note { display: none; }
+  .shell-nav button { justify-content: center; padding: 0; }
+}
+
 @media (max-width: 860px) {
-  .app-shell { display: block; padding-bottom: 76px; }
-  .sidebar { position: fixed; inset: auto 0 0; width: 100%; height: 72px; padding: 8px 12px; display: block; }
-  .brand, .sidebar-add, .privacy-note { display: none; }
-  .sidebar nav { height: 100%; grid-template-columns: repeat(9,1fr); gap: 2px; }
-  .sidebar nav button { height: 56px; padding: 5px; flex-direction: column; justify-content: center; gap: 2px; border-radius: 12px; }
-  .sidebar nav button > span { font-size: 17px; }
-  .sidebar nav button em { font-size: 9px; }
-  .sidebar nav button.active { box-shadow: inset 0 -3px #f4a261; }
-  .main-content { padding: 22px 14px 42px; }
   .hero-card { min-height: 200px; }
   .progress-orbit { width: 116px; height: 116px; }
   .task-gallery, .reward-grid { grid-template-columns: 1fr; }
@@ -576,7 +606,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .meditation-hero-actions { justify-content: flex-start; }
   .meditation-export-layout { grid-template-columns: 1fr; }
   .export-controls { position: static; }
-  .sidebar nav { grid-template-columns: repeat(10,1fr); }
 }
 
 @media (max-width: 600px) {

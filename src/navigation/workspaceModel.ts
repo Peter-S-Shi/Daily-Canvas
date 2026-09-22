@@ -1,0 +1,69 @@
+import type { BackgroundSlot } from "../types";
+
+export type WorkspaceId = "today" | "plan" | "tasks" | "reflect" | "review" | "settings";
+export type SectionId =
+  | "todayExecution"
+  | "floating"
+  | "calendar"
+  | "allTasks"
+  | "areas"
+  | "lifecycle"
+  | "rewards"
+  | "dailyReflection"
+  | "meditations"
+  | "periodReview"
+  | "settingsGeneral"
+  | "settingsAppearance"
+  | "settingsData";
+
+export interface WorkspaceSection {
+  id: SectionId;
+  labelKey: string;
+  backgroundSlot?: BackgroundSlot;
+}
+
+export interface Workspace {
+  id: WorkspaceId;
+  labelKey: string;
+  icon: string;
+  anchored?: boolean;
+  sections: WorkspaceSection[];
+}
+
+/**
+ * The M10-active subset of the frozen M9 target information architecture
+ * (`docs/m9-desktop-ui-blueprint/`, behavior spec Appendix A).
+ *
+ * Inbox, Global Search, Quick Capture, Timeline, On This Day, Notifications,
+ * Shortcuts, and About & Updates belong to M11-M13. Frozen Decision D4 requires
+ * that a destination appear only once it is real and usable, so they are absent
+ * here rather than rendered as disabled placeholders: adding one later means
+ * adding its entry below in the same change that makes it work.
+ */
+export const workspaces: Workspace[] = [
+  { id: "today", labelKey: "today", icon: "☀", sections: [{ id: "todayExecution", labelKey: "today", backgroundSlot: "today" }] },
+  { id: "plan", labelKey: "plan", icon: "◷", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }] },
+  { id: "tasks", labelKey: "ws_tasks", icon: "✓", sections: [{ id: "allTasks", labelKey: "allTasks" }, { id: "areas", labelKey: "areas" }, { id: "lifecycle", labelKey: "lifecycle" }, { id: "rewards", labelKey: "rewards" }] },
+  { id: "reflect", labelKey: "ws_reflect", icon: "✎", sections: [{ id: "dailyReflection", labelKey: "dailyReflection", backgroundSlot: "reflection" }, { id: "meditations", labelKey: "meditations" }] },
+  { id: "review", labelKey: "review", icon: "≋", sections: [{ id: "periodReview", labelKey: "review" }] },
+  { id: "settings", labelKey: "settings", icon: "⚙", anchored: true, sections: [{ id: "settingsGeneral", labelKey: "general" }, { id: "settingsAppearance", labelKey: "appearance" }, { id: "settingsData", labelKey: "dataAndBackup" }] },
+];
+
+export const primaryWorkspaces = workspaces.filter((workspace) => !workspace.anchored);
+export const anchoredWorkspaces = workspaces.filter((workspace) => workspace.anchored);
+
+export function getWorkspace(id: WorkspaceId): Workspace {
+  const workspace = workspaces.find((item) => item.id === id);
+  if (!workspace) throw new Error(`Unknown workspace: ${id}`);
+  return workspace;
+}
+
+export function getSection(workspace: Workspace, id: SectionId): WorkspaceSection {
+  return workspace.sections.find((section) => section.id === id) ?? workspace.sections[0];
+}
+
+export function workspaceOf(section: SectionId): Workspace {
+  const workspace = workspaces.find((item) => item.sections.some((entry) => entry.id === section));
+  if (!workspace) throw new Error(`Unknown section: ${section}`);
+  return workspace;
+}
