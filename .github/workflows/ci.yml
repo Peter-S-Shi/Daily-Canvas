@@ -170,11 +170,18 @@ jobs:
           $p = Start-Process -FilePath "src-tauri/target/release/daily-canvas-desktop.exe" -PassThru
           Start-Sleep -Seconds 12
           $p.Refresh(); "app HasExited=$($p.HasExited) ExitCode=$(if ($p.HasExited) { $p.ExitCode })"
-          "--- processes (with command lines)"
-          Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'daily|msedgewebview2' } | ForEach-Object { "{0} pid={1} ppid={2} :: {3}" -f $_.Name, $_.ProcessId, $_.ParentProcessId, ($_.CommandLine -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($_.CommandLine -replace '\s+', ' ').Length)) }
-          "--- debug port"
-          netstat -ano | Select-String ':9333'
+          "--- browser process arguments (looking for the debug port)"
+          $browser = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'msedgewebview2.exe' -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
+          if ($browser) { "browser pid=$($browser.ProcessId)"; ($browser.CommandLine -split ' --') | ForEach-Object { '  --' + $_ } }
+          "--- DevToolsActivePort file"
+          $dt = Get-ChildItem "$env:LOCALAPPDATA\io.github.peter-s-shi.dailycanvas\EBWebView" -Filter DevToolsActivePort -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dt) { Get-Content $dt.FullName } else { "none (remote debugging is not active)" }
+          "--- listeners owned by the webview processes"
+          $ids = (Get-Process msedgewebview2 -ErrorAction SilentlyContinue).Id; netstat -ano | Select-String 'LISTENING' | Where-Object { $line = $_.ToString(); $ids | Where-Object { $line -match "\s$_$" } }
+          "--- debug endpoint"
           try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:9333/json/version -TimeoutSec 5).Content } catch { "debug endpoint: $($_.Exception.Message)" }
+          "--- edge policies that could block remote debugging"
+          Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Edge','HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2','HKCU:\SOFTWARE\Policies\Microsoft\Edge' -ErrorAction SilentlyContinue | Format-List | Out-String
           "--- recent application errors"
           Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-3)} -ErrorAction SilentlyContinue | Where-Object { $_.ProviderName -match 'Application Error|Windows Error Reporting|\.NET|Edge|WebView' } | Select-Object -First 5 | ForEach-Object { $_.Message.Substring(0, [Math]::Min(500, $_.Message.Length)) }
           Get-Process daily-canvas-desktop -ErrorAction SilentlyContinue | Stop-Process -Force
