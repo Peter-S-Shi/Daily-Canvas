@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launchApp, closeApp, sleep } from "./cdp.mjs";
-import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, wipeAppDataSafely } from "./lib.mjs";
+import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, wipeAppDataSafely, SHELL } from "./lib.mjs";
 
 const [exe, fixtureDir, outDir] = process.argv.slice(2).map((p) => resolve(p));
 mkdirSync(outDir, { recursive: true });
@@ -33,11 +33,11 @@ const storage = await app.cdp.evaluate(`navigator.storage.estimate().then(e=>({q
 console.log("   storage estimate:", JSON.stringify(storage));
 await shot(app, "01-fresh-onboarding");
 check("fresh start shows onboarding (empty DB)", await clickText(app.cdp, "Start empty"), "clicked 'Start empty'");
-await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 15000, "main shell");
+await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 15000, "main shell");
 
 // ---------- Restore synthetic v6 backup through the real Settings UI ----------
 console.log("== Restore v6 backup (11 MB synthetic) via Settings");
-await nav(app.cdp, 9); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
+await nav(app.cdp, "settings", "settingsData"); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
 await app.cdp.setFiles('input[type=file][accept="application/json"]', [fixturePath]);
 await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 30000, "restore preview");
 const previewText = await app.cdp.evaluate(`document.querySelector('.restore-preview').innerText`);
@@ -52,16 +52,17 @@ await shot(app, "02-after-restore-settings");
 
 // ---------- Representative screens (English) ----------
 console.log("== Screens");
-const views = ["today", "floating", "calendar", "review", "lifecycle", "reflection", "meditations", "tasks", "rewards", "settings"];
-for (let i = 0; i < views.length; i++) { await nav(app.cdp, i); await sleep(700); const len = await app.cdp.evaluate(`document.querySelector('.main-content').innerText.length`); await shot(app, `03-en-${views[i]}`); check(`screen renders: ${views[i]}`, len > 20, `${len} chars`); }
-const bgApplied = await app.cdp.evaluate(`getComputedStyle(document.querySelector('.app-shell')).backgroundImage.startsWith('linear-gradient')`);
+// Every M10 destination, addressed by workspace/section id (src/navigation/workspaceModel.ts).
+const views = [["today"], ["plan", "floating"], ["plan", "calendar"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"]];
+for (const [workspace, section] of views) { const name = section ?? workspace; const opened = await nav(app.cdp, workspace, section); await sleep(700); const len = await app.cdp.evaluate(`document.querySelector('.workspace-content').innerText.length`); await shot(app, `03-en-${name}`); check(`screen renders: ${name}`, opened && len > 20, `${len} chars`); }
+const bgApplied = await app.cdp.evaluate(`getComputedStyle(document.querySelector('.desktop-shell')).backgroundImage.startsWith('linear-gradient')`);
 check("restored 4 MB background asset applies (data URL)", bgApplied);
 
 // ---------- JSON export through native dialog + fidelity ----------
 console.log("== JSON export");
-await nav(app.cdp, 9); await sleep(400);
+await nav(app.cdp, "settings", "settingsData"); await sleep(400);
 const exportPath = join(outDir, "export-v6.json");
-const exp = await saveVia(app, `(()=>{const b=document.querySelector('.data-actions .button.primary');if(!b)return false;b.click();return true})()`, exportPath);
+const exp = await saveVia(app, `(()=>{const b=document.querySelector('.settings-panel .setting-control .button.primary');if(!b)return false;b.click();return true})()`, exportPath);
 check("JSON export saved through native dialog (11 MB over IPC)", exp.exists && exp.size > 1_000_000 && /^daily-canvas-backup-\d{4}-\d{2}-\d{2}\.json$/.test(exp.name ?? ""), `${exp.name}, ${exp.size} bytes`);
 const exported = JSON.parse(readFileSync(exportPath, "utf8"));
 check("exported backup is format v6", exported.version === 6 && exported.format === "daily-canvas-backup");
@@ -71,6 +72,7 @@ check("round-trip identical: 2 large appearance assets", exported.appearanceAsse
 
 // ---------- Appearance image import through file input ----------
 console.log("== Appearance import (4 MB PNG)");
+await nav(app.cdp, "settings", "settingsAppearance"); await sleep(400);
 await app.cdp.setFiles('input[type=file][accept="image/jpeg,image/png,image/webp"]', [join(fixtureDir, "upload-image.png")]);
 await app.cdp.waitFor(`true`); await sleep(1500);
 const afterImg = await idbCounts(app.cdp);
@@ -78,14 +80,14 @@ check("background image import stored a new asset", afterImg.appearanceAssets >=
 
 // ---------- Bilingual ----------
 console.log("== Bilingual");
-await nav(app.cdp, 9); await sleep(400);
-const langValue = await setSelect(app.cdp, `document.querySelector('.settings-grid select')`, "zh-CN");
+await nav(app.cdp, "settings", "settingsGeneral"); await sleep(400);
+await clickText(app.cdp, "中文");
 await sleep(800);
-const zhTitle = await app.cdp.evaluate(`document.documentElement.lang + ' | ' + document.querySelector('.sidebar nav').innerText.replace(/\\s+/g,' ')`);
+const zhTitle = await app.cdp.evaluate(`document.documentElement.lang + ' | ' + document.querySelector('${SHELL}').innerText.replace(/\\s+/g,' ')`);
 check("interface switches to Chinese", /^zh-CN/.test(zhTitle) && /今天/.test(zhTitle), zhTitle);
-await nav(app.cdp, 0); await sleep(600); await shot(app, "04-zh-today");
-await nav(app.cdp, 6); await sleep(700); await shot(app, "05-zh-meditations");
-const cjk = await app.cdp.evaluate(`document.querySelector('.main-content').innerText.includes('日拱一卒')`);
+await nav(app.cdp, "today"); await sleep(600); await shot(app, "04-zh-today");
+await nav(app.cdp, "reflect", "meditations"); await sleep(700); await shot(app, "05-zh-meditations");
+const cjk = await app.cdp.evaluate(`document.querySelector('.workspace-content').innerText.includes('日拱一卒')`);
 check("Chinese user content renders (Meditations)", cjk);
 
 // ---------- Meditation print / PDF / Word ----------
@@ -122,7 +124,7 @@ const problems = app.cdp.problems().filter((p) => !p.includes("example.com")); c
 console.log("== Restart persistence");
 const before = await idbCounts(app.cdp);
 const how1 = await closeApp(app); check("graceful close completed", how1 === "graceful", how1);
-app = await launchApp(exe); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 20000, "shell after restart");
+app = await launchApp(exe); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 20000, "shell after restart");
 const after1 = await idbCounts(app.cdp);
 check("all records survive graceful restart", JSON.stringify(before) === JSON.stringify(after1), JSON.stringify(after1));
 const persistedLang = await app.cdp.evaluate(`document.documentElement.lang`);
@@ -133,7 +135,7 @@ await sleep(500); await shot(app, "08-after-restart-today");
 console.log("== Forced-kill durability");
 await app.cdp.evaluate(`new Promise((res,rej)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const d=r.result;const tx=d.transaction("dailyOrders","readwrite");tx.objectStore("dailyOrders").put({date:"1999-01-01",taskIds:["kill-marker"]});tx.oncomplete=()=>{d.close();res(true)};tx.onerror=()=>rej(tx.error)}})`);
 const how2 = await closeApp(app, { force: true });
-app = await launchApp(exe); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 20000, "shell after forced kill");
+app = await launchApp(exe); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 20000, "shell after forced kill");
 const marker = await app.cdp.evaluate(`new Promise((res)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const q=r.result.transaction("dailyOrders").objectStore("dailyOrders").get("1999-01-01");q.onsuccess=()=>{r.result.close();res(q.result)}}})`);
 check("committed write survives forced process kill", marker?.taskIds?.[0] === "kill-marker", `close mode: ${how2}`);
 await app.cdp.evaluate(`new Promise((res)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const tx=r.result.transaction("dailyOrders","readwrite");tx.objectStore("dailyOrders").delete("1999-01-01");tx.oncomplete=()=>{r.result.close();res(true)}}})`);
@@ -153,7 +155,7 @@ console.log(`   working set (app + direct children): ${(Number(mem) / 1e6).toFix
 const finalProblems = app.cdp.problems(); check("no console errors after restart runs", finalProblems.length === 0, finalProblems.slice(0, 3).join(" ‖ "));
 // ---------- Print through the desktop adapter (native WebView2 print surface) ----------
 console.log("== Print adapter (last: the print surface is modal)");
-await nav(app.cdp, 6); await sleep(600); await clickText(app.cdp, "导出全部"); await sleep(800);
+await nav(app.cdp, "reflect", "meditations"); await sleep(600); await clickText(app.cdp, "导出全部"); await sleep(800);
 let printErr = null; try { await app.cdp.evaluate(`(()=>{window.__printResult='pending';window.__TAURI_INTERNALS__.invoke('print_page').then(()=>{window.__printResult='closed'},(e)=>{window.__printResult='error: '+e});return true})()`); } catch (e) { printErr = e.message; }
 check("print_page command invokes the WebView2 print surface without error", printErr === null, printErr ?? "invoked");
 await sleep(3500);

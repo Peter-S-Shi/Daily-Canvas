@@ -28,7 +28,9 @@ export function wipeAppDataSafely() {
 
 export const sha = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 16);
 export const idbCounts = (cdp) => cdp.evaluate(`new Promise((res)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const d=r.result;const out={};const names=[...d.objectStoreNames];let n=names.length;names.forEach(nm=>{const q=d.transaction(nm).objectStore(nm).count();q.onsuccess=()=>{out[nm]=q.result;if(--n===0){d.close();res(out)}}})}})`);
-export const nav = (cdp, i) => cdp.evaluate(`(()=>{const b=document.querySelectorAll('.sidebar nav button')[${i}];if(!b)return false;b.click();return true})()`);
+/** Opens a workspace (and optionally one of its sections) by the stable ids of src/navigation/workspaceModel.ts. */
+export const nav = (cdp, workspace, section) => cdp.evaluate(`(async()=>{const w=document.querySelector('.shell-nav [data-workspace=${JSON.stringify(workspace)}]');if(!w)return false;w.click();await new Promise((r)=>setTimeout(r,200));${section ? `const s=document.querySelector('[data-section=${JSON.stringify(section)}]');if(!s)return false;s.click();await new Promise((r)=>setTimeout(r,200));` : ""}return true})()`);
+export const SHELL = ".shell-nav";
 export const clickText = (cdp, text) => cdp.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&!b.disabled);if(!b)return false;b.click();return true})()`);
 export const setSelect = (cdp, sel, value) => cdp.evaluate(`(()=>{const s=${sel};const set=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set;set.call(s,${JSON.stringify(value)});s.dispatchEvent(new Event('change',{bubbles:true}));return s.value})()`);
 export const ps = (script, ...args) => spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(here, script), ...args], { encoding: "utf8" });

@@ -19,7 +19,7 @@ export function DesktopShell({ navigation, shellStyle, contentStyle, children }:
   const [actions, setActions] = useState<HTMLElement | null>(null);
   const slots = useMemo(() => ({ controls, actions }), [controls, actions]);
   const navButton = (item: Workspace) => (
-    <button type="button" key={item.id} className={item.id === workspace.id ? "nav-button active" : "nav-button"} aria-current={item.id === workspace.id ? "page" : undefined} onClick={() => openWorkspace(item.id)}>
+    <button type="button" key={item.id} data-workspace={item.id} className={item.id === workspace.id ? "nav-button active" : "nav-button"} aria-current={item.id === workspace.id ? "page" : undefined} onClick={() => openWorkspace(item.id)}>
       <WorkspaceIcon name={item.icon}/>
       <span>{t(item.labelKey)}</span>
     </button>
@@ -62,7 +62,7 @@ export function SectionNav({ navigation, variant }: { navigation: WorkspaceNavig
   return (
     <nav className={variant === "tabs" ? "workspace-tabs" : "section-list"} aria-label={t(variant === "tabs" ? "workspaceNavigation" : "settingsCategories")}>
       {workspace.sections.map((item) => (
-        <button type="button" key={item.id} className={item.id === section.id ? "active" : ""} aria-current={item.id === section.id ? "page" : undefined} onClick={() => openSection(item.id)}>{t(item.labelKey)}</button>
+        <button type="button" key={item.id} data-section={item.id} className={item.id === section.id ? "active" : ""} aria-current={item.id === section.id ? "page" : undefined} onClick={() => openSection(item.id)}>{t(item.labelKey)}</button>
       ))}
     </nav>
   );

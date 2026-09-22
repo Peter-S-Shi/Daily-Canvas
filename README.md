@@ -2,7 +2,7 @@
 
 Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
 
-The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–7 (the product) and Milestone 8 (a Tauri 2 Windows desktop foundation, verified with independent CI) are complete. The application now runs both browser-served and as a packaged Windows desktop app. The approved program **Daily Canvas v1.0.0** continues by building the planning-to-execution feature set on top of that foundation (Milestones 9–13).
+The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–7 (the product), Milestone 8 (a Tauri 2 Windows desktop foundation, verified with independent CI), and Milestone 9 (a frozen desktop UI blueprint) are complete. Milestone 10, which migrates the existing product onto that blueprint, is in review. The application runs both browser-served and as a packaged Windows desktop app. The approved program **Daily Canvas v1.0.0** then adds the planning-to-execution feature set (Milestones 11–13).
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
@@ -10,7 +10,7 @@ The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/Ind
 
 The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope, approved a larger v1.0 desktop program, and completed Milestone 8, its desktop foundation: Tauri 2 as the desktop shell, a frozen desktop identifier/origin, Dexie/IndexedDB retained unchanged, narrow desktop adapters for native concerns, a Windows/MSVC-authoritative build, and risk-scaled GitHub Actions CI. See `desktop-spike/M8A-EVIDENCE.md` and `desktop-verify/M8B-EVIDENCE.md` for the verification evidence.
 
-Completed work remains valid and is not being discarded. The v0.7 application, now desktop-packaged, is the engineering baseline for the next milestone, **Milestone 9: Desktop Information Architecture and UI Blueprint**.
+Completed work remains valid and is not being discarded. Milestone 9 froze the desktop information architecture and UI blueprint (`docs/m9-desktop-ui-blueprint/`). **Milestone 10: Desktop UI Migration** has moved every existing surface onto it — six workspaces (Today, Plan, Tasks, Reflect, Review, Settings), a read-first Task Detail, and a light and dark desktop visual system — without changing product semantics or stored data. It awaits its Exit Review.
 
 See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
 
@@ -114,9 +114,9 @@ The desktop program started with a thin foundation rather than a rewrite. Milest
 - Persistence (including forced process kill), backup/restore, local document export, and installer upgrade safety were proven on Windows/MSVC before any feature expansion begins.
 - Desktop-native adapters (local files, print) are separated from domain services behind `src/desktop/desktopAdapter.ts`; notification and release-awareness adapters follow in Milestones 12–13 as their features are built.
 
-## UI transition principles
+## UI transition principles — resolved by Milestone 9
 
-The v1.0 desktop UI will be designed before broad implementation through an explicit blueprint process:
+The v1.0 desktop UI was designed before broad implementation through an explicit blueprint process; the frozen result lives in `docs/m9-desktop-ui-blueprint/` and Milestone 10 implements it:
 
 ```text
 Product semantics
@@ -159,9 +159,12 @@ pnpm build
 Desktop shell (Tauri 2, Windows; MSVC is the authoritative build environment, in CI):
 
 ```bash
+pnpm desktop:dev       # development window (Vite + Tauri)
 pnpm desktop:build     # release build without an installer
 pnpm desktop:bundle    # per-user NSIS installer (test-only versions are supplied by CI)
 ```
+
+On Windows, double-click `OPEN_DAILY_CANVAS_DEV.cmd` to start the development window. It loads the Visual Studio Build Tools x64 environment, uses the `stable-x86_64-pc-windows-msvc` Rust toolchain, and explains what is missing if the local toolchain is incomplete.
 
 Packaged-app verification lives in `desktop-verify/` (see `desktop-verify/M8B-EVIDENCE.md`). It uses synthetic data only and refuses to wipe an existing user data folder it did not create.
 

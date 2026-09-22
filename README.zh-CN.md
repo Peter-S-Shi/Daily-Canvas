@@ -2,13 +2,13 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–7（产品功能）与 Milestone 8（Tauri 2 桌面基础，已通过独立 CI 验证）均已完成。应用现在既能以浏览器方式运行，也已打包为 Windows 桌面应用。**Daily Canvas v1.0.0** 计划下一步在这个桌面基础之上继续构建"计划 → 执行"的能力（Milestone 9–13）。
+当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–7（产品功能）、Milestone 8（Tauri 2 桌面基础，已通过独立 CI 验证）与 Milestone 9（冻结的桌面 UI 蓝图）均已完成；把现有产品迁移到该蓝图上的 Milestone 10 正在评审中。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。**Daily Canvas v1.0.0** 之后将补齐"计划 → 执行"的能力（Milestone 11–13）。
 
 ## 当前开发状态
 
 此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的 Milestone 1–7 不作废。当前已完成桌面打包的 v0.7 应用，是下一个里程碑——**Milestone 9：桌面信息架构与 UI 蓝图**——的工程基线。
+已经完成的 Milestone 1–7 不作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`）。**Milestone 10：桌面 UI 迁移**已把所有现有页面迁移到该蓝图上：六个工作区（今天、计划、任务、回顾、回顾报告、设置）、先阅读后编辑的任务详情，以及浅色/深色的桌面视觉系统；产品语义与已存储的数据均未改变。目前等待退出评审。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -112,9 +112,9 @@ v1.0 桌面化先建立了一个薄的 Desktop Foundation，而不是大规模�
 - 在扩展功能之前，已经在 Windows/MSVC 上验证了数据持久化（包括强制杀进程后的持久性）、备份恢复、本地文档输出与安装包升级安全。
 - 本地文件、打印等桌面能力已通过 `src/desktop/desktopAdapter.ts` 与领域服务分离；系统通知与版本检查适配层将随 Milestone 12–13 的对应功能一并建立。
 
-## UI 迁移原则
+## UI 迁移原则 —— 已由 Milestone 9 落实
 
-广泛实施桌面 UI 之前，先建立明确的设计蓝本：
+广泛实施桌面 UI 之前，先建立了明确的设计蓝本；冻结结果位于 `docs/m9-desktop-ui-blueprint/`，由 Milestone 10 实现：
 
 ```text
 产品语义
@@ -154,9 +154,12 @@ pnpm build
 桌面壳（Tauri 2，Windows；权威构建环境是 CI 中的 MSVC）：
 
 ```bash
+pnpm desktop:dev       # 开发窗口（Vite + Tauri）
 pnpm desktop:build     # 不带安装包的 release 构建
 pnpm desktop:bundle    # 按用户安装的 NSIS 安装包（测试版本号由 CI 提供）
 ```
+
+在 Windows 上，双击 `OPEN_DAILY_CANVAS_DEV.cmd` 即可启动开发窗口：它会加载 Visual Studio Build Tools 的 x64 环境，使用 `stable-x86_64-pc-windows-msvc` Rust 工具链；本机工具链不完整时，会说明缺少什么。
 
 打包后的应用验证位于 `desktop-verify/`（见 `desktop-verify/M8B-EVIDENCE.md`），只使用合成数据，并且不会清除它没有创建过的现有用户数据目录。
 

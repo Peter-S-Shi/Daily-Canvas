@@ -4,7 +4,7 @@
 **Status:** Frozen v1.0 — final M9 behavior contract  
 **Target:** Daily Canvas v1.0 desktop product  
 **Implementation baseline:** v0.7 product semantics + M8 Tauri 2 desktop foundation  
-**Visual reference:** `Daily Canvas — Desktop UI Concept(4).pdf` (10-page frozen visual reference)
+**Visual reference:** `visual-reference/Daily_Canvas_Desktop_UI_Visual_Reference_Frozen.pdf` (10-page frozen visual reference)
 
 ---
 
@@ -15,6 +15,8 @@ This document defines the behavior, state, navigation, interaction, accessibilit
 It exists to prevent implementation agents from inferring product semantics from screenshots alone.
 
 **Freeze note:** The four M9 product decisions previously tracked as D1–D4 were explicitly approved by the product owner on 2026-09-22 and are part of this contract. The HTML Interaction Blueprint v0.3 passed human visual review and was frozen as v1.0 on the same date.
+
+**Errata (2026-09-22, reconciled at M10 Human Gate 1):** wording only; no product decision changed. The visual-reference citation above now names the frozen file actually in the repository (it previously cited a working-draft filename). §7.5 previously described Avoidance-habit Time Block eligibility as an open M12 decision, contradicting frozen Decision D2; it now states D2. Appendix C now names the visual-reference file and location.
 
 ### 0.1 Authority order
 
@@ -508,7 +510,7 @@ At minimum it may derive eligible items from:
 
 Completed, archived, or paused items should not appear as ordinary available work.
 
-The exact eligibility of Avoidance habits for Time Blocking remains an explicit M12 product decision; M9 must not imply that every Task kind must be blockable.
+Avoidance habits are not offered as ordinary Time Block work in v1.0 (Resolved Decision D2); the blueprint must not imply that every Task kind is blockable.
 
 ## 7.6 Drag behavior
 
@@ -1340,6 +1342,6 @@ Update awareness ≠ self-updater
 - `Daily_Canvas_M9_Desktop_Behavior_State_Spec_Frozen_v1.0.md`
 - `Daily_Canvas_M9_HTML_Interaction_Blueprint_Frozen_v1.0.html`
 - `Daily_Canvas_M9_Frozen_UI_Snapshot_v1.0.pdf`
-- Frozen 10-page Claude Design visual reference retained under the selected visual-exploration assets.
+- `Daily_Canvas_Desktop_UI_Visual_Reference_Frozen.pdf` — the frozen 10-page Claude Design visual reference, in `visual-reference/`.
 
 The HTML blueprint is the interaction-oriented implementation reference; the PDF is a fixed review snapshot, not a substitute for the behavior contract.
