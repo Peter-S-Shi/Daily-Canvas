@@ -2,13 +2,13 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–7（产品功能）、Milestone 8（Tauri 2 桌面基础，已通过独立 CI 验证）与 Milestone 9（冻结的桌面 UI 蓝图）均已完成；把现有产品迁移到该蓝图上的 Milestone 10 正在评审中。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。**Daily Canvas v1.0.0** 之后将补齐"计划 → 执行"的能力（Milestone 11–13）。
+当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–7（产品功能）、Milestone 8（Tauri 2 桌面基础，已通过独立 CI 验证）、Milestone 9（冻结的桌面 UI 蓝图）与 Milestone 10（桌面 UI 迁移）均已完成。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。**Daily Canvas v1.0.0** 之后将补齐“计划 → 执行”的能力（Milestone 11–13），下一步为 Milestone 11。
 
 ## 当前开发状态
 
 此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的 Milestone 1–7 不作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`）。**Milestone 10：桌面 UI 迁移**已把所有现有页面迁移到该蓝图上：六个工作区（今天、计划、任务、回顾、回顾报告、设置）、先阅读后编辑的任务详情，以及浅色/深色的桌面视觉系统；产品语义与已存储的数据均未改变。目前等待退出评审。
+已经完成的 Milestone 1–7 不作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`）。**Milestone 10：桌面 UI 迁移**已把所有现有页面迁移到该蓝图上：六个工作区（今天、计划、任务、回顾、回顾报告、设置）、先阅读后编辑的任务详情，以及浅色/深色的桌面视觉系统；产品语义与已存储的数据均未改变。Milestone 10 已通过独立退出评审并合并至 `main`（PR #4）；下一个工程目标为 Milestone 11（快速捕获与任务增强），尚未开始。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -114,7 +114,7 @@ v1.0 桌面化先建立了一个薄的 Desktop Foundation，而不是大规模�
 
 ## UI 迁移原则 —— 已由 Milestone 9 落实
 
-广泛实施桌面 UI 之前，先建立了明确的设计蓝本；冻结结果位于 `docs/m9-desktop-ui-blueprint/`，由 Milestone 10 实现：
+广泛实施桌面 UI 之前，先建立了明确的设计蓝本；冻结结果位于 `docs/m9-desktop-ui-blueprint/`，已由 Milestone 10 实现：
 
 ```text
 产品语义

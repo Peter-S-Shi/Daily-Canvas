@@ -1,6 +1,13 @@
 # Development log
 
-## Milestone 10: Desktop UI Migration — In review
+## Milestone 10: Desktop UI Migration — Completed
+
+### 2026-09-22 — Milestone 10 Exit Review acceptance and PR merge
+
+- Independent Milestone 10 Exit Review accepted: verified no regression against Milestones 1–7 domain semantics, alignment with the frozen M9 behavior specification and interaction blueprint, durable 900×600 minimum responsive behavior, and clean architectural seams.
+- PR #4 merged into `main` at commit `2730bbf49e669db8a3022182dd72711ea8540fb7` (`2730bbf`).
+- Independent post-merge CI run `35782091580` on `main` passed completely across all tiers: Classify, Core, Desktop (Windows/MSVC), and PR Gate (including 54/54 packaged-app smoke checks and 17/17 NSIS installer/upgrade/data-retention checks).
+- Milestone 10 is formally complete. Milestone 11 (Capture and Task Enrichment) is the next engineering objective and has not started.
 
 ### 2026-09-22 — Workspace architecture (M10-A) and full UI migration (M10-B)
 

@@ -4,20 +4,21 @@ Status reviewed: 2026-09-22
 
 ## Current Phase
 
-**v1.0 Desktop Program — Milestone 10 In Progress (Desktop UI Migration)**
+**v1.0 Desktop Program — Milestone 10 Complete, Milestone 11 Next**
 
-The previous v0.7 Feature Complete Gate was not accepted. Before Feature Freeze, the project intentionally reopened scope, approved the v1.0 feature boundary, and selected a migration-first desktop strategy. Milestone 8 delivered the Tauri 2 desktop foundation and CI guardrails; Milestone 9 froze the desktop information architecture and UI blueprint; Milestone 10 is migrating the existing product onto that blueprint.
+The previous v0.7 Feature Complete Gate was not accepted. Before Feature Freeze, the project intentionally reopened scope, approved the v1.0 feature boundary, and selected a migration-first desktop strategy. Milestone 8 delivered the Tauri 2 desktop foundation and CI guardrails; Milestone 9 froze the desktop information architecture and UI blueprint; Milestone 10 migrated the existing product onto that blueprint.
 
-Milestones 1–7 remain completed engineering history. The application feature set and version remain v0.7.0: Milestones 8–10 change the shell and presentation, not product capability. New v1.0 capabilities begin in Milestone 11.
+Milestones 1–7 remain completed engineering history. The application feature set and version remain v0.7.0: Milestones 8–10 changed the shell and presentation, not product capability. New v1.0 capabilities begin in Milestone 11.
 
 ## Current Milestone
 
-**Milestone 10: Desktop UI Migration — In progress; implementation complete, awaiting M10 Exit Review.**
+**Milestone 10: Desktop UI Migration — Completed.**
 
 - **M10-A (migration skeleton):** the flat ten-view navigation was replaced by the M9 workspace architecture — six M10-active destinations (Today, Plan, Tasks, Reflect, Review, Settings) with secondary destinations declared once in `src/navigation/workspaceModel.ts`. Accepted at **Human Gate 1** (2026-09-22) after independent architecture review and human inspection of the real Tauri window.
-- **M10-B (full UI migration):** every M10-capable surface now follows the frozen blueprint's visual system and composition. See *UI Decision* below.
+- **M10-B (full UI migration):** every M10-capable surface followed the frozen blueprint's visual system and composition. See *UI Decision* below.
+- **M10 Exit Review:** accepted independently against the frozen M9 artifacts and the exit criteria below. PR #4 merged into `main` at `2730bbf49e669db8a3022182dd72711ea8540fb7`; post-merge CI run `35782091580` succeeded (Classify, Core, Desktop Windows/MSVC, PR Gate all green).
 
-Milestone 10 is **not** complete until the Exit Review accepts it.
+The next engineering milestone is **Milestone 11: Capture and Task Enrichment**. It has not started.
 
 **Milestone 9: Desktop Information Architecture and UI Blueprint — Completed.** The frozen artifact set lives in `docs/m9-desktop-ui-blueprint/` (integrated through PR #3). Wording errata found during review were reconciled at M10 Human Gate 1; no product decision changed.
 
@@ -54,7 +55,7 @@ The v1.0 program preserves the current planning, habit, lifecycle, reflection, r
 - Desktop keyboard shortcuts.
 - GitHub Release update awareness without silent self-update.
 
-None of the above is implemented yet. Milestones 8–10 built the desktop foundation, the frozen blueprint, and the migrated shell these will sit on; the blueprint already reserves each capability's place.
+None of the above is implemented yet. Milestones 8–10 built the desktop foundation, the frozen blueprint, and the migrated shell these will sit on; the blueprint already reserves each capability's place. Milestone 11 begins implementing this scope.
 
 ## Explicit v1.0 Deferrals
 
@@ -95,11 +96,11 @@ The project migrated to a thin desktop foundation rather than a rewrite, as plan
 
 Evidence: `desktop-spike/M8A-EVIDENCE.md` (shell feasibility) and `desktop-verify/M8B-EVIDENCE.md` (identity, CI, MSVC build, packaged-app and installer verification).
 
-## UI Decision — Blueprint Frozen (M9), Migration In Progress (M10)
+## UI Decision — Blueprint Frozen (M9), Migrated (M10)
 
 The desktop UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, subordinate to `ARCHITECTURE.md`, `ROADMAP.md`, and current domain semantics. Authority order: domain governance → Behavior & State Specification → HTML Interaction Blueprint → frozen PDF snapshot and visual reference.
 
-Milestone 10 implements only the M10-active part of the target:
+Milestone 10 implemented only the M10-active part of the target:
 
 - **Navigation:** six destinations — Today, Plan (Floating, Calendar), Tasks (All tasks, Areas, Lifecycle, Rewards), Reflect (Daily Reflection, Meditations), Review, Settings (General, Appearance, Data & Backup).
 - **Staging (frozen Decision D4):** Inbox, Global Search, Quick Capture, Timeline, Replan, Notes, Checklist, Duration, Reminders, On This Day, automatic backup, update awareness, Notifications, Shortcuts, and About & Updates are absent, not disabled placeholders. A regression test asserts this.
@@ -118,7 +119,7 @@ Risk-scaled GitHub Actions CI is live (`.github/workflows/ci.yml`), gated by a c
 
 A stable `PR Gate` job always runs and fails closed: it requires every needed job to have succeeded and every unneeded job to have been skipped (never silently run, never silently failed). `concurrency: cancel-in-progress` cancels superseded runs. Only short-retention (7-day) evidence artifacts are uploaded, and only when produced.
 
-Branching remains lightweight: `main` plus one short-lived branch per milestone, integrated through a PR — `m8-desktop-foundation` (PR #2), `m9-desktop-ui-blueprint` (PR #3), and `m10-desktop-ui-migration` (PR #4, Draft). A permanent `develop` branch is not currently justified.
+Branching remains lightweight: `main` plus one short-lived branch per milestone, integrated through a PR — `m8-desktop-foundation` (PR #2), `m9-desktop-ui-blueprint` (PR #3), and `m10-desktop-ui-migration` (PR #4, merged at `2730bbf`). A permanent `develop` branch is not currently justified.
 
 The classifier routes the root dev launcher `OPEN_DAILY_CANVAS_DEV.cmd` to the desktop tier, like the other desktop tooling.
 
@@ -128,7 +129,7 @@ The classifier routes the root dev launcher `OPEN_DAILY_CANVAS_DEV.cmd` to the d
 
 **Feature Freeze: not active.**
 
-Feature Freeze can begin only after the approved v1.0 scope is implemented and the new Feature Complete Gate is explicitly accepted. Milestones 8–10 are foundation, blueprint, and migration milestones, not product-feature milestones, so they do not change this.
+Feature Freeze can begin only after the approved v1.0 scope is implemented and the new Feature Complete Gate is explicitly accepted. Milestones 8–10 were foundation, blueprint, and migration milestones, not product-feature milestones, so completing them does not change this.
 
 ## Verification Status of Current Baseline
 
@@ -139,6 +140,7 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - GitHub Actions now provides independent CI evidence for every subsequent change, with the risk routing described above.
 - Milestone 10 (local, synthetic data): TypeScript checking; 72 automated tests, including the end-to-end UI flow driven through the new workspace composition, a navigation-IA suite, and dialog focus/dismissal tests; production build. Every M10 surface was measured at 1280×820 and at the 900×600 minimum, in English and Chinese, with zero horizontal overflow. It was inspected in light and dark themes, over a personal background, and in the real Tauri window launched through `OPEN_DAILY_CANVAS_DEV.cmd`. Domain services, Dexie schema, backup format v6, and the Tauri adapter boundary are unchanged.
 - The packaged-app and installer smokes (`desktop-verify/`) drive the UI and were ported to the new workspace composition in M10-B. They had been stale since M10-A, because M10-A changed no desktop-routed path and CI never ran them. Screen coverage grew to 11 destinations, so the packaged-app smoke has 54 checks.
+- Milestone 10 final PR CI (run on the merged head of PR #4) and the independent post-merge CI run `35782091580` on `main` at `2730bbf` both passed in full: Classify, Core, Desktop (Windows/MSVC), and PR Gate all green, including the 54-check packaged-app smoke and the 17-check installer/upgrade smoke.
 
 ## Known Risks Entering v1.0
 
@@ -149,21 +151,22 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - Desktop CI verification runs on a single GitHub-hosted Windows runner image, not a version matrix.
 - Large multi-year history performance and full release-level accessibility remain to be hardened later (Milestone 14).
 - The production build still has the previously recorded large-chunk advisory.
-- Path-based CI routing can miss UI-driving verification: a change confined to `src/` runs only the core tier, while the desktop smokes depend on the rendered UI. M10 hit exactly this (see Verification Status). Until routing accounts for it, any milestone that reshapes the UI should also touch or run the desktop smokes.
+- **Unresolved:** path-based CI routing can miss UI-driving verification. A change confined to `src/` classifies as `core` only and does not select the `desktop` tier, so the packaged-app and installer smokes — which drive the actual rendered UI through CDP — do not run even when the change reshapes every screen. M10-A demonstrated this directly: its navigation rewrite touched only `src/`, so CI never exercised the desktop smokes against it, and they were later found stale (selectors from the old ten-view shell) and had to be repaired by hand in M10-B before they would run at all. This is a real, currently open gap, not a solved risk. Any future milestone that changes UI structure or selectors should manually run or update the desktop smokes rather than relying on the classifier to select them.
 - Release-level accessibility (contrast audit, screen-reader pass, full keyboard journey) is still Milestone 14 work. M10 applied the structural requirements: labelled navigation, selection not conveyed by color alone, named and focus-managed dialogs, and keyboard alternatives to drag.
 
 ## Next Engineering Objective
 
-Complete the **Milestone 10 Exit Review**: independent review of PR #4 against the frozen M9 artifacts and the M10 exit criteria in `ROADMAP.md`, with its full CI run as evidence. After acceptance and merge, Milestone 11 (Capture and Task Enrichment) is next. It is not started.
+Start **Milestone 11: Capture and Task Enrichment** (Quick Capture / Inbox with explicit triage, Global Search, Task Notes, one-level Checklist items, richer recurrence, task duration estimates, explicit Replan). It has not started; no implementation work has begun.
 
 ## Repository State
 
-- Branch: `m10-desktop-ui-migration` (Draft PR #4); `main` holds Milestones 8 and 9
+- Branch: `main` at `2730bbf49e669db8a3022182dd72711ea8540fb7` (Milestone 10 delivered via PR #4 from `m10-desktop-ui-migration`)
 - Current application version: `0.7.0`
 - Current Dexie schema and backup format: `v6`
-- Current implementation baseline: Milestone 7.1 (product) + Milestone 8 (desktop foundation) + Milestone 9 (frozen blueprint); Milestone 10 in review
+- Current implementation baseline: Milestone 7.1 (product) + Milestone 8 (desktop foundation) + Milestone 9 (frozen blueprint) + Milestone 10 (desktop UI migration)
 - Desktop identifier: `io.github.peter-s-shi.dailycanvas`; packaged origin: `https://tauri.localhost` (both frozen)
 - Desktop build target: Windows/MSVC (`x86_64-pc-windows-msvc`), statically linked CRT
 - Local desktop development: `OPEN_DAILY_CANVAS_DEV.cmd` (requires Visual Studio Build Tools with the x64 MSVC toolset and a Windows SDK, the `stable-x86_64-pc-windows-msvc` Rust toolchain, Node.js, and pnpm)
-- v1.0 product scope: approved; Milestones 8–9 complete, Milestone 10 in review (of 15)
+- v1.0 product scope: approved; Milestones 8, 9, and 10 complete (of 15); Milestone 11 next, not started
+- Feature Complete: not reached
 - Feature Freeze: inactive

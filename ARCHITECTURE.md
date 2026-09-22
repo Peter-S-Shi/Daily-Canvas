@@ -180,16 +180,16 @@ The following are understandable and were tested end to end (Windows/MSVC, GitHu
 - how browser-era v1–v6 backups migrate into a desktop install: unchanged from the existing `backupService` migration path (only v6 was driven end to end in M8; v1–v6 migration itself has its own unit tests, unaffected by the desktop shell);
 - automatic backups do not exist yet (Milestone 13); today, manual export/import through Settings is the same in the browser and the desktop build, routed through the local-file adapter.
 
-### 4.6 Desktop UI Composition — Frozen Blueprint (M9), Migration (M10)
+### 4.6 Desktop UI Composition — Established Baseline (M9 blueprint, M10 migration)
 
-The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, which is subordinate to this document and `ROADMAP.md`. Milestone 10 established the seams that later milestones insert into. Each is presentation-only, and none owns product semantics:
+The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, which is subordinate to this document and `ROADMAP.md`. Milestone 10 completed the migration onto that blueprint and established the seams that later milestones extend. Each is presentation-only, and none owns product semantics:
 
 - **Workspace model** (`src/navigation/workspaceModel.ts`): the single declaration of workspaces, their secondary sections, where section navigation renders, and which appearance background slot each section uses. A new destination is added here, in the same change that makes it usable. Frozen Decision D4 forbids disabled placeholders.
 - **Workspace navigation** (`src/navigation/useWorkspaceNavigation.ts`): the only way to change destination. Context jumps are named targets — Review → Calendar evidence for a date, Calendar → the Daily Reflection for a date, and any surface → a task's read-first detail — never ad-hoc view state.
 - **Header slots** (`src/components/shell/WorkspaceHeader.tsx`): a surface portals its own controls (for example, Review's period presets) and its own primary action into the workspace header. Actions are therefore named for the surface that owns them; there is no global creation action.
 - **Dialog** (`src/components/Dialog.tsx`): every modal is named, focus-managed, and dismissible with Escape only when that is safe. Decisions such as milestone choices cannot be dismissed implicitly.
 
-Components continue to call the existing domain services; none of these seams stores or derives product data.
+Components continue to call the existing domain services; none of these seams stores or derives product data. No Milestone 11 capability (Inbox, Search, Task Notes, Checklist, duration estimates, or Replan) is implemented yet — Milestone 10 only established the seams they will extend.
 
 ---
 
