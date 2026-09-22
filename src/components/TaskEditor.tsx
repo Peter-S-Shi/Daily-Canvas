@@ -18,9 +18,14 @@ export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }
   const [state, setState] = useState<"idle" | "saving" | "error">("idle");
   const defaults = useMemo(() => {
     const schedule = task?.schedule;
+    const initialStartDate = task
+      ? (schedule?.mode === "floating" || schedule?.mode === "quota"
+          ? schedule.availableFrom
+          : (task.replannedStartDate ?? task.startDate))
+      : todayKey();
     return {
       title: task?.title ?? initialTitle ?? "", kind: task?.kind ?? ((initialMode === "floating" ? "task" : "habit") as TaskKind), areaId: task?.areaId ?? "", colorOverride: task?.colorOverride ?? "", starred: task?.starred ?? false,
-      scheduleMode: schedule?.mode ?? initialMode ?? ("fixed" as Task["schedule"]["mode"]), startDate: task?.startDate ?? todayKey(), endDate: task?.endDate ?? "",
+      scheduleMode: schedule?.mode ?? initialMode ?? ("fixed" as Task["schedule"]["mode"]), startDate: initialStartDate, endDate: task?.endDate ?? (schedule?.mode === "quota" ? schedule.optionalEndDate ?? "" : ""),
       recurrenceType: schedule?.mode === "fixed" ? schedule.recurrence.type : ("daily" as RecurrenceType), weekdays: schedule?.mode === "fixed" ? schedule.recurrence.weekdays ?? [1,2,3,4,5] : [1,2,3,4,5], intervalDays: schedule?.mode === "fixed" ? schedule.recurrence.intervalDays ?? 2 : 2,
       intervalWeeks: schedule?.mode === "fixed" ? schedule.recurrence.intervalWeeks ?? 2 : 2, dayOfMonth: schedule?.mode === "fixed" ? schedule.recurrence.dayOfMonth ?? 1 : 1,
       deadline: schedule?.mode === "floating" ? schedule.optionalDeadline ?? "" : "", quotaPeriod: schedule?.mode === "quota" ? schedule.period : ("week" as const), quotaTarget: schedule?.mode === "quota" ? schedule.targetCount : 1,
@@ -40,7 +45,8 @@ export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }
           ? { mode: "quota", period: form.quotaPeriod, targetCount: Math.max(1, form.quotaTarget), availableFrom: form.startDate, optionalEndDate: form.endDate || undefined }
           : { mode: "fixed", recurrence: { type: form.kind === "task" ? "once" : form.recurrenceType, weekdays: form.recurrenceType === "weekdays" || form.recurrenceType === "weeklyInterval" ? form.weekdays : undefined, intervalDays: form.recurrenceType === "interval" ? Math.max(1, form.intervalDays) : undefined, intervalWeeks: form.recurrenceType === "weeklyInterval" ? Math.max(1, form.intervalWeeks) : undefined, dayOfMonth: form.recurrenceType === "monthlyDay" ? Math.min(31, Math.max(1, form.dayOfMonth)) : undefined } };
       const now = new Date().toISOString(); const previous = new Map((task?.checklist ?? []).map((item) => [item.title, item])); const checklist = form.checklistText.split("\n").map((title: string) => title.trim()).filter(Boolean).map((title: string, index: number) => previous.get(title) ?? { id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${index}`, title, completed: false, createdAt: now, updatedAt: now });
-      const saved = await saveTask({ title: form.title.trim(), kind: form.kind, areaId: form.areaId || undefined, colorOverride: form.colorOverride || undefined, starred: form.starred, archived: task?.archived ?? false, startDate: form.startDate, replannedStartDate: task?.replannedStartDate, endDate: form.scheduleMode === "fixed" && form.endDate ? form.endDate : undefined, schedule, targetDays: form.scheduleMode === "fixed" && form.kind !== "task" ? Math.max(1, form.targetDays) : undefined, targetPeriods: form.scheduleMode === "quota" ? Math.max(1, form.targetPeriods) : undefined, stopReminderAtTarget: false, notes: form.notes.trim() || undefined, estimatedMinutes: form.estimatedMinutes > 0 ? Math.round(form.estimatedMinutes) : undefined, checklist }, task);
+      const taskStartDate = task ? task.startDate : form.startDate;
+      const saved = await saveTask({ title: form.title.trim(), kind: form.kind, areaId: form.areaId || undefined, colorOverride: form.colorOverride || undefined, starred: form.starred, archived: task?.archived ?? false, startDate: taskStartDate, replannedStartDate: task?.replannedStartDate, replanHistory: task?.replanHistory, endDate: form.scheduleMode === "fixed" && form.endDate ? form.endDate : undefined, schedule, targetDays: form.scheduleMode === "fixed" && form.kind !== "task" ? Math.max(1, form.targetDays) : undefined, targetPeriods: form.scheduleMode === "quota" ? Math.max(1, form.targetPeriods) : undefined, stopReminderAtTarget: false, notes: form.notes.trim() || undefined, estimatedMinutes: form.estimatedMinutes > 0 ? Math.round(form.estimatedMinutes) : undefined, checklist }, task);
       await onSaved?.(saved);
       onClose();
     } catch { setState("error"); }

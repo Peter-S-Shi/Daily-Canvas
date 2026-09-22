@@ -38,6 +38,7 @@ export interface Task {
   archived: boolean;
   startDate: string;
   replannedStartDate?: string;
+  replanHistory?: ReplanHistoryEntry[];
   endDate?: string;
   schedule: Schedule;
   targetDays?: number;
@@ -52,6 +53,7 @@ export interface Task {
 
 export interface ChecklistItem { id: string; title: string; completed: boolean; createdAt: string; updatedAt: string }
 export interface InboxCapture { id: string; title: string; createdAt: string; updatedAt: string }
+export interface ReplanHistoryEntry { replannedAt: string; previousStartDate: string; nextStartDate: string; note?: string }
 export interface ReplanEvent { id: string; taskId: string; replannedAt: string; previousStartDate: string; nextStartDate: string; note?: string }
 export type SearchResult =
   | { type: "task"; id: string; title: string; excerpt?: string }

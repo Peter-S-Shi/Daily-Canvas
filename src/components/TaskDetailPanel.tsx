@@ -7,7 +7,8 @@ import { supportsLifecycle, targetFor } from "../services/lifecycleService";
 import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
 import { calculateTaskStats } from "../services/statisticsService";
 import { deleteTask, updateTask } from "../services/taskService";
-import { replanTask } from "../services/replanService";
+import { canReplanTask, replanTask } from "../services/replanService";
+import { todayKey } from "../lib/dates";
 import type { CheckIn, Task } from "../types";
 
 type DetailTab = "overview" | "schedule" | "checklist" | "notes" | "lifecycle" | "history";
@@ -115,7 +116,9 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
           {task.schedule.mode === "quota" && <div><dt>{t("targetCount")}</dt><dd>{task.schedule.targetCount} · {t(task.schedule.period === "week" ? "weekly" : "monthly")}</dd></div>}
           {task.schedule.mode === "quota" && task.schedule.optionalEndDate && <div><dt>{t("endDate")}</dt><dd>{date(task.schedule.optionalEndDate)}</dd></div>}
           {supportsLifecycle(task) && <div><dt>{t(task.schedule.mode === "quota" ? "targetPeriods" : "targetDays")}</dt><dd>{targetFor(task)}</dd></div>}
-          <div className="replan-row"><dt>{t("replan")}</dt><dd><input type="date" min={task.startDate} value={replanDate} onChange={(event) => setReplanDate(event.target.value)}/><button type="button" className="button secondary" disabled={!replanDate} onClick={async () => { try { await replanTask(task.id, replanDate); setReplanDate(""); } catch { setError(t("saveError")); } }}>{t("replanFuture")}</button></dd></div>
+          {canReplanTask(task, data.checkIns) && (
+            <div className="replan-row"><dt>{t("replan")}</dt><dd><input type="date" min={todayKey()} value={replanDate} onChange={(event) => setReplanDate(event.target.value)}/><button type="button" className="button secondary" disabled={!replanDate} onClick={async () => { try { await replanTask(task.id, replanDate); setReplanDate(""); } catch { setError(t("saveError")); } }}>{t("replanFuture")}</button></dd></div>
+          )}
         </dl>}
 
         {tab === "checklist" && ((task.checklist?.length ?? 0) === 0 ? <p className="muted">{t("noChecklistItems")}</p> : <ul className="checklist-list">{task.checklist!.map((item) => <li key={item.id}><label><input type="checkbox" checked={item.completed} onChange={() => updateTask(task.id, { checklist: task.checklist!.map((value) => value.id === item.id ? { ...value, completed: !value.completed, updatedAt: new Date().toISOString() } : value) })}/><span className={item.completed ? "strike" : ""}>{item.title}</span></label></li>)}</ul>)}
