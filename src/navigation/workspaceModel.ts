@@ -22,11 +22,15 @@ export interface WorkspaceSection {
   backgroundSlot?: BackgroundSlot;
 }
 
+export type WorkspaceIcon = "today" | "plan" | "tasks" | "reflect" | "review" | "settings";
+
 export interface Workspace {
   id: WorkspaceId;
   labelKey: string;
-  icon: string;
+  icon: WorkspaceIcon;
   anchored?: boolean;
+  /** Where secondary navigation renders: header tabs (default) or inside the page (Settings, blueprint §11). */
+  sectionPlacement?: "header" | "page";
   sections: WorkspaceSection[];
 }
 
@@ -41,12 +45,12 @@ export interface Workspace {
  * adding its entry below in the same change that makes it work.
  */
 export const workspaces: Workspace[] = [
-  { id: "today", labelKey: "today", icon: "☀", sections: [{ id: "todayExecution", labelKey: "today", backgroundSlot: "today" }] },
-  { id: "plan", labelKey: "plan", icon: "◷", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }] },
-  { id: "tasks", labelKey: "ws_tasks", icon: "✓", sections: [{ id: "allTasks", labelKey: "allTasks" }, { id: "areas", labelKey: "areas" }, { id: "lifecycle", labelKey: "lifecycle" }, { id: "rewards", labelKey: "rewards" }] },
-  { id: "reflect", labelKey: "ws_reflect", icon: "✎", sections: [{ id: "dailyReflection", labelKey: "dailyReflection", backgroundSlot: "reflection" }, { id: "meditations", labelKey: "meditations" }] },
-  { id: "review", labelKey: "review", icon: "≋", sections: [{ id: "periodReview", labelKey: "review" }] },
-  { id: "settings", labelKey: "settings", icon: "⚙", anchored: true, sections: [{ id: "settingsGeneral", labelKey: "general" }, { id: "settingsAppearance", labelKey: "appearance" }, { id: "settingsData", labelKey: "dataAndBackup" }] },
+  { id: "today", labelKey: "today", icon: "today", sections: [{ id: "todayExecution", labelKey: "today", backgroundSlot: "today" }] },
+  { id: "plan", labelKey: "plan", icon: "plan", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }] },
+  { id: "tasks", labelKey: "ws_tasks", icon: "tasks", sections: [{ id: "allTasks", labelKey: "allTasks" }, { id: "areas", labelKey: "areas" }, { id: "lifecycle", labelKey: "lifecycle" }, { id: "rewards", labelKey: "rewards" }] },
+  { id: "reflect", labelKey: "ws_reflect", icon: "reflect", sections: [{ id: "dailyReflection", labelKey: "dailyReflection", backgroundSlot: "reflection" }, { id: "meditations", labelKey: "meditations" }] },
+  { id: "review", labelKey: "review", icon: "review", sections: [{ id: "periodReview", labelKey: "review" }] },
+  { id: "settings", labelKey: "settings", icon: "settings", anchored: true, sectionPlacement: "page", sections: [{ id: "settingsGeneral", labelKey: "general" }, { id: "settingsAppearance", labelKey: "appearance" }, { id: "settingsData", labelKey: "dataAndBackup" }] },
 ];
 
 export const primaryWorkspaces = workspaces.filter((workspace) => !workspace.anchored);

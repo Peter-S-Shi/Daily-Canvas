@@ -70,7 +70,8 @@ describe("Milestone 4 critical browser flow", () => {
     const area = await db.areas.where("name").equals("Wellbeing").first();
     expect(area).toBeTruthy();
 
-    await click(button("New"));
+    await click(button("All tasks"));
+    await click(button("New task"));
     await change(document.querySelector('input[required][maxlength="80"]') as HTMLInputElement, "Flexible errand");
     await click(button("Floating task"));
     await click(button("Continue"));
@@ -82,7 +83,8 @@ describe("Milestone 4 critical browser flow", () => {
     await click(button("Complete today"));
     expect(await db.checkIns.get(`${(await db.tasks.filter((item) => item.title === "Flexible errand").first())!.id}:${toDateKey(new Date())}`)).toMatchObject({ status: "done" });
 
-    await click(button("New"));
+    await click(button("Today"));
+    await click(button("New task"));
     await change(document.querySelector('input[required][maxlength="80"]') as HTMLInputElement, "Weekly practice");
     await click(button("Quota goal"));
     await change(document.querySelector('.task-form input[type="number"]') as HTMLInputElement, "2");
@@ -103,7 +105,6 @@ describe("Milestone 4 critical browser flow", () => {
 
     await click(button("Reflect"));
     await click(button("Calm"));
-    await click(button("Continue to journal"));
     await click(button("Skip prompt"));
     expect(button("Skip prompt")).toBeUndefined();
     await change(document.querySelector(".full-journal") as HTMLTextAreaElement, "A complete reflection.\n\nWith another paragraph.");
@@ -121,7 +122,7 @@ describe("Milestone 4 critical browser flow", () => {
     expect(document.querySelector(".date-detail")?.textContent).toContain("Supporting records");
 
     await click(button("Settings"));
-    await change(document.querySelector(".setting-row select") as HTMLSelectElement, "zh-CN");
+    await click(button("中文"));
     expect(document.documentElement.lang).toBe("zh-CN");
   });
 });

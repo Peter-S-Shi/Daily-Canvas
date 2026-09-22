@@ -2,24 +2,84 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
-import { resolveTaskColor } from "../services/areaService";
-import { deleteTask, updateTask } from "../services/taskService";
-import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
+import { getQuotaPeriod, getQuotaProgress } from "../services/quotaService";
 import { calculateTaskStats } from "../services/statisticsService";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import type { Task } from "../types";
 
-interface TasksViewProps { onAdd: () => void; onEdit: (task: Task) => void }
-export function TasksView({ onAdd, onEdit }: TasksViewProps) {
-  const { t } = useTranslation(); const [filter, setFilter] = useState<"all" | "starred" | "archived">("all"); const [areaFilter, setAreaFilter] = useState(""); const [scheduleFilter, setScheduleFilter] = useState(""); const [error, setError] = useState(""); const [selectedId, setSelectedId] = useState("");
-  const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? []; const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? []; const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? []; const settings = useLiveQuery(() => db.settings.get("app"), []);
-  const visible = tasks.filter((task) => (filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)) && (!areaFilter || task.areaId === areaFilter) && (!scheduleFilter || task.schedule.mode === scheduleFilter)).sort((a,b) => Number(b.starred)-Number(a.starred)||b.updatedAt.localeCompare(a.updatedAt));
-  const selected = visible.find((task) => task.id === selectedId);
-  const remove = async (task: Task) => { if (!globalThis.confirm(t("deleteConfirm", { title: task.title }))) return; try { await deleteTask(task.id); if (task.id === selectedId) setSelectedId(""); } catch { setError(t("deleteError")); } };
-  return <div className="tasks-split"><section className="panel tasks-master"><div className="section-heading"><div><span className="eyebrow">{t("tasks")}</span><h2>{t("allTasks")}</h2><p>{t("planningHint")}</p></div><button type="button" className="button primary" onClick={onAdd}>＋ {t("addTask")}</button></div>
-    <div className="task-filters"><div className="filter-tabs">{(["all","starred","archived"] as const).map((item) => <button type="button" key={item} className={filter===item?"active":""} onClick={() => setFilter(item)}>{t(item === "all" ? "filterAll" : item === "starred" ? "filterStarred" : "archived")}</button>)}</div><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}><option value="">{t("allAreas")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select><select value={scheduleFilter} onChange={(e) => setScheduleFilter(e.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select></div>
-    {error && <p className="error-message">{error}</p>}{visible.length===0 && <div className="empty-state"><span>＋</span><p>{t(filter === "archived" ? "emptyArchived" : "emptyTasks")}</p></div>}
-    <div className="task-gallery">{visible.map((task) => { const records = checkIns.filter((item) => item.taskId===task.id); const stats = calculateTaskStats(task, records); const area = areas.find((item)=>item.id===task.areaId); let statA = stats.currentStreak, statALabel = t("currentStreak"), statB = `${stats.completionRate}%`, statBLabel = t("completionRate"); if (task.schedule.mode === "floating") { statA = stats.completed; statALabel = t("completed"); statB = task.schedule.optionalDeadline ?? "—"; statBLabel = t("deadline"); } else if (task.schedule.mode === "quota") { const progress = getQuotaProgress(task, getQuotaPeriod(task.schedule, new Date(), settings?.weekStartsOn ?? 1), records); statA = `${progress.count}/${progress.target}` as unknown as number; statALabel = t(task.schedule.period === "week" ? "thisWeek" : "thisMonth"); statB = getQuotaStreak(task, records, new Date(), settings?.weekStartsOn ?? 1) as unknown as string; statBLabel = t("periodStreak"); }
-      return <article className={task.id === selectedId ? "task-tile selected" : "task-tile"} key={task.id} style={{ "--task-color": resolveTaskColor(task, areas) } as React.CSSProperties}><div className="tile-top"><span className="kind-pill">{t(task.schedule.mode === "fixed" ? "fixedSchedule" : task.schedule.mode === "floating" ? "floatingTask" : "quotaGoal")}</span><button className="star-button" onClick={() => updateTask(task.id,{starred:!task.starred})}>{task.starred?"★":"☆"}</button></div><button className="tile-copy" aria-pressed={task.id === selectedId} onClick={() => setSelectedId(task.id)}><h3>{task.title}</h3><p>{area ? `${area.icon ?? ""} ${area.name}` : t("noArea")}</p></button><div className="mini-stats"><span><strong>{String(statA)}</strong>{statALabel}</span><span><strong>{String(statB)}</strong>{statBLabel}</span></div><div className="tile-actions"><button onClick={() => updateTask(task.id,{archived:!task.archived})}>{task.archived?t("restore"):t("archive")}</button><button className="danger-text" onClick={() => remove(task)}>{t("delete")}</button></div></article>; })}</div>
-  </section><TaskDetailPanel task={selected} onEdit={onEdit}/></div>;
+interface TasksViewProps {
+  selectedTaskId: string;
+  onSelectTask: (taskId: string) => void;
+  onCreateTask: () => void;
+  onEditTask: (task: Task) => void;
+  onInspectDate: (date: string) => void;
+  onOpenLifecycle: () => void;
+}
+
+export function TasksView({ selectedTaskId, onSelectTask, onCreateTask, onEditTask, onInspectDate, onOpenLifecycle }: TasksViewProps) {
+  const { t } = useTranslation();
+  const [filter, setFilter] = useState<"all" | "starred" | "archived">("all");
+  const [query, setQuery] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
+  const [scheduleFilter, setScheduleFilter] = useState("");
+  const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
+  const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
+  const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? [];
+  const settings = useLiveQuery(() => db.settings.get("app"), []);
+  const needle = query.trim().toLocaleLowerCase();
+  const visible = tasks
+    .filter((task) => (filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)) && (!areaFilter || task.areaId === areaFilter) && (!scheduleFilter || task.schedule.mode === scheduleFilter) && (!needle || task.title.toLocaleLowerCase().includes(needle)))
+    .sort((a, b) => Number(b.starred) - Number(a.starred) || b.updatedAt.localeCompare(a.updatedAt));
+  const selected = tasks.find((task) => task.id === selectedTaskId);
+  const rowSummary = (task: Task) => {
+    const area = areas.find((item) => item.id === task.areaId);
+    const kind = t(task.kind === "task" ? "regularTask" : task.kind === "habit" ? "goodHabit" : "avoidanceHabit");
+    const records = checkIns.filter((item) => item.taskId === task.id);
+    let stat = "";
+    if (task.schedule.mode === "quota") {
+      const progress = getQuotaProgress(task, getQuotaPeriod(task.schedule, new Date(), settings?.weekStartsOn ?? 1), records);
+      stat = `${progress.count}/${progress.target} ${t(task.schedule.period === "week" ? "thisWeek" : "thisMonth")}`;
+    } else if (task.schedule.mode === "floating") {
+      stat = t("floatingTask");
+    } else if (task.kind !== "task") {
+      const streak = calculateTaskStats(task, records).currentStreak;
+      if (streak > 0) stat = t("streakDays", { count: streak });
+    }
+    return [area?.name ?? t("noArea"), kind, stat].filter(Boolean).join(" · ");
+  };
+  const moveFocus = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const offset = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+    if (!offset) return;
+    event.preventDefault();
+    const next = visible[index + offset];
+    if (!next) return;
+    onSelectTask(next.id);
+    (event.currentTarget.parentElement?.children[index + offset] as HTMLElement | undefined)?.focus();
+  };
+  return (
+    <div className="tasks-shell">
+      <aside className="task-list-pane" aria-label={t("allTasks")}>
+        <input className="filter-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("filterTasks")} aria-label={t("filterTasks")}/>
+        <div className="mini-tabs">
+          {(["all", "starred", "archived"] as const).map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} aria-pressed={filter === item} onClick={() => setFilter(item)}>{t(item === "all" ? "filterAll" : item === "starred" ? "filterStarred" : "archived")}</button>)}
+          <button type="button" className="link-button" onClick={onCreateTask}>＋ {t("newTask")}</button>
+        </div>
+        <div className="list-filters">
+          <select aria-label={t("areas")} value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="">{t("allAreas")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select>
+          <select aria-label={t("scheduleType")} value={scheduleFilter} onChange={(event) => setScheduleFilter(event.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
+        </div>
+        {visible.length === 0 ? <p className="list-empty">{t(needle ? "noMatchingTasks" : filter === "archived" ? "emptyArchived" : "emptyTasks")}</p> : (
+          <div className="task-rows">
+            {visible.map((task, index) => (
+              <button type="button" key={task.id} className={task.id === selectedTaskId ? "task-row active" : "task-row"} aria-pressed={task.id === selectedTaskId} onClick={() => onSelectTask(task.id)} onKeyDown={(event) => moveFocus(event, index)}>
+                <span className="row-star" aria-hidden="true">{task.starred ? "★" : "☆"}</span>
+                <span className="task-row-copy"><strong>{task.title}</strong><span className="item-sub">{rowSummary(task)}</span></span>
+              </button>
+            ))}
+          </div>
+        )}
+      </aside>
+      <TaskDetailPanel task={selected} onEdit={onEditTask} onDeleted={() => onSelectTask("")} onInspectDate={onInspectDate} onOpenLifecycle={onOpenLifecycle}/>
+    </div>
+  );
 }
