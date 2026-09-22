@@ -10,9 +10,11 @@ interface DesktopShellProps {
   shellStyle?: CSSProperties;
   contentStyle?: CSSProperties;
   children: ReactNode;
+  onSearch: () => void;
+  onQuickCapture: () => void;
 }
 
-export function DesktopShell({ navigation, shellStyle, contentStyle, children }: DesktopShellProps) {
+export function DesktopShell({ navigation, shellStyle, contentStyle, children, onSearch, onQuickCapture }: DesktopShellProps) {
   const { t } = useTranslation();
   const { workspace, openWorkspace } = navigation;
   const [controls, setControls] = useState<HTMLElement | null>(null);
@@ -43,7 +45,7 @@ export function DesktopShell({ navigation, shellStyle, contentStyle, children }:
           <h1 className="workspace-title">{t(workspace.labelKey)}</h1>
           {headerTabs && <SectionNav navigation={navigation} variant="tabs"/>}
           <div className="workspace-controls" ref={setControls}/>
-          <div className="workspace-actions" ref={setActions}/>
+          <div className="workspace-actions"><button type="button" className="button secondary global-search" onClick={onSearch}>{t("search")} <kbd>Ctrl K</kbd></button><button type="button" className="button primary global-capture" onClick={onQuickCapture}>＋ {t("quickCapture")}</button><span ref={setActions}/></div>
         </header>
         <div className={contentStyle || shellStyle ? "workspace-surface personalized-surface has-background" : "workspace-surface personalized-surface"} style={contentStyle}>
           <div className="workspace-content">

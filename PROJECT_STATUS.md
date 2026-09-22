@@ -4,21 +4,32 @@ Status reviewed: 2026-09-22
 
 ## Current Phase
 
-**v1.0 Desktop Program — Milestone 10 Complete, Milestone 11 Next**
+**v1.0 Desktop Program — Milestone 11 Complete, Milestone 12 Next**
 
 The previous v0.7 Feature Complete Gate was not accepted. Before Feature Freeze, the project intentionally reopened scope, approved the v1.0 feature boundary, and selected a migration-first desktop strategy. Milestone 8 delivered the Tauri 2 desktop foundation and CI guardrails; Milestone 9 froze the desktop information architecture and UI blueprint; Milestone 10 migrated the existing product onto that blueprint.
 
-Milestones 1–7 remain completed engineering history. The application feature set and version remain v0.7.0: Milestones 8–10 changed the shell and presentation, not product capability. New v1.0 capabilities begin in Milestone 11.
+Milestones 1–7 remain completed engineering history. Milestones 8–10 established the desktop foundation and frozen UI composition. Milestone 11 delivered the first v1.0 product capabilities while the package version remains v0.7.0 until release-version policy advances it.
 
 ## Current Milestone
+
+**Milestone 11: Capture and Task Enrichment — Completed.**
+
+- Quick Capture implements the frozen title-only `Save to Inbox` flow plus `Create full task instead`.
+- Inbox captures remain distinct unresolved records until explicit successful triage into Fixed, Floating, or Quota Task semantics.
+- Global Search is local and derived across Tasks (including notes), Daily Reflections, Meditations, and Areas; unresolved Inbox captures are excluded.
+- Task Notes, one-level Task-owned Checklist items, and duration estimates are available through read-first Task Detail and explicit Edit.
+- Habit/Avoidance recurrence now includes every-N-weeks with selected weekdays and monthly day-of-month with short-month final-day behavior. Regular Tasks remain one-time.
+- Replan changes only the future plan and appends a durable event; earlier check-ins and missing occurrences are not rewritten.
+- Dexie schema and backup format are v7. Supported v1-v6 backups migrate forward; every new authoritative M11 field survives export/restore.
+- Desktop smoke infrastructure now forces a disposable WebView2 user-data folder, refuses cleanup of an existing real profile, and verifies the real Daily Canvas profile metadata remains unchanged.
+
+The next engineering milestone is **Milestone 12: Timeline and Desktop Execution**. It has not started.
 
 **Milestone 10: Desktop UI Migration — Completed.**
 
 - **M10-A (migration skeleton):** the flat ten-view navigation was replaced by the M9 workspace architecture — six M10-active destinations (Today, Plan, Tasks, Reflect, Review, Settings) with secondary destinations declared once in `src/navigation/workspaceModel.ts`. Accepted at **Human Gate 1** (2026-09-22) after independent architecture review and human inspection of the real Tauri window.
 - **M10-B (full UI migration):** every M10-capable surface followed the frozen blueprint's visual system and composition. See *UI Decision* below.
 - **M10 Exit Review:** accepted independently against the frozen M9 artifacts and the exit criteria below. PR #4 merged into `main` at `2730bbf49e669db8a3022182dd72711ea8540fb7`; post-merge CI run `35782091580` succeeded (Classify, Core, Desktop Windows/MSVC, PR Gate all green).
-
-The next engineering milestone is **Milestone 11: Capture and Task Enrichment**. It has not started.
 
 **Milestone 9: Desktop Information Architecture and UI Blueprint — Completed.** The frozen artifact set lives in `docs/m9-desktop-ui-blueprint/` (integrated through PR #3). Wording errata found during review were reconciled at M10 Human Gate 1; no product decision changed.
 
@@ -55,7 +66,7 @@ The v1.0 program preserves the current planning, habit, lifecycle, reflection, r
 - Desktop keyboard shortcuts.
 - GitHub Release update awareness without silent self-update.
 
-None of the above is implemented yet. Milestones 8–10 built the desktop foundation, the frozen blueprint, and the migrated shell these will sit on; the blueprint already reserves each capability's place. Milestone 11 begins implementing this scope.
+Milestone 11 implements Quick Capture/Inbox, Global Search, Task Notes, one-level Checklist items, richer recurrence, duration estimates, and Replan. Timeline/Time Blocking and desktop execution controls remain M12; the reflection/preservation and automatic-backup/update-awareness items remain M13.
 
 ## Explicit v1.0 Deferrals
 
@@ -100,10 +111,11 @@ Evidence: `desktop-spike/M8A-EVIDENCE.md` (shell feasibility) and `desktop-verif
 
 The desktop UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, subordinate to `ARCHITECTURE.md`, `ROADMAP.md`, and current domain semantics. Authority order: domain governance → Behavior & State Specification → HTML Interaction Blueprint → frozen PDF snapshot and visual reference.
 
-Milestone 10 implemented only the M10-active part of the target:
+Milestone 11 extends the migrated M10 composition:
 
-- **Navigation:** six destinations — Today, Plan (Floating, Calendar), Tasks (All tasks, Areas, Lifecycle, Rewards), Reflect (Daily Reflection, Meditations), Review, Settings (General, Appearance, Data & Backup).
-- **Staging (frozen Decision D4):** Inbox, Global Search, Quick Capture, Timeline, Replan, Notes, Checklist, Duration, Reminders, On This Day, automatic backup, update awareness, Notifications, Shortcuts, and About & Updates are absent, not disabled placeholders. A regression test asserts this.
+- **Navigation:** seven destinations — Today, Inbox, Plan (Floating, Calendar), Tasks (All tasks, Areas, Lifecycle, Rewards), Reflect (Daily Reflection, Meditations), Review, Settings (General, Appearance, Data & Backup).
+- **Global actions:** Search and Quick Capture are functional overlays rather than primary destinations. Task Detail adds Schedule, Checklist, Notes, Lifecycle, and History states while preserving read-first behavior and explicit Edit.
+- **Staging (frozen Decision D4):** Timeline, Reminders, On This Day, automatic backup, update awareness, Notifications, Shortcuts, and About & Updates remain absent, not disabled placeholders.
 - **Composition:** each surface owns its actions, named for what they create; there is no ambiguous global "+ New". Task Detail is read-first with an explicit Edit. Review's period presets sit in the workspace header. Settings uses an in-page category list. Daily Reflection is a single surface with an explicit Save.
 - **Deliberate deviations from blueprint values:** muted text and the primary-button fill are slightly deeper than the blueprint's colors, to meet WCAG AA text contrast (spec §14.5 outranks the visual reference). A full dark theme is defined because the product supports one, although the blueprint depicts only light. Over a personal background, the reading column gets a paper veil (spec §18).
 
@@ -138,9 +150,10 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - Dexie migrations and backup compatibility are implemented through version 6, unchanged by Milestone 8.
 - Milestone 8 desktop verification (Windows/MSVC, GitHub Actions, synthetic data): packaged-app smoke 53/53 checks passed (launch, all 10 existing screens, v6 backup restore/export round-trip, large-image import, bilingual switch, Meditation print/PDF page sizing and `.docx` OpenXML content, CSP/no-outbound-network, graceful-restart and forced-kill persistence, data-boundary location); NSIS installer/upgrade/data-retention smoke 17/17 checks passed (install, first launch, restart, same-identifier upgrade without orphaning IndexedDB, same-version reinstall, silent uninstall with data retention, reinstall re-attaching to kept data).
 - GitHub Actions now provides independent CI evidence for every subsequent change, with the risk routing described above.
-- Milestone 10 (local, synthetic data): TypeScript checking; 72 automated tests, including the end-to-end UI flow driven through the new workspace composition, a navigation-IA suite, and dialog focus/dismissal tests; production build. Every M10 surface was measured at 1280×820 and at the 900×600 minimum, in English and Chinese, with zero horizontal overflow. It was inspected in light and dark themes, over a personal background, and in the real Tauri window launched through `OPEN_DAILY_CANVAS_DEV.cmd`. Domain services, Dexie schema, backup format v6, and the Tauri adapter boundary are unchanged.
+- Milestone 10 (local, synthetic data): TypeScript checking; 72 automated tests, including the end-to-end UI flow driven through the new workspace composition, a navigation-IA suite, and dialog focus/dismissal tests; production build. Every M10 surface was measured at 1280×820 and at the 900×600 minimum, in English and Chinese, with zero horizontal overflow. It was inspected in light and dark themes, over a personal background, and in the real Tauri window launched through `OPEN_DAILY_CANVAS_DEV.cmd`. Domain services, Dexie schema, backup format v6, and the Tauri adapter boundary were unchanged at that historical milestone.
 - The packaged-app and installer smokes (`desktop-verify/`) drive the UI and were ported to the new workspace composition in M10-B. They had been stale since M10-A, because M10-A changed no desktop-routed path and CI never ran them. Screen coverage grew to 11 destinations, so the packaged-app smoke has 54 checks.
 - Milestone 10 final PR CI (run on the merged head of PR #4) and the independent post-merge CI run `35782091580` on `main` at `2730bbf` both passed in full: Classify, Core, Desktop (Windows/MSVC), and PR Gate all green, including the 54-check packaged-app smoke and the 17-check installer/upgrade smoke.
+- Milestone 11 local verification (synthetic data): TypeScript checking; 79/79 automated tests; production build; Windows/MSVC Tauri build; 56/56 packaged-app checks using an isolated WebView2 profile. Coverage includes schema/backup v7, v1-v6 migration, Inbox triage, approved Search sources and Inbox exclusion, recurrence boundaries, forward-only Replan, all 12 M11 desktop surfaces, bilingual operation, print/Word, restart persistence, and forced-kill durability. The smoke verifies that the real Daily Canvas profile metadata fingerprint is unchanged.
 
 ## Known Risks Entering v1.0
 
@@ -156,17 +169,17 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 
 ## Next Engineering Objective
 
-Start **Milestone 11: Capture and Task Enrichment** (Quick Capture / Inbox with explicit triage, Global Search, Task Notes, one-level Checklist items, richer recurrence, task duration estimates, explicit Replan). It has not started; no implementation work has begun.
+Start **Milestone 12: Timeline and Desktop Execution** only after the M11 PR is independently reviewed and merged. Scope: optional Day/Week Timeline, simple Time Blocks, local reminders, and the approved small shortcut set while preserving schedule semantics.
 
-## Repository State
+## Post-Merge Repository State
 
-- Branch: `main` at `2730bbf49e669db8a3022182dd72711ea8540fb7` (Milestone 10 delivered via PR #4 from `m10-desktop-ui-migration`)
+- Branch: `main` with the Milestone 11 merge commit (merge SHA assigned by GitHub); M11 started from verified baseline `98129cdae48b0441b4970d771d86a59c763eeca7`.
 - Current application version: `0.7.0`
-- Current Dexie schema and backup format: `v6`
-- Current implementation baseline: Milestone 7.1 (product) + Milestone 8 (desktop foundation) + Milestone 9 (frozen blueprint) + Milestone 10 (desktop UI migration)
+- Current Dexie schema and backup format: `v7`
+- Current implementation baseline: Milestone 7.1 + Milestone 8 desktop foundation + Milestone 9 frozen blueprint + Milestone 10 desktop UI migration + Milestone 11 capture/task enrichment
 - Desktop identifier: `io.github.peter-s-shi.dailycanvas`; packaged origin: `https://tauri.localhost` (both frozen)
 - Desktop build target: Windows/MSVC (`x86_64-pc-windows-msvc`), statically linked CRT
 - Local desktop development: `OPEN_DAILY_CANVAS_DEV.cmd` (requires Visual Studio Build Tools with the x64 MSVC toolset and a Windows SDK, the `stable-x86_64-pc-windows-msvc` Rust toolchain, Node.js, and pnpm)
-- v1.0 product scope: approved; Milestones 8, 9, and 10 complete (of 15); Milestone 11 next, not started
+- v1.0 product scope: approved; Milestones 8–11 complete (of 15); Milestone 12 next, not started
 - Feature Complete: not reached
 - Feature Freeze: inactive

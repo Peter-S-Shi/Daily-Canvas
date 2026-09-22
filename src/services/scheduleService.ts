@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, isAfter, isBefore, parseISO, startOfDay } from "date-fns";
+import { differenceInCalendarDays, differenceInCalendarWeeks, getDaysInMonth, isAfter, isBefore, parseISO, startOfDay, startOfWeek } from "date-fns";
 import type { Task } from "../types";
 
 export function isFixedOccurrenceOn(task: Task, date: Date): boolean {
@@ -12,6 +12,11 @@ export function isFixedOccurrenceOn(task: Task, date: Date): boolean {
     case "daily": return true;
     case "weekdays": return (recurrence.weekdays ?? []).includes(day.getDay());
     case "interval": return differenceInCalendarDays(day, start) % Math.max(1, recurrence.intervalDays ?? 1) === 0;
+    case "weeklyInterval": {
+      const weeks = differenceInCalendarWeeks(startOfWeek(day), startOfWeek(start));
+      return weeks % Math.max(1, recurrence.intervalWeeks ?? 1) === 0 && (recurrence.weekdays ?? []).includes(day.getDay());
+    }
+    case "monthlyDay": return day.getDate() === Math.min(Math.max(1, recurrence.dayOfMonth ?? 1), getDaysInMonth(day));
   }
 }
 

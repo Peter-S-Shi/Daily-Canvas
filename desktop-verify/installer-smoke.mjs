@@ -47,7 +47,7 @@ try {
   check("first launch: data folder is %LOCALAPPDATA%\\<identifier>", first.info.appLocalDataDir.toLowerCase() === dataRoot.toLowerCase(), first.info.appLocalDataDir);
   await clickText(app.cdp, "Start empty"); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 15000, "shell");
   await nav(app.cdp, "settings", "settingsData"); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
-  await app.cdp.setFiles('input[type=file][accept="application/json"]', [join(fixtureDir, "synthetic-v6-backup.json")]);
+  await app.cdp.setFiles('input[type=file][accept="application/json"]', [join(fixtureDir, "synthetic-v7-backup.json")]);
   await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 30000, "restore preview");
   const safety = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.restore-preview button')].find(b=>b.classList.contains('primary'));if(!b)return false;b.click();return true})()`, join(outDir, "safety.json"));
   check("seed: safety backup saved through the native dialog", safety.exists && safety.size > 0, `${safety.size} bytes`);

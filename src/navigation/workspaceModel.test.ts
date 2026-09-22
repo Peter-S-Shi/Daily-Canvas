@@ -2,15 +2,16 @@ import { describe, expect, it } from "vitest";
 import { calendarEvidenceFor, reflectionFor } from "./useWorkspaceNavigation";
 import { anchoredWorkspaces, primaryWorkspaces, workspaceOf, workspaces, type SectionId } from "./workspaceModel";
 
-describe("M10 workspace information architecture", () => {
-  it("exposes the M10-active primary destinations in blueprint order, with Settings anchored", () => {
-    expect(primaryWorkspaces.map((workspace) => workspace.id)).toEqual(["today", "plan", "tasks", "reflect", "review"]);
+describe("M11 workspace information architecture", () => {
+  it("exposes the M11-active primary destinations in blueprint order, with Settings anchored", () => {
+    expect(primaryWorkspaces.map((workspace) => workspace.id)).toEqual(["today", "inbox", "plan", "tasks", "reflect", "review"]);
     expect(anchoredWorkspaces.map((workspace) => workspace.id)).toEqual(["settings"]);
   });
 
-  it("keeps M11-M13 destinations out of the live navigation rather than disabling them", () => {
+  it("activates Inbox while keeping M12-M13 destinations out of live navigation", () => {
     const sections = workspaces.flatMap((workspace) => workspace.sections.map((section) => section.id as string));
-    for (const deferred of ["inbox", "search", "quickCapture", "timeline", "onThisDay", "notifications", "shortcuts", "aboutUpdates"]) {
+    expect(workspaceOf("inboxCaptures").id).toBe("inbox");
+    for (const deferred of ["timeline", "onThisDay", "notifications", "shortcuts", "aboutUpdates"]) {
       expect(workspaces.some((workspace) => workspace.id === deferred)).toBe(false);
       expect(sections).not.toContain(deferred);
     }

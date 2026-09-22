@@ -44,6 +44,14 @@ describe("Milestone 4 critical browser flow", () => {
     await click(await waitForButton("Start empty"));
     expect(button("New")).toBeTruthy();
 
+    await click(button("Quick Capture"));
+    await change(document.querySelector('#quick-capture-title + p')?.parentElement?.parentElement?.querySelector('input[maxlength="160"]') as HTMLInputElement || document.querySelector('input[maxlength="160"]') as HTMLInputElement, "Captured thought");
+    await click(button("Save to Inbox"));
+    expect(await db.inboxCaptures.filter((item) => item.title === "Captured thought").count()).toBe(1);
+    await click(button("Inbox"));
+    expect(document.querySelector(".inbox-list")?.textContent).toContain("Captured thought");
+    await click(button("Today"));
+
     await click(button("New"));
     await change(document.querySelector('input[required][maxlength="80"]') as HTMLInputElement, "Smoke-test habit");
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
@@ -96,7 +104,7 @@ describe("Milestone 4 critical browser flow", () => {
     await click(document.querySelector('.quota-card .round-check') as HTMLButtonElement);
 
     const backup = await createBackup();
-    expect(backup).toMatchObject({ version: 6 });
+    expect(backup).toMatchObject({ version: 7 });
     expect(backup.areas).toHaveLength(1);
     const task = (await db.tasks.toArray()).find((item) => item.title === "Smoke-test habit");
     await db.tasks.update(task!.id, { title: "Temporary change" });

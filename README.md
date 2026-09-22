@@ -2,7 +2,7 @@
 
 Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
 
-The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–7 (the product), Milestone 8 (a Tauri 2 Windows desktop foundation, verified with independent CI), Milestone 9 (a frozen desktop UI blueprint), and Milestone 10 (desktop UI migration) are complete. The application runs both browser-served and as a packaged Windows desktop app. The approved program **Daily Canvas v1.0.0** then adds the planning-to-execution feature set (Milestones 11–13), starting with Milestone 11.
+The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–11 are complete, including the Tauri 2 Windows desktop foundation, frozen desktop UI blueprint, desktop UI migration, and the first v1.0 capture/task-enrichment capabilities. The application runs both browser-served and as a packaged Windows desktop app. Milestone 12 is next.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
@@ -10,7 +10,7 @@ The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/Ind
 
 The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope, approved a larger v1.0 desktop program, and completed Milestone 8, its desktop foundation: Tauri 2 as the desktop shell, a frozen desktop identifier/origin, Dexie/IndexedDB retained unchanged, narrow desktop adapters for native concerns, a Windows/MSVC-authoritative build, and risk-scaled GitHub Actions CI. See `desktop-spike/M8A-EVIDENCE.md` and `desktop-verify/M8B-EVIDENCE.md` for the verification evidence.
 
-Completed work remains valid and is not being discarded. Milestone 9 froze the desktop information architecture and UI blueprint (`docs/m9-desktop-ui-blueprint/`). **Milestone 10: Desktop UI Migration** moved every existing surface onto it — six workspaces (Today, Plan, Tasks, Reflect, Review, Settings), a read-first Task Detail, and a light and dark desktop visual system — without changing product semantics or stored data. Milestone 10 passed independent exit review and merged into `main` via PR #4; Milestone 11 (Capture and Task Enrichment) is next and has not started.
+Completed work remains valid and is not being discarded. Milestone 9 froze the desktop information architecture and UI blueprint (`docs/m9-desktop-ui-blueprint/`), and Milestone 10 migrated the existing product onto it. **Milestone 11: Capture and Task Enrichment** adds Inbox/Quick Capture, local Global Search, Task Notes, one-level Checklist items, duration estimates, richer Habit/Avoidance recurrence, and forward-only Replan. Milestone 12 (Timeline and Desktop Execution) is next.
 
 See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
 
@@ -25,6 +25,10 @@ See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md]
 - Reorder Today's work without changing schedule semantics.
 - Distinguish completed, safe, lapsed, skipped, and unrecorded days.
 - Preserve the rule that missing data is never silently treated as success.
+- Capture unresolved thoughts into a distinct Inbox and explicitly triage them into real Task semantics.
+- Search Task titles/notes, Daily Reflections, Meditations, and Areas locally.
+- Add Task Notes, one-level Checklist items, and duration estimates without creating recursive subtasks or time tracking.
+- Use richer Habit/Avoidance recurrence and forward-looking Replan without rewriting history.
 
 ### Habit lifecycle
 
@@ -52,7 +56,7 @@ See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md]
 
 - Store product data locally in Dexie/IndexedDB.
 - Export and restore versioned JSON backups with migration and validation.
-- Preserve backup compatibility through format v6.
+- Preserve backup compatibility through format v7, including migration of supported v1-v6 backups.
 - Keep local appearance assets on-device.
 - Switch between English and Chinese, light/dark/system themes, week-start preferences, and reduced motion.
 

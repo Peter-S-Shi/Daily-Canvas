@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable, type Transaction } from "dexie";
-import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, JournalEntry, LegacyTask, MeditationEntry, MilestoneEvent, PausePeriod, Reward, Task, TaskLifecycle } from "./types";
+import type { AppSettings, AppearanceAsset, Area, CheckIn, DailyOrder, DailyReflection, EmotionDefinition, ExperienceLog, InboxCapture, JournalEntry, LegacyTask, MeditationEntry, MilestoneEvent, PausePeriod, ReplanEvent, Reward, Task, TaskLifecycle } from "./types";
 import { calculateTaskStats } from "./services/statisticsService";
 
 export const db = new Dexie("DailyCanvas") as Dexie & {
@@ -17,6 +17,8 @@ export const db = new Dexie("DailyCanvas") as Dexie & {
   appearanceAssets: EntityTable<AppearanceAsset, "id">;
   rewards: EntityTable<Reward, "id">;
   settings: EntityTable<AppSettings, "id">;
+  inboxCaptures: EntityTable<InboxCapture, "id">;
+  replanEvents: EntityTable<ReplanEvent, "id">;
 };
 
 export const storesV2 = {
@@ -46,6 +48,7 @@ export const storesV4 = {
 };
 export const storesV5 = { ...storesV4, taskLifecycles: "taskId, state, celebrationPending, updatedAt", pausePeriods: "id, taskId, startDate, endDate, type, createdAt", milestoneEvents: "id, taskId, date, type, sequence, createdAt" };
 export const storesV6 = { ...storesV5, meditationEntries: "id, sortOrder, createdAt, updatedAt" };
+export const storesV7 = { ...storesV6, inboxCaptures: "id, createdAt, updatedAt", replanEvents: "id, taskId, replannedAt" };
 const lifecycleTask = (task: Task) => task.kind !== "task" && task.schedule.mode !== "floating";
 const migratedLifecycle = (task: Task, personalBest = 0, at = new Date().toISOString()): TaskLifecycle => ({ taskId: task.id, state: "building", milestoneSequence: 1, personalBest, celebrationPending: false, createdAt: at, updatedAt: at });
 
@@ -129,12 +132,18 @@ db.version(5).stores(storesV5).upgrade(upgradeDataToV5);
 
 export async function upgradeDataToV6(transaction: Transaction): Promise<void> {
   const settings = await transaction.table<AppSettings>("settings").get("app");
-  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 6 });
+  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 6 } as unknown as AppSettings);
 }
 db.version(6).stores(storesV6).upgrade(upgradeDataToV6);
 
+export async function upgradeDataToV7(transaction: Transaction): Promise<void> {
+  const settings = await transaction.table<AppSettings>("settings").get("app");
+  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 7 });
+}
+db.version(7).stores(storesV7).upgrade(upgradeDataToV7);
+
 export const defaultBackgroundPreferences = (): AppSettings["backgroundPreferences"] => (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
-export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 6, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
+export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 7, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
 
 export async function initializeDb(): Promise<void> {
   await db.open();

@@ -4,7 +4,7 @@
 
 Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-The current implementation is v0.7.0: the same React/Vite application and Dexie/IndexedDB domain model, now also packaged as a Tauri 2 Windows desktop application (Milestone 8) alongside its existing browser-served form. The v1.0 target adds the approved planning/execution and desktop-native capabilities (Milestones 9–13) on top of this accepted desktop foundation.
+The current implementation is v0.7.0 plus the completed Milestone 11 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. The v1.0 target adds the remaining approved planning/execution and desktop-native capabilities (Milestones 12–13) on top of this accepted foundation.
 
 The architecture supports five connected layers:
 
@@ -88,9 +88,9 @@ Timeline and Time Blocking help users who want clock-based planning, but they mu
 
 ---
 
-## 3. Current Persistent Model Through v0.7
+## 3. Current Persistent Model Through Milestone 11
 
-The current authoritative persistent model is Dexie schema / backup format v6.
+The current authoritative persistent model is Dexie schema / backup format v7.
 
 ```text
 Area
@@ -102,6 +102,12 @@ Area
        ├── PausePeriod[]
        ├── MilestoneEvent[]
        └── Reward[taskId?]
+       ├── notes
+       ├── estimatedMinutes
+       └── ChecklistItem[]
+
+InboxCapture[]
+ReplanEvent[taskId][]
 
 DailyOrder[date]
 
@@ -119,7 +125,7 @@ MeditationEntry
 
 Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, and backup/migration logic.
 
-Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations.
+Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations. Milestone 11 added separate unresolved Inbox captures, Task-owned enrichment fields, and append-only Replan events; Search remains derived.
 
 The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive hierarchy.
 
@@ -180,7 +186,7 @@ The following are understandable and were tested end to end (Windows/MSVC, GitHu
 - how browser-era v1–v6 backups migrate into a desktop install: unchanged from the existing `backupService` migration path (only v6 was driven end to end in M8; v1–v6 migration itself has its own unit tests, unaffected by the desktop shell);
 - automatic backups do not exist yet (Milestone 13); today, manual export/import through Settings is the same in the browser and the desktop build, routed through the local-file adapter.
 
-### 4.6 Desktop UI Composition — Established Baseline (M9 blueprint, M10 migration)
+### 4.6 Desktop UI Composition — Established Baseline (M9 blueprint, M10 migration, M11 activation)
 
 The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, which is subordinate to this document and `ROADMAP.md`. Milestone 10 completed the migration onto that blueprint and established the seams that later milestones extend. Each is presentation-only, and none owns product semantics:
 
@@ -189,7 +195,7 @@ The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, wh
 - **Header slots** (`src/components/shell/WorkspaceHeader.tsx`): a surface portals its own controls (for example, Review's period presets) and its own primary action into the workspace header. Actions are therefore named for the surface that owns them; there is no global creation action.
 - **Dialog** (`src/components/Dialog.tsx`): every modal is named, focus-managed, and dismissible with Escape only when that is safe. Decisions such as milestone choices cannot be dismissed implicitly.
 
-Components continue to call the existing domain services; none of these seams stores or derives product data. No Milestone 11 capability (Inbox, Search, Task Notes, Checklist, duration estimates, or Replan) is implemented yet — Milestone 10 only established the seams they will extend.
+Components continue to call domain services; presentation seams do not own product semantics. Milestone 11 activated Inbox, Search, Quick Capture, Task Notes, Checklist, duration estimates, richer recurrence, and Replan through those established seams. Timeline, reminders, shortcuts, On This Day, automatic backup, and update awareness remain absent until their milestones.
 
 ---
 
@@ -425,7 +431,7 @@ Global Search and On This Day may surface Meditations only if the approved produ
 
 The manual backup payload remains versioned and portable.
 
-Current v6 includes Areas, Tasks, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings.
+Current v7 includes Areas, enriched Tasks, unresolved Inbox captures, Replan events, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings. Restore migrates supported v1-v6 backups in memory before transactional replacement.
 
 Restore remains:
 

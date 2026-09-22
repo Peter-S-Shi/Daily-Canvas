@@ -1,8 +1,9 @@
 import type { BackgroundSlot } from "../types";
 
-export type WorkspaceId = "today" | "plan" | "tasks" | "reflect" | "review" | "settings";
+export type WorkspaceId = "today" | "inbox" | "plan" | "tasks" | "reflect" | "review" | "settings";
 export type SectionId =
   | "todayExecution"
+  | "inboxCaptures"
   | "floating"
   | "calendar"
   | "allTasks"
@@ -22,7 +23,7 @@ export interface WorkspaceSection {
   backgroundSlot?: BackgroundSlot;
 }
 
-export type WorkspaceIcon = "today" | "plan" | "tasks" | "reflect" | "review" | "settings";
+export type WorkspaceIcon = "today" | "inbox" | "plan" | "tasks" | "reflect" | "review" | "settings";
 
 export interface Workspace {
   id: WorkspaceId;
@@ -35,17 +36,18 @@ export interface Workspace {
 }
 
 /**
- * The M10-active subset of the frozen M9 target information architecture
+ * The M11-active subset of the frozen M9 target information architecture
  * (`docs/m9-desktop-ui-blueprint/`, behavior spec Appendix A).
  *
- * Inbox, Global Search, Quick Capture, Timeline, On This Day, Notifications,
- * Shortcuts, and About & Updates belong to M11-M13. Frozen Decision D4 requires
+ * Timeline, On This Day, Notifications, Shortcuts, and About & Updates belong
+ * to M12-M13. Frozen Decision D4 requires
  * that a destination appear only once it is real and usable, so they are absent
  * here rather than rendered as disabled placeholders: adding one later means
  * adding its entry below in the same change that makes it work.
  */
 export const workspaces: Workspace[] = [
   { id: "today", labelKey: "today", icon: "today", sections: [{ id: "todayExecution", labelKey: "today", backgroundSlot: "today" }] },
+  { id: "inbox", labelKey: "inbox", icon: "inbox", sections: [{ id: "inboxCaptures", labelKey: "inbox" }] },
   { id: "plan", labelKey: "plan", icon: "plan", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }] },
   { id: "tasks", labelKey: "ws_tasks", icon: "tasks", sections: [{ id: "allTasks", labelKey: "allTasks" }, { id: "areas", labelKey: "areas" }, { id: "lifecycle", labelKey: "lifecycle" }, { id: "rewards", labelKey: "rewards" }] },
   { id: "reflect", labelKey: "ws_reflect", icon: "reflect", sections: [{ id: "dailyReflection", labelKey: "dailyReflection", backgroundSlot: "reflection" }, { id: "meditations", labelKey: "meditations" }] },

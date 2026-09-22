@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
 import { getQuotaPeriod, getQuotaProgress } from "../services/quotaService";
@@ -14,14 +14,16 @@ interface TasksViewProps {
   onEditTask: (task: Task) => void;
   onInspectDate: (date: string) => void;
   onOpenLifecycle: () => void;
+  selectedAreaId?: string;
 }
 
-export function TasksView({ selectedTaskId, onSelectTask, onCreateTask, onEditTask, onInspectDate, onOpenLifecycle }: TasksViewProps) {
+export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCreateTask, onEditTask, onInspectDate, onOpenLifecycle }: TasksViewProps) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<"all" | "starred" | "archived">("all");
   const [query, setQuery] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [scheduleFilter, setScheduleFilter] = useState("");
+  useEffect(() => { if (selectedAreaId) setAreaFilter(selectedAreaId); }, [selectedAreaId]);
   const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
   const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? [];

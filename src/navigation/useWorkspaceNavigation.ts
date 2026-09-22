@@ -8,6 +8,8 @@ export interface NavigationTarget {
   section: SectionId;
   date?: string;
   taskId?: string;
+  areaId?: string;
+  meditationId?: string;
 }
 
 export interface WorkspaceNavigation {
@@ -17,6 +19,8 @@ export interface WorkspaceNavigation {
   calendarDate: string;
   reflectionDate: string;
   selectedTaskId: string;
+  selectedAreaId: string;
+  selectedMeditationId: string;
   openWorkspace: (id: WorkspaceId) => void;
   openSection: (id: SectionId) => void;
   navigate: (target: NavigationTarget) => void;
@@ -38,6 +42,8 @@ export function useWorkspaceNavigation(): WorkspaceNavigation {
   const [calendarDate, setCalendarDate] = useState(todayKey());
   const [reflectionDate, setReflectionDate] = useState(todayKey());
   const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [selectedAreaId, setSelectedAreaId] = useState("");
+  const [selectedMeditationId, setSelectedMeditationId] = useState("");
 
   const workspace = getWorkspace(workspaceId);
   const section = getSection(workspace, sectionMemory[workspaceId] ?? workspace.sections[0].id);
@@ -54,11 +60,13 @@ export function useWorkspaceNavigation(): WorkspaceNavigation {
     if (target.date && target.section === "calendar") setCalendarDate(target.date);
     if (target.date && target.section === "dailyReflection") setReflectionDate(target.date);
     if (target.taskId && target.section === "allTasks") setSelectedTaskId(target.taskId);
+    if (target.areaId && target.section === "allTasks") setSelectedAreaId(target.areaId);
+    if (target.meditationId && target.section === "meditations") setSelectedMeditationId(target.meditationId);
     openSection(target.section);
   }, [openSection]);
 
   return useMemo(
-    () => ({ workspace, section, backgroundSlot: section.backgroundSlot ?? "app", calendarDate, reflectionDate, selectedTaskId, openWorkspace, openSection, navigate, selectTask: setSelectedTaskId }),
-    [workspace, section, calendarDate, reflectionDate, selectedTaskId, openWorkspace, openSection, navigate],
+    () => ({ workspace, section, backgroundSlot: section.backgroundSlot ?? "app", calendarDate, reflectionDate, selectedTaskId, selectedAreaId, selectedMeditationId, openWorkspace, openSection, navigate, selectTask: setSelectedTaskId }),
+    [workspace, section, calendarDate, reflectionDate, selectedTaskId, selectedAreaId, selectedMeditationId, openWorkspace, openSection, navigate],
   );
 }

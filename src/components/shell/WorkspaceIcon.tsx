@@ -2,6 +2,7 @@ import type { WorkspaceIcon as IconName } from "../../navigation/workspaceModel"
 
 const paths: Record<IconName, React.ReactNode> = {
   today: <><circle cx="10" cy="10" r="3.4"/><path d="M10 2.2v2M10 15.8v2M2.2 10h2M15.8 10h2M4.5 4.5l1.4 1.4M14.1 14.1l1.4 1.4M4.5 15.5l1.4-1.4M14.1 5.9l1.4-1.4"/></>,
+  inbox: <><path d="M3 4h14v12H3z"/><path d="M3 11h4l1.5 2h3L13 11h4"/></>,
   plan: <><circle cx="10" cy="10" r="7.6"/><path d="M12.9 7.1l-1.6 4.2-4.2 1.6 1.6-4.2z"/></>,
   tasks: <><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M6.8 10.2l2.2 2.2 4.3-4.6"/></>,
   reflect: <><path d="M15.8 3.4c-4.9.4-8.6 3.9-9.4 9.2l-.6 4"/><path d="M6.4 12.6c3.2-.2 6.2-1.4 8-4.3M8.6 9.2l3.2-.2"/></>,
