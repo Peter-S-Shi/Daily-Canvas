@@ -2,15 +2,15 @@
 
 Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
 
-The current codebase is **v0.7.0**, a React/Vite browser-served application backed by Dexie/IndexedDB. Milestones 1–7 are complete. The next approved program is **Daily Canvas v1.0.0**, which will turn the product into a real desktop application while preserving the current local-first data model and expanding the planning-to-execution workflow.
+The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–7 (the product) and Milestone 8 (a Tauri 2 Windows desktop foundation, verified with independent CI) are complete. The application now runs both browser-served and as a packaged Windows desktop app. The approved program **Daily Canvas v1.0.0** continues by building the planning-to-execution feature set on top of that foundation (Milestones 9–13).
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Current development state
 
-The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope and approved a larger v1.0 desktop program.
+The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope, approved a larger v1.0 desktop program, and completed Milestone 8, its desktop foundation: Tauri 2 as the desktop shell, a frozen desktop identifier/origin, Dexie/IndexedDB retained unchanged, narrow desktop adapters for native concerns, a Windows/MSVC-authoritative build, and risk-scaled GitHub Actions CI. See `desktop-spike/M8A-EVIDENCE.md` and `desktop-verify/M8B-EVIDENCE.md` for the verification evidence.
 
-Completed work remains valid and is not being discarded. The v0.7 application is the engineering baseline for the desktop transition.
+Completed work remains valid and is not being discarded. The v0.7 application, now desktop-packaged, is the engineering baseline for the next milestone, **Milestone 9: Desktop Information Architecture and UI Blueprint**.
 
 See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
 
@@ -104,15 +104,15 @@ Area
 
 If a checklist item needs its own schedule, lifecycle, Area, quota, reward, or history, it should become a real Task rather than another recursive level.
 
-## Desktop transition principles
+## Desktop transition principles — resolved by Milestone 8
 
-The desktop program starts with a thin foundation rather than a rewrite.
+The desktop program started with a thin foundation rather than a rewrite. Milestone 8 answered each question below with evidence rather than assumption:
 
-- Preserve React, TypeScript, Vite, services, and existing domain semantics.
-- Preserve Dexie/IndexedDB initially; do not rewrite the database to SQLite without evidence that the desktop spike requires it.
-- Evaluate a lightweight desktop shell first, with an alternative retained if the feasibility spike exposes blockers.
-- Prove persistence, backup/restore, local document export, and upgrade safety before feature expansion.
-- Separate desktop-native adapters such as local files, notifications, and release awareness from domain services.
+- React, TypeScript, Vite, services, and existing domain semantics are preserved unchanged.
+- Dexie/IndexedDB is preserved; the feasibility spike found no evidence to justify a rewrite to SQLite.
+- **Tauri 2** was evaluated and accepted as the desktop shell. Desktop identifier `io.github.peter-s-shi.dailycanvas` and packaged origin `https://tauri.localhost` are now frozen.
+- Persistence (including forced process kill), backup/restore, local document export, and installer upgrade safety were proven on Windows/MSVC before any feature expansion begins.
+- Desktop-native adapters (local files, print) are separated from domain services behind `src/desktop/desktopAdapter.ts`; notification and release-awareness adapters follow in Milestones 12–13 as their features are built.
 
 ## UI transition principles
 

@@ -1,5 +1,18 @@
 # Development log
 
+## Milestone 8: Desktop Foundation and CI Guardrails
+
+### 2026-09-22 — Tauri 2 desktop foundation, frozen identity, and risk-scaled CI
+
+- Evaluated Tauri 2 against the existing React/Vite application (M8-A feasibility spike) and accepted it as the desktop shell; found no evidence to justify rewriting Dexie/IndexedDB to another engine, so storage stayed unchanged.
+- Froze the desktop identity before installer and persistence evidence made it costly to change: application identifier `io.github.peter-s-shi.dailycanvas` and packaged origin `https://tauri.localhost` (replacing the provisional M8-A identifier).
+- Added a thin desktop-adapter boundary (`src/desktop/desktopAdapter.ts` plus three narrow Rust commands: save-file dialog, print surface, data-location info) so domain services and the web UI never call shell APIs directly; web behavior (anchor download, `window.print()`) is unchanged in a plain browser, and no filesystem/shell/network capability is granted to the web layer.
+- Established Windows/MSVC (`x86_64-pc-windows-msvc`, statically linked CRT) as the authoritative desktop build, with an automated check that the shipped executable imports only OS-owned DLLs.
+- Enabled a current-user NSIS installer as a verification foundation (not release polish) and drove it end to end: install, first launch, restart, same-identifier upgrade without orphaning IndexedDB, same-version reinstall, silent uninstall (data currently retained by the NSIS default), and reinstall re-attaching to kept data.
+- Added risk-scaled GitHub Actions CI (`.github/workflows/ci.yml`) with a self-tested cheap path classifier and a fail-closed `PR Gate`: documentation-only changes install no toolchain; app changes run typecheck/tests/build; migration/backup changes add targeted regression; desktop/CI changes add the Windows/MSVC build, a packaged-app smoke run, and the installer/upgrade smoke run.
+- Verification result on Windows/MSVC in CI: packaged-app smoke 53/53 checks passed; installer/upgrade/data-retention smoke 17/17 checks passed. Full evidence: `desktop-spike/M8A-EVIDENCE.md` and `desktop-verify/M8B-EVIDENCE.md`.
+- Intentionally deferred to later hardening/RC milestones: code signing, updater infrastructure, installer branding/polish, an uninstall data-delete option, and a Windows-version build matrix. No v1.0 product feature was implemented in this milestone.
+
 ## Milestone 7.1: Print and backup contract corrections
 
 ### 2026-07-27 — Physical page size and Meditation restore validation

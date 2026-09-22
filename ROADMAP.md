@@ -164,7 +164,7 @@ These may be useful later but are intentionally outside v1.0:
 
 # v1.0 Milestone Sequence
 
-## Milestone 8: Desktop Foundation and CI Guardrails
+## Milestone 8: Desktop Foundation and CI Guardrails — Completed
 
 **Goal:** Prove that the existing v0.7 application can become a reliable desktop product without prematurely rewriting its data model or expanding feature scope.
 
@@ -211,6 +211,15 @@ Requirements:
 - The next milestone can design the desktop UI against a stable technical boundary.
 
 **Not included:** new v1.0 product features, broad UI redesign, cloud sync, final installer polish, or release-candidate packaging.
+
+### Completion evidence
+
+Delivered in two batches, both merged through PR #2 from branch `m8-desktop-foundation`:
+
+- **M8-A (feasibility spike):** Tauri 2 evaluated and accepted as the thin desktop shell around the unchanged React/Vite application. Dexie/IndexedDB retained; no evidence found to justify a storage rewrite. A narrow desktop-adapter boundary (`src/desktop/desktopAdapter.ts` + three Rust commands: save-file dialog, print surface, data-location info) replaced direct shell-API use, with no filesystem/shell/network capability granted to the web layer. Packaged-app smoke on a first build: 53/53 checks (launch, existing screens, v6 backup restore/export, restart and forced-kill persistence, Meditation print/PDF/Word paths, bilingual operation). Full detail: `desktop-spike/M8A-EVIDENCE.md`.
+- **M8-B (foundation consolidation):** froze the desktop identity — identifier `io.github.peter-s-shi.dailycanvas`, packaged origin `https://tauri.localhost` — before installer/persistence evidence made it costly to change. Established risk-scaled GitHub Actions (`.github/workflows/ci.yml`) with a self-tested cheap classifier and a fail-closed `PR Gate`. Windows/MSVC (`x86_64-pc-windows-msvc`, static CRT) proven as the authoritative build, with an automated check that the shipped executable has no unexpected runtime dependency. A current-user NSIS installer answered the foundation's install/upgrade/data-retention questions: 53/53 packaged-app checks and 17/17 installer/upgrade/data-retention checks passed on Windows/MSVC in CI, including a same-identifier upgrade that did not orphan IndexedDB and a silent uninstall/reinstall cycle. Full detail: `desktop-verify/M8B-EVIDENCE.md`.
+
+All five exit criteria above are met. Deferred to later milestones as planned: signing, updater infrastructure, installer branding/polish, and release-candidate packaging (Milestones 14–15); any v1.0 product feature (Milestones 9–13).
 
 ---
 
