@@ -1,5 +1,30 @@
 # Development log
 
+## Milestone 10: Desktop UI Migration — In review
+
+### 2026-09-22 — Workspace architecture (M10-A) and full UI migration (M10-B)
+
+- M10-A replaced the flat ten-view navigation with the M9 workspace architecture. There are six M10-active destinations, and their secondary sections are declared once in `src/navigation/workspaceModel.ts`. Context jumps go through named navigation targets. Accepted at Human Gate 1.
+- The HG1 repair fixed a persistent horizontal scrollbar at the 900×600 minimum. The personalized background layer is scaled 1.015 to hide blurred edges, and M10-A had moved it onto the new scroll container, turning its 0.75% bleed into scroll range. It now bleeds against a separate clipping frame.
+- Desktop development is durable. Vite no longer watches `src-tauri/**`, which removes Windows EBUSY during Cargo builds without polling. A new root launcher, `OPEN_DAILY_CANVAS_DEV.cmd`, discovers the Visual Studio Build Tools x64 environment, pins the MSVC Rust toolchain, and explains any missing toolchain.
+- M10-B migrated every M10-capable surface to the frozen blueprint's visual system:
+  - light and dark themes, serif display type, a dark sidebar with line icons, and a 78px workspace header with segmented tabs;
+  - surface-owned header actions replace the ambiguous global "+ New";
+  - Review's period presets move into the header, and Settings uses an in-page category list;
+  - Tasks is the blueprint's side-by-side, read-first master/detail;
+  - Daily Reflection is a single surface with an explicit Save;
+  - modals share an accessible dialog: named, Escape only when safe, focus trapped and restored.
+- Copy fixes: device wording replaces "this browser", and "Areas" replaces "Mainlines / Areas". Over a personal background, the reading column now gets a paper veil so text never sits directly on the image.
+- The packaged-app and installer smokes drive the UI and had been stale since M10-A, because CI's path routing never ran them. They were ported to the new composition using stable `data-workspace`/`data-section` hooks. The dev launcher now routes to the desktop CI tier.
+- Local verification: 72 automated tests; zero horizontal overflow on every surface at 1280×820 and 900×600, in English and Chinese; inspection of the real Tauri window. Domain services, Dexie schema, backup format v6, and the Tauri boundary are unchanged. M11–M13 capabilities are absent, not stubbed.
+
+## Milestone 9: Desktop Information Architecture and UI Blueprint — Completed
+
+### 2026-09-22 — Frozen desktop blueprint
+
+- Integrated the frozen artifact set in `docs/m9-desktop-ui-blueprint/`: Behavior & State Specification, HTML Interaction Blueprint, frozen PDF snapshot, selected visual reference, and manifest. The exit review found no blocking contradiction with domain governance.
+- Three wording errata were reconciled at M10 Human Gate 1, each recorded in the affected file; no product decision changed.
+
 ## Milestone 8: Desktop Foundation and CI Guardrails
 
 ### 2026-09-22 — Tauri 2 desktop foundation, frozen identity, and risk-scaled CI

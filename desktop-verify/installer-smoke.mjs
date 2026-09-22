@@ -9,7 +9,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, 
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { launchApp, closeApp, sleep } from "./cdp.mjs";
-import { identifier, dataRoot, sha, idbCounts, nav, clickText, saveVia, createReporter, wipeAppDataSafely } from "./lib.mjs";
+import { identifier, dataRoot, sha, idbCounts, nav, clickText, saveVia, createReporter, wipeAppDataSafely, SHELL } from "./lib.mjs";
 
 if (process.env.DC_INSTALLER_TEST !== "1") throw new Error("Refusing to install anything: set DC_INSTALLER_TEST=1 (this script installs/uninstalls the app for the current user).");
 const [installerA, installerB, fixtureDir, outDir] = process.argv.slice(2).map((p) => resolve(p));
@@ -45,8 +45,8 @@ try {
   const first = await snapshot(app);
   check("first launch: frozen origin and identifier", first.origin === "https://tauri.localhost" && first.info.identifier === identifier, `${first.origin} ${first.info.identifier} v${first.info.appVersion}`);
   check("first launch: data folder is %LOCALAPPDATA%\\<identifier>", first.info.appLocalDataDir.toLowerCase() === dataRoot.toLowerCase(), first.info.appLocalDataDir);
-  await clickText(app.cdp, "Start empty"); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 15000, "shell");
-  await nav(app.cdp, 9); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
+  await clickText(app.cdp, "Start empty"); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 15000, "shell");
+  await nav(app.cdp, "settings", "settingsData"); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
   await app.cdp.setFiles('input[type=file][accept="application/json"]', [join(fixtureDir, "synthetic-v6-backup.json")]);
   await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 30000, "restore preview");
   const safety = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.restore-preview button')].find(b=>b.classList.contains('primary'));if(!b)return false;b.click();return true})()`, join(outDir, "safety.json"));
@@ -60,7 +60,7 @@ try {
 
   // ---- 2. restart ----
   console.log("== Restart");
-  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 20000, "shell");
+  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 20000, "shell");
   let s = await snapshot(app);
   check("restart keeps all data", JSON.stringify(s.counts) === JSON.stringify(baseline.counts) && s.digest === baseline.digest);
   await closeApp(app); await settle();
@@ -68,7 +68,7 @@ try {
   // ---- 3. upgrade A -> B (same identifier, same directory) ----
   console.log("== Upgrade A -> B");
   check("installer B (newer test version) ran silently over A", install(installerB) === 0);
-  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 20000, "shell after upgrade");
+  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 20000, "shell after upgrade");
   s = await snapshot(app);
   check("upgrade changed the app version", s.info.appVersion !== first.info.appVersion, `${first.info.appVersion} -> ${s.info.appVersion}`);
   check("upgrade did not orphan IndexedDB (same identifier, same origin)", s.origin === "https://tauri.localhost" && s.info.identifier === identifier && JSON.stringify(s.counts) === JSON.stringify(baseline.counts) && s.digest === baseline.digest);
@@ -77,7 +77,7 @@ try {
   // ---- 4. same-version reinstall ----
   console.log("== Same-version reinstall");
   check("installer B re-ran over B", install(installerB) === 0);
-  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('.sidebar nav')`, 20000, "shell after reinstall");
+  ({ app } = await launchInstalled()); await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 20000, "shell after reinstall");
   s = await snapshot(app);
   check("same-version reinstall keeps all data", JSON.stringify(s.counts) === JSON.stringify(baseline.counts) && s.digest === baseline.digest);
   await closeApp(app); await settle();
@@ -93,7 +93,7 @@ try {
   mkdirSync(installDir, { recursive: true });
   check("installer B ran again after uninstall", install(installerB) === 0);
   ({ app } = await launchInstalled()); await sleep(2500);
-  const shellUp = await app.cdp.evaluate(`Boolean(document.querySelector('.sidebar nav'))`).catch(() => false);
+  const shellUp = await app.cdp.evaluate(`Boolean(document.querySelector('${SHELL}'))`).catch(() => false);
   s = await snapshot(app);
   if (dataKept) check("reinstall after uninstall re-attaches to the kept data", shellUp && JSON.stringify(s.counts) === JSON.stringify(baseline.counts) && s.digest === baseline.digest);
   else check("reinstall after data-removing uninstall starts clean (no half-state)", !shellUp && s.counts.tasks === 0, JSON.stringify({ tasks: s.counts.tasks }));

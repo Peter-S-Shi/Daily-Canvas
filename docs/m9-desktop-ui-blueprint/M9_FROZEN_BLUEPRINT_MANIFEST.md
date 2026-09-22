@@ -42,6 +42,10 @@ M10 must not expose dead placeholders or pull M11-M13 feature implementation for
 - `docs/m9-desktop-ui-blueprint/behavior-spec/`
 - `docs/m9-desktop-ui-blueprint/html-blueprint/`
 - `docs/m9-desktop-ui-blueprint/frozen-pdf/`
-- `docs/m9-desktop-ui-blueprint/visual-exploration/selected/`
+- `docs/m9-desktop-ui-blueprint/visual-reference/`
 
-The remaining M9 work is repository integration, independent exit review, and governance/PR closeout — not additional product or visual design.
+## Status
+
+M9 is complete. The artifact set was integrated in PR #3 and accepted as the M10 implementation contract at M10 Human Gate 1. Any later change to these artifacts is an explicit errata or a new recorded decision, not remaining M9 work.
+
+Errata (2026-09-22, reconciled at M10 Human Gate 1): the visual-reference location above previously pointed to a pre-freeze working folder, and this section previously described integration and review as still outstanding. The Behavior & State Specification carries its own errata note. No product decision changed.

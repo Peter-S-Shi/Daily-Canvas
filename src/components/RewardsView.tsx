@@ -6,6 +6,7 @@ import { claimReward, createReward, deleteReward } from "../services/rewardServi
 import { todayKey } from "../lib/dates";
 import { calculateTaskStats } from "../services/statisticsService";
 import type { RewardTrigger } from "../types";
+import { HeaderActions } from "./shell/WorkspaceHeader";
 
 export function RewardsView() {
   const { t } = useTranslation();
@@ -42,44 +43,41 @@ export function RewardsView() {
   };
 
   return (
-    <div className="view-stack">
-      <section className="reward-hero">
-        <div><span className="eyebrow">{t("rewards")}</span><h1>{t("rewardTitle")}</h1><p>{t("rewardHint")}</p></div>
-        <button type="button" className="button light" onClick={() => setShowForm((value) => !value)}>＋ {t("addReward")}</button>
-      </section>
+    <div className="page page-narrow">
+      <HeaderActions><button type="button" className="button primary" onClick={() => setShowForm((value) => !value)} aria-expanded={showForm}>＋ {t("addReward")}</button></HeaderActions>
+      <div className="page-intro"><h2 className="page-title">{t("rewardTitle")}</h2><p className="muted">{t("rewardHint")}</p></div>
       {showForm && (
-        <section className="panel reward-form-card">
-          <form className="reward-form" onSubmit={save}>
-            <label className="field"><span>{t("rewardName")}</span><input required maxLength={80} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-            <label className="field"><span>{t("trigger")}</span><select value={trigger} onChange={(event) => setTrigger(event.target.value as RewardTrigger)}><option value="streak">{t("onStreak")}</option><option value="date">{t("onDate")}</option></select></label>
-            {trigger === "date" ? (
-              <label className="field"><span>{t("onDate")}</span><input type="date" required value={rewardDate} onChange={(event) => setRewardDate(event.target.value)} /></label>
-            ) : (
-              <>
-                <label className="field"><span>{t("relatedTask")}</span><select required value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="" disabled>{t("relatedTask")}</option>{tasks.filter((task) => !task.archived).map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
-                <label className="field"><span>{t("targetDays")}</span><input type="number" min="1" max="999" value={streakDays} onChange={(event) => setStreakDays(Number(event.target.value))} /></label>
-              </>
-            )}
-            <div className="form-actions"><button className="button secondary" type="button" onClick={() => setShowForm(false)}>{t("cancel")}</button><button className="button primary" type="submit">{t("save")}</button></div>
-          </form>
-        </section>
+        <form className="panel reward-form" onSubmit={save} aria-label={t("addReward")}>
+          <label className="field"><span>{t("rewardName")}</span><input autoFocus required maxLength={80} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+          <label className="field"><span>{t("trigger")}</span><select value={trigger} onChange={(event) => setTrigger(event.target.value as RewardTrigger)}><option value="streak">{t("onStreak")}</option><option value="date">{t("onDate")}</option></select></label>
+          {trigger === "date" ? (
+            <label className="field"><span>{t("onDate")}</span><input type="date" required value={rewardDate} onChange={(event) => setRewardDate(event.target.value)} /></label>
+          ) : (
+            <>
+              <label className="field"><span>{t("relatedTask")}</span><select required value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="" disabled>{t("relatedTask")}</option>{tasks.filter((task) => !task.archived).map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
+              <label className="field"><span>{t("targetDays")}</span><input type="number" min="1" max="999" value={streakDays} onChange={(event) => setStreakDays(Number(event.target.value))} /></label>
+            </>
+          )}
+          <div className="form-actions field-wide"><button className="button secondary" type="button" onClick={() => setShowForm(false)}>{t("cancel")}</button><button className="button primary" type="submit">{t("save")}</button></div>
+        </form>
       )}
-      <section className="reward-grid">
-        {rewards.length === 0 ? <div className="panel empty-state"><span>✦</span><p>{t("noRewards")}</p></div> : rewards.map((reward) => {
+      {rewards.length === 0 ? <div className="empty-state"><p>{t("noRewards")}</p></div> : <div className="reward-grid">
+        {rewards.map((reward) => {
           const unlocked = isUnlocked(reward);
           const task = tasks.find((item) => item.id === reward.taskId);
           return (
-            <article key={reward.id} className={`reward-card ${unlocked ? "unlocked" : ""}`}>
-              <div className="gift-mark">✦</div>
-              <div><span className="eyebrow">{reward.claimedAt ? t("claimed") : unlocked ? t("rewardUnlocked") : t("locked")}</span><h3>{reward.title}</h3><p>{reward.trigger === "date" ? reward.rewardDate : `${task?.title ?? ""} · ${reward.streakDays} ${t("days")}`}</p></div>
+            <article key={reward.id} className={`reward-card ${unlocked ? "unlocked" : ""} ${reward.claimedAt ? "claimed" : ""}`}>
+              <span className="pill">{reward.claimedAt ? t("claimed") : unlocked ? t("rewardUnlocked") : t("locked")}</span>
+              <h3>{reward.title}</h3>
+              <p className="muted small">{reward.trigger === "date" ? reward.rewardDate : `${task?.title ?? ""} · ${reward.streakDays} ${t("days")}`}</p>
               <div className="reward-actions">
-                {unlocked && !reward.claimedAt && <button type="button" className="button primary" onClick={() => claimReward(reward.id)}>{t("claim")}</button>}
-                <button type="button" className="icon-button" aria-label={t("delete")} onClick={() => globalThis.confirm(t("rewardDeleteConfirm")) && deleteReward(reward.id)}>×</button>
+                {unlocked && !reward.claimedAt ? <button type="button" className="button primary compact" onClick={() => claimReward(reward.id)}>{t("claim")}</button> : <span/>}
+                <button type="button" className="button text-button danger-text" onClick={() => globalThis.confirm(t("rewardDeleteConfirm")) && deleteReward(reward.id)}>{t("delete")}</button>
               </div>
             </article>
           );
         })}
-      </section>
+      </div>}
     </div>
   );
 }

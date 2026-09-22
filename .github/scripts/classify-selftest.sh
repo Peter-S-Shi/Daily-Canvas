@@ -24,6 +24,7 @@ expect "rust shell"             "false true false true"   src-tauri/src/lib.rs
 expect "tauri config"           "false true false true"   src-tauri/tauri.conf.json
 expect "desktop adapter"        "false true false true"   src/desktop/desktopAdapter.ts
 expect "verification tooling"   "false true false true"   desktop-verify/desktop-smoke.mjs
+expect "desktop dev launcher"   "false true false true"   OPEN_DAILY_CANVAS_DEV.cmd
 expect "workflow change"        "false true false true"   .github/workflows/ci.yml
 expect "dependency manifest"    "false true false true"   pnpm-lock.yaml
 expect "unknown path is app"    "false true false false"  some/new/thing.bin

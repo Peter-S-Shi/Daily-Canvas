@@ -223,7 +223,7 @@ All five exit criteria above are met. Deferred to later milestones as planned: s
 
 ---
 
-## Milestone 9: Desktop Information Architecture and UI Blueprint
+## Milestone 9: Desktop Information Architecture and UI Blueprint — Completed
 
 **Goal:** Freeze the desktop product structure and visual/interaction contract before broad UI implementation.
 
@@ -248,22 +248,13 @@ All five exit criteria above are met. Deferred to later milestones as planned: s
 
 **Not included:** broad implementation of the redesigned desktop UI.
 
-### Blueprint status — pending independent review
+### Completion evidence
 
-A frozen artifact set has been produced and integrated at
-`docs/m9-desktop-ui-blueprint/`: the Behavior & State Specification, the
-HTML Interaction Blueprint, the frozen PDF snapshot, the selected visual
-reference, and `M9_FROZEN_BLUEPRINT_MANIFEST.md`. An exit review against
-`ARCHITECTURE.md`, `ROADMAP.md`, and current domain semantics found no
-blocking contradiction: the seven-destination navigation, the Fixed /
-Floating / Quota / Avoidance / Lifecycle / Reflection / Review boundaries,
-and the Task Schedule / Time Block distinction are preserved, and the
-M10–M13 staging boundary is explicit in the spec's Section 19 and
-Resolved Decision Register.
+The frozen artifact set is in `docs/m9-desktop-ui-blueprint/`, integrated through PR #3. It contains the Behavior & State Specification, the HTML Interaction Blueprint, the frozen PDF snapshot, the selected visual reference, and `M9_FROZEN_BLUEPRINT_MANIFEST.md`.
 
-Milestone 9 is **not yet marked complete**. This blueprint is an approved
-input awaiting independent final review before governance documents are
-updated to reflect completion.
+- The exit review found no blocking contradiction with domain governance. Preserved: the seven-destination target navigation; the Fixed / Floating / Quota / Avoidance / Lifecycle / Reflection / Review boundaries; and the Task Schedule / Time Block distinction.
+- The M10–M13 staging boundary is explicit in spec §19 and the Resolved Decision Register (D1–D4).
+- Three wording errata were reconciled at M10 Human Gate 1, and each file records them: a stale visual-reference filename; §7.5 describing Avoidance Time Block eligibility as open when Decision D2 had frozen it; and the manifest's stale path and "remaining work" text. No product decision changed.
 
 ---
 
@@ -283,6 +274,19 @@ updated to reflect completion.
 - All Milestones 1–7 workflows remain reachable and semantically unchanged unless the approved blueprint explicitly changes presentation only.
 - No data-model migration is introduced solely for visual redesign.
 - The application can proceed to new feature work without another major shell rewrite.
+
+### Status — in progress: implementation complete, awaiting Exit Review
+
+Work is on branch `m10-desktop-ui-migration` in Draft PR #4.
+
+- **M10-A — migration skeleton.** Replaced the flat ten-view navigation with the M9 workspace architecture, declared once in `src/navigation/workspaceModel.ts`. Accepted at Human Gate 1 after architecture review and human inspection of the real Tauri window.
+- **M10-B — full UI migration.** Every M10-capable surface now follows the blueprint's visual system and composition:
+  - shell, Today, Plan (Floating, Calendar), Tasks (read-first master/detail, Areas, Lifecycle, Rewards), Reflect (single-surface Daily Reflection, Meditations), Review, and Settings;
+  - the Task Editor and other modals, now on a shared accessible dialog;
+  - empty states and responsive behavior at 1280×820 and 900×600.
+- **Unchanged.** M11–M13 capabilities are absent rather than stubbed. Domain services, Dexie schema, backup format v6, and the Tauri boundary are unchanged.
+
+Milestone 10 is **not** complete until its Exit Review accepts it.
 
 ---
 

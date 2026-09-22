@@ -23,7 +23,7 @@ while IFS= read -r path; do
   docs_only=false
   case "$path" in
     # ---- CI / desktop shell / packaging ----
-    .github/workflows/*|.github/scripts/*|src-tauri/*|src/desktop/*|desktop-verify/*|start-daily-canvas.cmd)
+    .github/workflows/*|.github/scripts/*|src-tauri/*|src/desktop/*|desktop-verify/*|start-daily-canvas.cmd|OPEN_DAILY_CANVAS_DEV.cmd)
       desktop=true ;;
     # ---- shared dependency manifests affect both the web app and the shell ----
     package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
