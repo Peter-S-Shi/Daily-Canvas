@@ -248,6 +248,23 @@ All five exit criteria above are met. Deferred to later milestones as planned: s
 
 **Not included:** broad implementation of the redesigned desktop UI.
 
+### Blueprint status — pending independent review
+
+A frozen artifact set has been produced and integrated at
+`docs/m9-desktop-ui-blueprint/`: the Behavior & State Specification, the
+HTML Interaction Blueprint, the frozen PDF snapshot, the selected visual
+reference, and `M9_FROZEN_BLUEPRINT_MANIFEST.md`. An exit review against
+`ARCHITECTURE.md`, `ROADMAP.md`, and current domain semantics found no
+blocking contradiction: the seven-destination navigation, the Fixed /
+Floating / Quota / Avoidance / Lifecycle / Reflection / Review boundaries,
+and the Task Schedule / Time Block distinction are preserved, and the
+M10–M13 staging boundary is explicit in the spec's Section 19 and
+Resolved Decision Register.
+
+Milestone 9 is **not yet marked complete**. This blueprint is an approved
+input awaiting independent final review before governance documents are
+updated to reflect completion.
+
 ---
 
 ## Milestone 10: Desktop UI Migration
