@@ -4,7 +4,9 @@ import type { Task } from "../types";
 export function isFixedOccurrenceOn(task: Task, date: Date): boolean {
   if (task.archived || task.schedule.mode !== "fixed") return false;
   const day = startOfDay(date);
-  const start = startOfDay(parseISO(task.startDate));
+  const originalStart = startOfDay(parseISO(task.startDate));
+  const replanStart = task.replannedStartDate ? startOfDay(parseISO(task.replannedStartDate)) : undefined;
+  const start = replanStart && !isBefore(day, replanStart) ? replanStart : originalStart;
   if (isBefore(day, start) || (task.endDate && isAfter(day, startOfDay(parseISO(task.endDate))))) return false;
   const recurrence = task.schedule.recurrence;
   switch (recurrence.type) {

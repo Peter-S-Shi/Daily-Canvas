@@ -22,10 +22,11 @@ import { SearchDialog } from "./components/SearchDialog";
 import { db, initializeDb, resetDatabase } from "./db";
 import { calendarEvidenceFor, reflectionFor, taskDetailFor, useWorkspaceNavigation } from "./navigation/useWorkspaceNavigation";
 import { backgroundStyle } from "./services/appearanceService";
+import { deleteCapture } from "./services/inboxService";
 import { resumeExpiredPauses } from "./services/lifecycleService";
 import type { Schedule, SearchResult, Task } from "./types";
 
-type Editing = { task?: Task; mode?: Schedule["mode"] };
+type Editing = { task?: Task; mode?: Schedule["mode"]; initialTitle?: string; captureId?: string };
 
 export default function App() {
   const { t, i18n } = useTranslation();
@@ -56,7 +57,7 @@ export default function App() {
   return <>
     <DesktopShell navigation={navigation} onSearch={() => setSearching(true)} onQuickCapture={() => setQuickCapture(true)} shellStyle={backgroundStyle(appPreference, assets.find((item) => item.id === appPreference?.assetId))} contentStyle={backgroundStyle(sectionPreference, assets.find((item) => item.id === sectionPreference?.assetId))}>
       {section === "todayExecution" && <TodayView onCreateTask={() => createTask()} onOpenTask={openTask}/>}
-      {section === "inboxCaptures" && <InboxView/>}
+      {section === "inboxCaptures" && <InboxView onFullTask={(capture) => setEditing({ initialTitle: capture.title, captureId: capture.id })}/>}
       {section === "floating" && <FloatingView onCreateTask={() => createTask("floating")} onOpenTask={openTask}/>}
       {section === "calendar" && <CalendarView key={navigation.calendarDate} initialDate={navigation.calendarDate} weekStartsOn={settings.weekStartsOn} onOpenReflection={(date) => navigation.navigate(reflectionFor(date))}/>}
       {section === "allTasks" && <TasksView selectedTaskId={navigation.selectedTaskId} selectedAreaId={navigation.selectedAreaId} onSelectTask={navigation.selectTask} onCreateTask={() => createTask()} onEditTask={editTask} onInspectDate={(date) => navigation.navigate(calendarEvidenceFor(date))} onOpenLifecycle={() => navigation.openSection("lifecycle")}/>}
@@ -64,12 +65,12 @@ export default function App() {
       {section === "lifecycle" && <LifecycleView onEdit={editTask} onOpenTask={openTask}/>}
       {section === "rewards" && <RewardsView/>}
       {section === "dailyReflection" && <ReflectionView key={navigation.reflectionDate} initialDate={navigation.reflectionDate}/>}
-      {section === "meditations" && <MeditationsView/>}
+      {section === "meditations" && <MeditationsView selectedId={navigation.selectedMeditationId}/>}
       {section === "periodReview" && <ReviewView weekStartsOn={settings.weekStartsOn} onInspectDate={(date) => navigation.navigate(calendarEvidenceFor(date))}/>}
       {navigation.workspace.id === "settings" && <SettingsView settings={settings} section={section} nav={<SectionNav navigation={navigation} variant="list"/>}/>}
     </DesktopShell>
-    {editing && <TaskEditor task={editing.task} initialMode={editing.mode} onClose={() => setEditing(undefined)}/>}
-    {quickCapture && <QuickCaptureDialog onClose={() => setQuickCapture(false)} onFullTask={() => { setQuickCapture(false); createTask(); }}/>}
+    {editing && <TaskEditor task={editing.task} initialMode={editing.mode} initialTitle={editing.initialTitle} onSaved={async () => { if (editing.captureId) await deleteCapture(editing.captureId); }} onClose={() => setEditing(undefined)}/>}
+    {quickCapture && <QuickCaptureDialog onClose={() => setQuickCapture(false)} onFullTask={(title) => { setQuickCapture(false); setEditing({ initialTitle: title }); }}/>}
     {searching && <SearchDialog onClose={() => setSearching(false)} onSelect={selectSearchResult}/>}
     {pendingLifecycle && pendingTask && <MilestoneCelebration task={pendingTask} lifecycle={pendingLifecycle}/>}
   </>;

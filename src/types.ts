@@ -37,6 +37,7 @@ export interface Task {
   starred: boolean;
   archived: boolean;
   startDate: string;
+  replannedStartDate?: string;
   endDate?: string;
   schedule: Schedule;
   targetDays?: number;

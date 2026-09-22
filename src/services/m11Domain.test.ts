@@ -35,7 +35,7 @@ describe("Milestone 11 capture, search, and replan", () => {
     await db.checkIns.put({ id: "habit:2026-09-21", taskId: "habit", date: "2026-09-21", status: "skipped", updatedAt: "" });
     await replanTask("habit", "2026-09-23", "Move the next plan forward");
     expect(await db.checkIns.get("habit:2026-09-21")).toMatchObject({ status: "skipped" });
-    expect(await db.tasks.get("habit")).toMatchObject({ startDate: "2026-09-23" });
+    expect(await db.tasks.get("habit")).toMatchObject({ startDate: "2026-09-01", replannedStartDate: "2026-09-23" });
     expect(await db.replanEvents.where("taskId").equals("habit").first()).toMatchObject({ previousStartDate: "2026-09-01", nextStartDate: "2026-09-23" });
   });
 

@@ -12,7 +12,7 @@ export async function replanTask(taskId: string, nextStartDate: string, note?: s
     const replannedAt = new Date().toISOString();
     const event = { id: makeId(), taskId, replannedAt, previousStartDate: task.startDate, nextStartDate, note: note?.trim() || undefined };
     const schedule = task.schedule.mode === "floating" ? { ...task.schedule, availableFrom: nextStartDate } : task.schedule.mode === "quota" ? { ...task.schedule, availableFrom: nextStartDate } : task.schedule;
-    await db.tasks.update(taskId, { startDate: nextStartDate, schedule, updatedAt: replannedAt });
+    await db.tasks.update(taskId, { replannedStartDate: nextStartDate, schedule, updatedAt: replannedAt });
     await db.replanEvents.add(event);
     return event;
   });
