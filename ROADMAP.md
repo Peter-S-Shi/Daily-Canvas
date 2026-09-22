@@ -258,7 +258,7 @@ The frozen artifact set is in `docs/m9-desktop-ui-blueprint/`, integrated throug
 
 ---
 
-## Milestone 10: Desktop UI Migration
+## Milestone 10: Desktop UI Migration — Completed
 
 **Goal:** Implement the approved desktop information architecture and visual system while preserving all completed v0.7 behavior.
 
@@ -275,18 +275,21 @@ The frozen artifact set is in `docs/m9-desktop-ui-blueprint/`, integrated throug
 - No data-model migration is introduced solely for visual redesign.
 - The application can proceed to new feature work without another major shell rewrite.
 
-### Status — in progress: implementation complete, awaiting Exit Review
+### Completion evidence
 
-Work is on branch `m10-desktop-ui-migration` in Draft PR #4.
+Delivered through PR #4 from branch `m10-desktop-ui-migration`, merged into `main` at `2730bbf49e669db8a3022182dd72711ea8540fb7`.
 
 - **M10-A — migration skeleton.** Replaced the flat ten-view navigation with the M9 workspace architecture, declared once in `src/navigation/workspaceModel.ts`. Accepted at Human Gate 1 after architecture review and human inspection of the real Tauri window.
-- **M10-B — full UI migration.** Every M10-capable surface now follows the blueprint's visual system and composition:
+- **M10-B — full UI migration.** Every M10-capable surface followed the blueprint's visual system and composition:
   - shell, Today, Plan (Floating, Calendar), Tasks (read-first master/detail, Areas, Lifecycle, Rewards), Reflect (single-surface Daily Reflection, Meditations), Review, and Settings;
-  - the Task Editor and other modals, now on a shared accessible dialog;
-  - empty states and responsive behavior at 1280×820 and 900×600.
+  - the Task Editor and other modals, moved onto a shared accessible dialog;
+  - empty states and responsive behavior at 1280×820 and the 900×600 minimum, repairing an HG1-flagged horizontal-scroll defect at the minimum size;
+  - a durable local desktop dev launcher (`OPEN_DAILY_CANVAS_DEV.cmd`) so `pnpm desktop:dev` works reliably from a clean machine;
+  - reconciliation of three wording-only M9 governance errata (visual-reference path, §7.5/Decision D2 alignment, manifest path and status text) with no product decision changed.
+- **Verification.** 72/72 automated tests; full CI on the final PR head and again on the post-merge `main` commit, both green across Classify, Core, Desktop (Windows/MSVC), and PR Gate, including the 54-check packaged-app smoke and the 17-check installer/upgrade smoke.
 - **Unchanged.** M11–M13 capabilities are absent rather than stubbed. Domain services, Dexie schema, backup format v6, and the Tauri boundary are unchanged.
 
-Milestone 10 is **not** complete until its Exit Review accepts it.
+All exit criteria above are met.
 
 ---
 
