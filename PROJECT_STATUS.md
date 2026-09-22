@@ -158,6 +158,8 @@ Start **Milestone 9: Desktop Information Architecture and UI Blueprint**.
 
 Milestone 9 must freeze the desktop product structure and visual/interaction contract (navigation, surface responsibilities, wireframes, behavior specification, HTML blueprint, frozen PDF snapshot) before broad UI implementation begins in Milestone 10. It must not implement approved v1.0 product features or expand desktop-shell architecture.
 
+A frozen M9 blueprint artifact set has been integrated at `docs/m9-desktop-ui-blueprint/` on branch `m9-desktop-ui-blueprint` (Draft PR) and passed an exit review against this document, `ROADMAP.md`, and `ARCHITECTURE.md` with no blocking finding. Milestone 9 is **not yet marked complete**: this awaits independent final review before the post-merge governance rewrite.
+
 ## Repository State
 
 - Branch: `main` (Milestone 8 delivered via PR #2 from `m8-desktop-foundation`)
