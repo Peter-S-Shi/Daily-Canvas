@@ -3,7 +3,7 @@
 # name through UI Automation and presses the dialog's own Save button (the dialog itself decides directory + name).
 # No screen coordinates, no keystrokes, no other windows. The control layout differs between Windows client and
 # Server builds, so the Save button is located with progressively looser strategies and the tree is dumped on failure.
-param([Parameter(Mandatory)][int]$ProcessId, [Parameter(Mandatory)][string]$ExpectedDir, [int]$TimeoutSeconds = 20)
+param([Parameter(Mandatory)][int]$ProcessId, [Parameter(Mandatory)][string]$ExpectedDir, [string]$Extension = '', [int]$TimeoutSeconds = 20)
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type -TypeDefinition @"
 using System; using System.Text; using System.Runtime.InteropServices;
@@ -43,10 +43,12 @@ function Dump-Tree { foreach ($d in $dialog.FindAll([System.Windows.Automation.T
 $name = ''
 for ($i = 0; $i -lt 15 -and -not $name; $i++) {
   foreach ($d in $dialog.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::AutomationIdProperty, '1001')))) {
-    if ($d.Current.Name -match '\.[A-Za-z0-9]{2,5}$' -and $d.Current.Name -notmatch '^Address') { $name = $d.Current.Name; break }
+    # Windows Server hides known extensions in the dialog, so the shown name may lack '.json' / '.docx'
+    if ($d.Current.Name -and $d.Current.Name -notmatch '^Address') { $name = $d.Current.Name; break }
   }
   if (-not $name) { Start-Sleep -Milliseconds 200 }
 }
+if ($name -and $Extension -and -not $name.EndsWith(".$Extension")) { $name = "$name.$Extension" }
 Write-Output ("PREFILLED_NAME=" + $name)
 if (-not $name) { Write-Output "NO_NAME"; Dump-Tree; exit 7 }
 # Safety: never overwrite an existing file the app did not just create.

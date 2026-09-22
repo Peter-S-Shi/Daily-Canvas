@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { sleep } from "./cdp.mjs";
 
 export const here = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -37,7 +37,7 @@ export const ps = (script, ...args) => spawnSync("powershell", ["-NoProfile", "-
 export async function saveVia(app, clickExpr, target) {
   rmSync(target, { force: true });
   if (!(await app.cdp.evaluate(clickExpr))) throw new Error("trigger button not found");
-  const r = ps("native-save-dialog.ps1", "-ProcessId", String(app.pid), "-ExpectedDir", downloads);
+  const r = ps("native-save-dialog.ps1", "-ProcessId", String(app.pid), "-ExpectedDir", downloads, "-Extension", extname(target).slice(1));
   console.log("   dialog:", r.stdout.trim().split(/\s*[\r\n]+\s*/).join(" | "));
   const name = (r.stdout.match(/PREFILLED_NAME=(.*)/) ?? [])[1]?.trim(); const landed = name && join(downloads, name);
   for (let i = 0; i < 60 && !(landed && existsSync(landed)); i++) await sleep(250);
