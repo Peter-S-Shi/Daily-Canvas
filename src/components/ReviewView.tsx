@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
 import { buildReviewModel, isValidRange, rangeForPreset, reviewAsText, reviewSentences, type DateRange, type ReviewFilters, type ReviewPreset } from "../services/reviewService";
+import { exportReview } from "../services/exportService";
 import { HeaderControls } from "./shell/WorkspaceHeader";
 
 const presets: ReviewPreset[] = ["this-week", "last-week", "this-month", "last-month", "custom"];
@@ -15,12 +16,14 @@ export function ReviewView({ weekStartsOn, onInspectDate }: { weekStartsOn: 0 | 
   const [filters, setFilters] = useState<ReviewFilters>({});
   const [copied, setCopied] = useState(false);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const sources = useLiveQuery(async () => ({ tasks: await db.tasks.toArray(), areas: await db.areas.toArray(), checkIns: await db.checkIns.toArray(), reflections: await db.dailyReflections.toArray(), emotions: await db.emotionDefinitions.toArray(), experiences: await db.experienceLogs.toArray(), rewards: await db.rewards.toArray() }), []) ?? { tasks: [], areas: [], checkIns: [], reflections: [], emotions: [], experiences: [], rewards: [] };
   const valid = isValidRange(range);
   const model = useMemo(() => valid ? buildReviewModel(sources, range, filters, weekStartsOn) : null, [sources, range, filters, weekStartsOn, valid]);
   const language = i18n.language === "zh-CN" ? "zh-CN" : "en";
   const setShortcut = (next: ReviewPreset) => { setPreset(next); setShowAllEvidence(false); if (next !== "custom") setRange(rangeForPreset(next, new Date(), weekStartsOn)); };
   const copy = async () => { if (!model) return; await navigator.clipboard.writeText(reviewAsText(model, language)); setCopied(true); globalThis.setTimeout(() => setCopied(false), 1800); };
+  const exportMarkdown = async () => { if (!model) return; setExporting(true); try { await exportReview(model, filters, language, { areas: sources.areas, tasks: sources.tasks }); } finally { setExporting(false); } };
   const label = (date: string) => new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${date}T12:00:00`));
   const groups = model?.completionGroups ?? [];
   const shownGroups = showAllEvidence ? groups : groups.slice(0, evidencePreview);
@@ -40,6 +43,7 @@ export function ReviewView({ weekStartsOn, onInspectDate }: { weekStartsOn: 0 | 
           <select aria-label={t("taskKind")} value={filters.taskKind ?? ""} onChange={(event) => setFilters({ ...filters, taskKind: (event.target.value || undefined) as ReviewFilters["taskKind"] })}><option value="">{t("allTaskKinds")}</option><option value="task">{t("regularTask")}</option><option value="habit">{t("goodHabit")}</option><option value="avoidance">{t("avoidanceHabit")}</option></select>
           <select aria-label={t("scheduleType")} value={filters.scheduleMode ?? ""} onChange={(event) => setFilters({ ...filters, scheduleMode: (event.target.value || undefined) as ReviewFilters["scheduleMode"] })}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
           <button type="button" className="button secondary" onClick={copy} disabled={!model}>{t(copied ? "copied" : "copyReview")}</button>
+          <button type="button" className="button secondary" onClick={exportMarkdown} disabled={!model || exporting}>{exporting ? t("exporting") : t("exportReview")}</button>
         </div>
       </div>
       {!valid && <p className="error-message" role="alert">{t("invalidReviewRange")}</p>}

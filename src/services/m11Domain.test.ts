@@ -45,7 +45,7 @@ describe("Milestone 11 capture, search, and replan", () => {
     await db.tasks.put({ id: "task", title: "Enriched", notes: "Searchable notes", estimatedMinutes: 45, checklist: [{ id: "step", title: "First step", completed: true, createdAt: "created", updatedAt: "updated" }], kind: "habit", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "monthlyDay", dayOfMonth: 31 } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
     await replanTask("task", "2026-10-01", "Forward only");
     const backup = await createBackup();
-    expect(backup).toMatchObject({ version: 8, inboxCaptures: [{ id: capture.id }], tasks: [expect.objectContaining({ notes: "Searchable notes", estimatedMinutes: 45, checklist: [expect.objectContaining({ id: "step" })] })], replanEvents: [expect.objectContaining({ taskId: "task" })] });
+    expect(backup).toMatchObject({ version: 9, inboxCaptures: [{ id: capture.id }], tasks: [expect.objectContaining({ notes: "Searchable notes", estimatedMinutes: 45, checklist: [expect.objectContaining({ id: "step" })] })], replanEvents: [expect.objectContaining({ taskId: "task" })] });
     await db.inboxCaptures.clear(); await db.replanEvents.clear(); await db.tasks.clear();
     await restoreBackup(backup);
     expect(await db.inboxCaptures.get(capture.id)).toBeTruthy();

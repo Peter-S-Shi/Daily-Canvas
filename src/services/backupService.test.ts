@@ -22,11 +22,11 @@ describe("backup migration", () => {
   it("upgrades a version 1 backup into Areas and fixed schedules without mutating task identity", () => {
     const result = migrateBackup(v1);
     expect(result.migrated).toBe(true);
-    expect(result.payload.version).toBe(8);
+    expect(result.payload.version).toBe(9);
     expect(result.payload.timeBlocks).toEqual([]);
     expect(result.payload.tasks[0].title).toBe("Example");
     expect(result.payload.tasks[0]).toMatchObject({ id: "example-task", colorOverride: "#f4a261", schedule: { mode: "fixed", recurrence: { type: "daily" } } });
-    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 8, onboardingComplete: true });
+    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 9, onboardingComplete: true, autoBackupEnabled: true });
   });
 
   it("migrates shared categories to one editable Area and preserves its visual color", () => {
@@ -48,13 +48,24 @@ describe("backup migration", () => {
     expect(result.warnings.some((warning) => warning.includes("missing tasks"))).toBe(true);
   });
 
-  it("upgrades a version 7 backup to version 8 by adding an empty Time Block collection", () => {
+  it("upgrades a version 7 backup all the way to the current format, adding an empty Time Block collection along the way", () => {
     const v7 = { format: "daily-canvas-backup", version: 7, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [{ id: "app", dataVersion: 7, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }] };
     const result = migrateBackup(v7);
     expect(result.migrated).toBe(true);
-    expect(result.payload.version).toBe(8);
+    expect(result.payload.version).toBe(9);
     expect(result.payload.timeBlocks).toEqual([]);
-    expect(result.payload.settings[0].dataVersion).toBe(8);
+    expect(result.payload.settings[0].dataVersion).toBe(9);
+    expect(result.payload.settings[0].autoBackupEnabled).toBe(true);
+  });
+
+  it("upgrades a version 8 backup to version 9, defaulting autoBackupEnabled and preserving every v8 field (Milestone 13)", () => {
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [{ date: "2026-09-01", emotionIds: [], note: "kept", createdAt: "x", updatedAt: "x" }], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], timeBlocks: [], settings: [{ id: "app", dataVersion: 8, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }] };
+    const result = migrateBackup(v8);
+    expect(result.migrated).toBe(true);
+    expect(result.payload.version).toBe(9);
+    expect(result.payload.dailyReflections).toEqual([{ date: "2026-09-01", emotionIds: [], note: "kept", createdAt: "x", updatedAt: "x" }]);
+    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 9, autoBackupEnabled: true });
+    expect(result.warnings.some((warning) => warning.includes("Milestone 13"))).toBe(true);
   });
 
   it("rejects a v8 backup whose Time Block is off the 15-minute grid, instead of silently importing a domain-invalid placement", () => {
@@ -84,7 +95,7 @@ describe("backup migration", () => {
     const task = await saveTask({ title: "Write report", kind: "task", starred: false, archived: false, startDate: "2026-01-05", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
     const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 45, reminder: "10" });
     const backup = await createBackup();
-    expect(backup.version).toBe(8);
+    expect(backup.version).toBe(9);
     expect(backup.timeBlocks).toHaveLength(1);
     await db.delete(); await db.open(); await initializeDb();
     await restoreBackup(backup);

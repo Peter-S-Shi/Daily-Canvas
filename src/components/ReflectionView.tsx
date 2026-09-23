@@ -5,23 +5,28 @@ import { useTranslation } from "react-i18next";
 import { db } from "../db";
 import { toDateKey, todayKey } from "../lib/dates";
 import { createCustomEmotion, setEmotionArchived } from "../services/emotionService";
+import { exportReflection } from "../services/exportService";
 import { getPrompt, nextReflectionPrompt } from "../services/promptService";
 import { saveReflection } from "../services/reflectionService";
+import { getReflectionTemplate, REFLECTION_TEMPLATES } from "../services/reflectionTemplateService";
+import type { ReflectionTemplateId } from "../types";
 
 export function ReflectionView({ initialDate = todayKey() }: { initialDate?: string }) {
   const { t, i18n } = useTranslation();
   const [date, setDate] = useState(initialDate);
   const reflection = useLiveQuery(() => db.dailyReflections.get(date), [date], null);
   const emotions = useLiveQuery(() => db.emotionDefinitions.toArray(), []) ?? [];
-  const [emotionIds, setEmotionIds] = useState<string[]>([]); const [intensity, setIntensity] = useState<number>(); const [note, setNote] = useState(""); const [promptId, setPromptId] = useState<string>(); const [promptSkipped, setPromptSkipped] = useState(false); const promptRequested = useRef(false); const [custom, setCustom] = useState(""); const [addingCustom, setAddingCustom] = useState(false); const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  useEffect(() => { setEmotionIds(reflection?.emotionIds ?? []); setIntensity(reflection?.intensity); setNote(reflection?.note ?? ""); setPromptId(reflection?.promptId); }, [reflection, date]);
+  const [emotionIds, setEmotionIds] = useState<string[]>([]); const [intensity, setIntensity] = useState<number>(); const [note, setNote] = useState(""); const [promptId, setPromptId] = useState<string>(); const [promptSkipped, setPromptSkipped] = useState(false); const promptRequested = useRef(false); const [custom, setCustom] = useState(""); const [addingCustom, setAddingCustom] = useState(false); const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle"); const [templateId, setTemplateId] = useState<ReflectionTemplateId>("free"); const [exporting, setExporting] = useState(false);
+  useEffect(() => { setEmotionIds(reflection?.emotionIds ?? []); setIntensity(reflection?.intensity); setNote(reflection?.note ?? ""); setPromptId(reflection?.promptId); setTemplateId(reflection?.templateId ?? "free"); }, [reflection, date]);
   useEffect(() => { promptRequested.current = false; setPromptSkipped(false); setSaveState("idle"); }, [date]);
   useEffect(() => { if (reflection === undefined && !promptId && !promptSkipped && !promptRequested.current) { promptRequested.current = true; void nextReflectionPrompt().then((prompt) => setPromptId(prompt?.id)); } }, [reflection, promptId, promptSkipped]);
   const active = useMemo(() => emotions.filter((item) => !item.archived || emotionIds.includes(item.id)), [emotions, emotionIds]);
   const prompt = getPrompt(promptId);
   const label = (id: string) => { const emotion = emotions.find((item) => item.id === id); return emotion?.systemKey ? t(`emotion_${emotion.systemKey}`) : emotion?.label ?? id; };
   const toggle = (id: string) => { setEmotionIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]); setSaveState("idle"); };
-  const save = async () => { setSaveState("saving"); try { await saveReflection({ date, emotionIds, intensity, note, promptId: note || emotionIds.length ? promptId : undefined }); setSaveState("saved"); } catch { setSaveState("error"); } };
+  const save = async () => { setSaveState("saving"); try { await saveReflection({ date, emotionIds, intensity, note, promptId: note || emotionIds.length ? promptId : undefined, templateId }); setSaveState("saved"); } catch { setSaveState("error"); } };
+  const exportMarkdown = async () => { if (!reflection) return; setExporting(true); try { await exportReflection(reflection, i18n.language === "zh-CN" ? "zh-CN" : "en"); } finally { setExporting(false); } };
+  const template = getReflectionTemplate(templateId);
   const addCustom = async (event: React.FormEvent) => { event.preventDefault(); if (!custom.trim()) return; const emotion = await createCustomEmotion(custom); setEmotionIds((ids) => [...new Set([...ids, emotion.id])]); setCustom(""); setAddingCustom(false); };
   const shiftDate = (days: number) => setDate(toDateKey(addDays(parseISO(date), days)));
   const today = todayKey();
@@ -33,6 +38,16 @@ export function ReflectionView({ initialDate = todayKey() }: { initialDate?: str
         <button type="button" className="icon-button" onClick={() => shiftDate(1)} disabled={date >= today} aria-label={t("nextDay")}>›</button>
       </div>
       <label className="date-jump"><span>{t("date")}</span><input type="date" value={date} max={today} onChange={(event) => event.target.value && setDate(event.target.value)}/></label>
+
+      <div className="segmented-control" role="group" aria-label={t("reflectionTemplate")}>
+        {REFLECTION_TEMPLATES.map((item) => <button key={item.id} type="button" className={item.id === templateId ? "active" : ""} aria-pressed={item.id === templateId} onClick={() => { setTemplateId(item.id); setSaveState("idle"); }}>{t(item.labelKey)}</button>)}
+      </div>
+      {template.promptKeys.length > 0 && (
+        <ul className="reflection-template-prompts" aria-label={t(template.labelKey)}>
+          {template.promptKeys.map((key) => <li key={key}>{t(key)}</li>)}
+        </ul>
+      )}
+      <p className="settings-intro">{t("templatePromptsOptionalHint")}</p>
 
       <section className="emotion-section" aria-labelledby="emotion-heading">
         <p className="eyebrow centered" id="emotion-heading">{t("howAreYouFeeling")} <span className="eyebrow-note">{t("emotionMultiHint")}</span></p>
@@ -61,6 +76,7 @@ export function ReflectionView({ initialDate = todayKey() }: { initialDate?: str
       <textarea id="daily-journal" className="full-journal" value={note} onChange={(event) => { setNote(event.target.value); setSaveState("idle"); }} placeholder={t("journalFreeHint")}/>
       <div className="journal-actions">
         <button type="button" className="button primary" onClick={save} disabled={saveState === "saving"}>{t("saveReflection")}</button>
+        <button type="button" className="button secondary" onClick={exportMarkdown} disabled={!reflection || exporting}>{exporting ? t("exporting") : t("exportReflection")}</button>
         <span role="status" className={saveState === "error" ? "error-message" : "save-state"}>{saveState === "saving" ? t("saving") : saveState === "saved" ? t("reflectionSaved") : saveState === "error" ? t("saveError") : t("authoredExactly")}</span>
       </div>
     </div>

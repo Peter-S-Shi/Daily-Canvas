@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AreasManager } from "./components/AreasManager";
 import { CalendarView } from "./components/CalendarView";
@@ -7,6 +7,7 @@ import { FloatingView } from "./components/FloatingView";
 import { LifecycleView } from "./components/LifecycleView";
 import { MilestoneCelebration } from "./components/MilestoneCelebration";
 import { MeditationsView } from "./components/MeditationsView";
+import { OnThisDayView } from "./components/OnThisDayView";
 import { Onboarding } from "./components/Onboarding";
 import { ReflectionView } from "./components/ReflectionView";
 import { ReviewView } from "./components/ReviewView";
@@ -26,6 +27,7 @@ import { backgroundStyle } from "./services/appearanceService";
 import { deleteCapture } from "./services/inboxService";
 import { resumeExpiredPauses } from "./services/lifecycleService";
 import { catchUpMissedReminders, checkDueReminders } from "./services/reminderService";
+import { runAutoBackup } from "./services/autoBackupService";
 import { todayKey } from "./lib/dates";
 import type { Schedule, SearchResult, Task } from "./types";
 
@@ -49,6 +51,9 @@ export default function App() {
   useEffect(() => { initializeDb().then(resumeExpiredPauses).then(() => setStartup("ready")).catch((error: unknown) => { setStartupError(error instanceof Error ? error.message : String(error)); setStartup("error"); }); }, []);
   // Reminders are an in-app-only assistive feature: a notification failure must never affect local-data startup/recovery, so this is deliberately kept out of the initializeDb chain above (reminderService also catches its own errors).
   useEffect(() => { if (startup !== "ready") return; void catchUpMissedReminders(); const id = setInterval(() => { void checkDueReminders(); }, REMINDER_CHECK_INTERVAL_MS); return () => clearInterval(id); }, [startup]);
+  // Automatic Backup runs at most once per local day on successful startup. It never blocks startup and any failure is swallowed by runAutoBackup itself -- identical failure-isolation discipline to reminders above.
+  const autoBackupAttempted = useRef(false);
+  useEffect(() => { if (startup !== "ready" || !settings || autoBackupAttempted.current) return; autoBackupAttempted.current = true; void runAutoBackup({ settings }); }, [startup, settings]);
   /** Frozen desktop shortcut set (ROADMAP M12): Ctrl/Cmd+K Search, Ctrl/Cmd+Shift+K Quick Capture, Ctrl/Cmd+1 Today. Escape is handled locally by each Dialog. Guarded against editable targets so text editing is never hijacked. */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -85,6 +90,7 @@ export default function App() {
       {section === "lifecycle" && <LifecycleView onEdit={editTask} onOpenTask={openTask}/>}
       {section === "rewards" && <RewardsView/>}
       {section === "dailyReflection" && <ReflectionView key={navigation.reflectionDate} initialDate={navigation.reflectionDate}/>}
+      {section === "onThisDay" && <OnThisDayView onOpenReflection={(date) => navigation.navigate(reflectionFor(date))} onOpenMeditation={(id) => navigation.navigate({ section: "meditations", meditationId: id })}/>}
       {section === "meditations" && <MeditationsView selectedId={navigation.selectedMeditationId}/>}
       {section === "periodReview" && <ReviewView weekStartsOn={settings.weekStartsOn} onInspectDate={(date) => navigation.navigate(calendarEvidenceFor(date))}/>}
       {navigation.workspace.id === "settings" && <SettingsView settings={settings} section={section} nav={<SectionNav navigation={navigation} variant="list"/>}/>}

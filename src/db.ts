@@ -51,6 +51,7 @@ export const storesV5 = { ...storesV4, taskLifecycles: "taskId, state, celebrati
 export const storesV6 = { ...storesV5, meditationEntries: "id, sortOrder, createdAt, updatedAt" };
 export const storesV7 = { ...storesV6, inboxCaptures: "id, createdAt, updatedAt", replanEvents: "id, taskId, replannedAt" };
 export const storesV8 = { ...storesV7, timeBlocks: "id, taskId, date, [date+startMinutes], updatedAt" };
+export const storesV9 = storesV8;
 const lifecycleTask = (task: Task) => task.kind !== "task" && task.schedule.mode !== "floating";
 const migratedLifecycle = (task: Task, personalBest = 0, at = new Date().toISOString()): TaskLifecycle => ({ taskId: task.id, state: "building", milestoneSequence: 1, personalBest, celebrationPending: false, createdAt: at, updatedAt: at });
 
@@ -146,12 +147,22 @@ db.version(7).stores(storesV7).upgrade(upgradeDataToV7);
 
 export async function upgradeDataToV8(transaction: Transaction): Promise<void> {
   const settings = await transaction.table<AppSettings>("settings").get("app");
-  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 8 });
+  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 8 } as unknown as AppSettings);
 }
 db.version(8).stores(storesV8).upgrade(upgradeDataToV8);
 
+// Milestone 13: Reflection Templates (DailyReflection.templateId, additive) and Automatic Backup
+// (AppSettings.autoBackupEnabled/lastAutoBackupAt, additive) need no new table -- backup history is
+// derived by listing the app-owned backup directory, not stored in Dexie -- but the settings default
+// and the backup format's version marker still need this upgrade step, so the stores are unchanged.
+export async function upgradeDataToV9(transaction: Transaction): Promise<void> {
+  const settings = await transaction.table<AppSettings>("settings").get("app");
+  if (settings) await transaction.table<AppSettings>("settings").put({ ...settings, dataVersion: 9, autoBackupEnabled: (settings as Partial<AppSettings>).autoBackupEnabled ?? true } as AppSettings);
+}
+db.version(9).stores(storesV9).upgrade(upgradeDataToV9);
+
 export const defaultBackgroundPreferences = (): AppSettings["backgroundPreferences"] => (["app", "today", "calendar", "reflection"] as const).map((slot) => ({ slot, fit: "cover", position: "center", overlayOpacity: 0.48, blurPx: 0 }));
-export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 8, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences() });
+export const defaultSettings = (): AppSettings => ({ id: "app", dataVersion: 9, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: false, reflectionPromptsEnabled: true, backgroundPreferences: defaultBackgroundPreferences(), autoBackupEnabled: true });
 
 export async function initializeDb(): Promise<void> {
   await db.open();

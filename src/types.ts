@@ -78,7 +78,8 @@ export type MilestoneEventType = "target-reached" | "continued" | "maintenance" 
 export interface MilestoneEvent { id: string; taskId: string; date: string; type: MilestoneEventType; sequence: number; targetValue?: number; note?: string; createdAt: string }
 export interface DailyOrder { date: string; taskIds: string[] }
 export interface JournalEntry { date: string; content: string; updatedAt: string }
-export interface DailyReflection { date: string; emotionIds: string[]; intensity?: number; note: string; promptId?: string; createdAt: string; updatedAt: string }
+export type ReflectionTemplateId = "free" | "daily-checkin" | "gratitude";
+export interface DailyReflection { date: string; emotionIds: string[]; intensity?: number; note: string; promptId?: string; templateId?: ReflectionTemplateId; createdAt: string; updatedAt: string }
 export interface EmotionDefinition { id: string; label: string; normalizedLabel: string; systemKey?: string; isSystem: boolean; archived: boolean; createdAt: string; updatedAt: string }
 export type ExperienceComparison = "easier" | "similar" | "harder";
 export interface ExperienceLog { id: string; taskId: string; date: string; comparison?: ExperienceComparison; effort?: number; urgeIntensity?: number; note?: string; updatedAt: string }
@@ -88,10 +89,12 @@ export interface BackgroundPreference { slot: BackgroundSlot; assetId?: string; 
 export type RewardTrigger = "date" | "streak";
 export interface Reward { id: string; title: string; taskId?: string; trigger: RewardTrigger; rewardDate?: string; streakDays?: number; claimedAt?: string; createdAt: string }
 export interface MeditationEntry { id: string; content: string; sortOrder: number; createdAt: string; updatedAt: string }
+export type AutoBackupStatus = "success" | "failed";
+export interface AutoBackupRun { id: string; at: string; status: AutoBackupStatus; fileName: string; sizeBytes?: number; error?: string }
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 8;
+  dataVersion: 9;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
@@ -100,6 +103,8 @@ export interface AppSettings {
   reflectionPromptsEnabled: boolean;
   promptRotationState?: { remainingPromptIds: string[]; promptSetVersion: number };
   backgroundPreferences: BackgroundPreference[];
+  autoBackupEnabled: boolean;
+  lastAutoBackupAt?: string;
 }
 
 interface BackupBase<TTask, TSettings> {
@@ -120,11 +125,12 @@ export interface BackupPayloadV4 { format: "daily-canvas-backup"; version: 4; ex
 export interface BackupPayloadV5 { format: "daily-canvas-backup"; version: 5; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; taskLifecycles: TaskLifecycle[]; pausePeriods: PausePeriod[]; milestoneEvents: MilestoneEvent[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 5 }> }
 export interface BackupPayloadV6 extends Omit<BackupPayloadV5, "version" | "settings"> { version: 6; meditationEntries: MeditationEntry[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 6 }> }
 export interface BackupPayloadV7 extends Omit<BackupPayloadV6, "version" | "settings"> { version: 7; inboxCaptures: InboxCapture[]; replanEvents: ReplanEvent[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 7 }> }
-export interface BackupPayload extends Omit<BackupPayloadV7, "version" | "settings"> { version: 8; timeBlocks: TimeBlock[]; settings: AppSettings[] }
+export interface BackupPayloadV8 extends Omit<BackupPayloadV7, "version" | "settings"> { version: 8; timeBlocks: TimeBlock[]; settings: Array<Omit<AppSettings, "dataVersion" | "autoBackupEnabled" | "lastAutoBackupAt"> & { dataVersion: 8 }> }
+export interface BackupPayload extends Omit<BackupPayloadV8, "version" | "settings"> { version: 9; settings: AppSettings[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  sourceVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   migrated: boolean;
   warnings: string[];
   counts: { areas: number; tasks: number; inboxCaptures: number; replanEvents: number; timeBlocks: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; meditations: number; emotions: number; rewards: number; appearanceAssets: number };

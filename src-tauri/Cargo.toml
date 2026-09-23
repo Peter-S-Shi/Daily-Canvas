@@ -17,6 +17,8 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }
+tauri-plugin-http = "2.6.1"
+tauri-plugin-opener = "2.5.5"
 
 [profile.release]
 codegen-units = 1

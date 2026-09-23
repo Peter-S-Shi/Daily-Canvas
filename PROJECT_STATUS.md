@@ -1,16 +1,27 @@
 # Daily Canvas Project Status
 
-Status reviewed: 2026-09-22
+Status reviewed: 2026-09-23
 
 ## Current Phase
 
-**v1.0 Desktop Program — Milestone 12 Complete, Milestone 13 Next**
+**v1.0 Desktop Program — Milestone 13 Complete, v1.0 Feature Scope Fully Implemented**
 
 The previous v0.7 Feature Complete Gate was not accepted. Before Feature Freeze, the project intentionally reopened scope, approved the v1.0 feature boundary, and selected a migration-first desktop strategy. Milestone 8 delivered the Tauri 2 desktop foundation and CI guardrails; Milestone 9 froze the desktop information architecture and UI blueprint; Milestone 10 migrated the existing product onto that blueprint.
 
-Milestones 1–7 remain completed engineering history. Milestones 8–10 established the desktop foundation and frozen UI composition. Milestones 11–12 delivered the first v1.0 product and execution-planning capabilities while the package version remains v0.7.0 until release-version policy advances it.
+Milestones 1–7 remain completed engineering history. Milestones 8–10 established the desktop foundation and frozen UI composition. Milestones 11–13 delivered the full approved v1.0 product, execution-planning, reflection/preservation, and desktop-utility capability set, while the package version remains v0.7.0 until release-version policy advances it.
 
 ## Current Milestone
+
+**Milestone 13: Reflection, Preservation, and Desktop Utilities — Completed.**
+
+- Three lightweight Reflection Templates (Free Write, Daily Check-in, Gratitude & Perspective) live inside the existing Daily Reflection flow. Every prompt is skippable and never mandatory; prompt text is never written into the saved `note`; Free Write remains the default. `DailyReflection.templateId` is an additive optional field.
+- On This Day is a real destination inside Reflect: a read-only lens over Daily Reflections and Meditations matching the exact month+day from prior years only (never the current year), grouped by year with the most recent year first, each entry offering "Open original" navigation. It never mutates or duplicates a source record and produces no growth/emotion/analysis framing.
+- Local Reflection and Review export produce deterministic Markdown (`.md`) through the existing `saveBlob` native-Save-dialog seam; Review export carries the Review screen's current period/filter selection; neither mutates source data, and the Meditation print/PDF/Word pipeline is untouched.
+- Automatic Rotating Backup is enabled by default, runs at most once per local calendar day on successful startup (failure-isolated from startup, like M12 reminders), and is also exposed as "Back up now" in Settings → Data & Backup alongside the toggle, last-success time, location, and retained history. Backups write to a temp file and atomically rename into place, retain only the most recent 7, and prune only after a new backup is confirmed written. Restoring from a retained automatic backup reuses the exact manual restore pipeline (parse → validate/migrate → preview/warnings → safety backup → confirm → transactional restore). Four narrow native commands (`std::fs` only, no filesystem plugin) back this.
+- GitHub Release update awareness lives only in the new Settings → About & Updates page: it shows the installed version and checks only on page open or an explicit "Check for updates" click (never on a timer or at startup), through the scoped `tauri-plugin-http` (limited to the single GitHub Releases endpoint). States are Up to date / Update available (with "View Release" via the scoped `tauri-plugin-opener`) / Unable to check; network failure is non-blocking.
+- Dexie schema and backup format move v8 → v9. No new table was needed for `templateId` (additive optional field); v9 versions the new `AppSettings.autoBackupEnabled`/`lastAutoBackupAt` defaults and keeps the versioned-migration/backup-format pattern intact. v1-v8 backups migrate forward and every new field round-trips through backup.
+
+The v1.0 approved feature scope (Milestones 8–13) is now fully implemented. The next engineering milestone is **Milestone 14: Product Hardening and Full Regression**. It has not started.
 
 **Milestone 12: Timeline and Desktop Execution — Completed.**
 
@@ -22,8 +33,6 @@ Milestones 1–7 remain completed engineering history. Milestones 8–10 establi
 - Local, in-app-only reminders (frozen Off/At-start/5-60-minute grammar) belong to a Time Block; Task Detail can view/edit the reminder on a Task's upcoming blocks. A minimal `send_notification` Tauri command fires while the app is running, with a restrained, non-repeating startup catch-up for reminders missed while closed — no resident process, tray, or OS task scheduler was added.
 - The frozen small shortcut set is live (`Ctrl/Cmd+K` Search, `Ctrl/Cmd+Shift+K` Quick Capture, `Ctrl/Cmd+1` Today, `Escape`), guarded against editable targets; Settings → Shortcuts is a read-only cheat sheet with no customization.
 - Dexie schema and backup format move v7 → v8, adding the `timeBlocks` collection; v1-v7 backups migrate forward and every new field round-trips through backup.
-
-The next engineering milestone is **Milestone 13: Reflection, Preservation, and Desktop Utilities**. It has not started.
 
 **Milestone 11: Capture and Task Enrichment — Completed.**
 
@@ -122,12 +131,12 @@ Evidence: `desktop-spike/M8A-EVIDENCE.md` (shell feasibility) and `desktop-verif
 
 The desktop UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, subordinate to `ARCHITECTURE.md`, `ROADMAP.md`, and current domain semantics. Authority order: domain governance → Behavior & State Specification → HTML Interaction Blueprint → frozen PDF snapshot and visual reference.
 
-Milestone 12 extends the migrated M10/M11 composition:
+Milestone 13 extends the migrated M10/M11/M12 composition:
 
-- **Navigation:** seven destinations — Today, Inbox, Plan (Floating, Calendar, Timeline), Tasks (All tasks, Areas, Lifecycle, Rewards), Reflect (Daily Reflection, Meditations), Review, Settings (General, Appearance, Data & Backup, Shortcuts).
+- **Navigation:** seven workspaces — Today, Inbox, Plan (Floating, Calendar, Timeline), Tasks (All tasks, Areas, Lifecycle, Rewards), Reflect (Daily Reflection, On This Day, Meditations), Review, Settings (General, Appearance, Data & Backup, Shortcuts, About & Updates).
 - **Global actions:** Search and Quick Capture are functional overlays rather than primary destinations. Task Detail adds Schedule (now including a Task's upcoming Time Block reminders), Checklist, Notes, Lifecycle, and History states while preserving read-first behavior and explicit Edit.
-- **Staging (frozen Decision D4):** On This Day, automatic backup, update awareness, Notifications, and About & Updates remain absent, not disabled placeholders; Timeline, local reminders, and the fixed Shortcuts cheat sheet are live as of Milestone 12.
-- **Composition:** each surface owns its actions, named for what they create; there is no ambiguous global "+ New". Task Detail is read-first with an explicit Edit. Review's period presets sit in the workspace header. Settings uses an in-page category list. Daily Reflection is a single surface with an explicit Save. Every Time Block has a fully keyboard-accessible Date/Start/Duration/Reminder dialog; drag is an optional convenience, never the only entry point.
+- **Staging (frozen Decision D4):** On This Day and About & Updates are live real destinations as of Milestone 13, added in the same change that made each one genuinely usable; a general desktop Notifications surface (distinct from the M12 in-app Time Block reminders already live) remains out of scope and absent, not a disabled placeholder.
+- **Composition:** each surface owns its actions, named for what they create; there is no ambiguous global "+ New". Task Detail is read-first with an explicit Edit. Review's period presets sit in the workspace header, alongside its new Markdown export action. Settings uses an in-page category list. Daily Reflection is a single surface with an explicit Save, a template picker, and a Markdown export action. Every Time Block has a fully keyboard-accessible Date/Start/Duration/Reminder dialog; drag is an optional convenience, never the only entry point.
 - **Deliberate deviations from blueprint values:** muted text and the primary-button fill are slightly deeper than the blueprint's colors, to meet WCAG AA text contrast (spec §14.5 outranks the visual reference). A full dark theme is defined because the product supports one, although the blueprint depicts only light. Over a personal background, the reading column gets a paper veil (spec §18).
 
 ## CI and Branching Decision — Established by Milestone 8
@@ -148,15 +157,15 @@ The classifier routes the root dev launcher `OPEN_DAILY_CANVAS_DEV.cmd` to the d
 
 ## Feature Complete and Freeze Status
 
-**Feature Complete: not reached for v1.0.**
+**Feature Complete: implementation complete, Gate acceptance pending.** With Milestone 13 delivered, every approved v1.0 feature (`ROADMAP.md`, "v1.0 Approved Scope") is now implemented. The v1.0 Feature Complete Gate itself (ROADMAP.md, "Feature Complete Gate") requires an explicit, separately recorded acceptance decision; that acceptance has not yet been recorded, so this status intentionally does not declare Feature Complete reached.
 
 **Feature Freeze: not active.**
 
-Feature Freeze can begin only after the approved v1.0 scope is implemented and the new Feature Complete Gate is explicitly accepted. Milestones 8–10 were foundation, blueprint, and migration milestones, not product-feature milestones, so completing them does not change this.
+Feature Freeze can begin only after the v1.0 Feature Complete Gate is explicitly accepted and recorded in both `ROADMAP.md` and this document.
 
 ## Verification Status of Current Baseline
 
-- Milestone 12 is the latest completed **product-feature** baseline; Milestones 8–10 added the desktop foundation, frozen UI blueprint, and UI migration around the prior Milestone 7.1 baseline without changing product semantics.
+- Milestone 13 is the latest completed **product-feature** baseline; Milestones 8–10 added the desktop foundation, frozen UI blueprint, and UI migration around the prior Milestone 7.1 baseline without changing product semantics.
 - The v0.7 baseline passed TypeScript checking, 60 automated tests, production build, focused print checks, live print-dialog validation, and the earlier bilingual/OpenXML checks recorded in project history.
 - Dexie migrations and backup compatibility are implemented through version 6, unchanged by Milestone 8.
 - Milestone 8 desktop verification (Windows/MSVC, GitHub Actions, synthetic data): packaged-app smoke 53/53 checks passed (launch, all 10 existing screens, v6 backup restore/export round-trip, large-image import, bilingual switch, Meditation print/PDF page sizing and `.docx` OpenXML content, CSP/no-outbound-network, graceful-restart and forced-kill persistence, data-boundary location); NSIS installer/upgrade/data-retention smoke 17/17 checks passed (install, first launch, restart, same-identifier upgrade without orphaning IndexedDB, same-version reinstall, silent uninstall with data retention, reinstall re-attaching to kept data).
@@ -166,6 +175,8 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - Milestone 10 final PR CI (run on the merged head of PR #4) and the independent post-merge CI run `35782091580` on `main` at `2730bbf` both passed in full: Classify, Core, Desktop (Windows/MSVC), and PR Gate all green, including the 54-check packaged-app smoke and the 17-check installer/upgrade smoke.
 - Milestone 11 verification (synthetic data): TypeScript checking; 86/86 automated tests across 15 suites; production build; Windows/MSVC Tauri build; packaged-app smoke 58/58 checks passed using an isolated WebView2 profile; NSIS installer/upgrade/data-retention smoke 17/17 checks passed. Coverage includes schema/backup format v7, v1-v6 migration, Inbox triage, approved Search sources and Inbox exclusion, recurrence boundaries, forward-only Replan with anchor transition and gap semantics, active start tracking, all 12 M11 desktop surfaces, bilingual operation, print/Word, restart persistence, and forced-kill durability. The smoke verifies that the real Daily Canvas profile metadata fingerprint is unchanged. Remote GitHub Actions CI confirmed all tiers green (Classify, Core, Desktop Windows/MSVC, PR Gate).
 - Milestone 12 verification (synthetic data): TypeScript checking; 114/114 automated tests across 19 suites, including 15-minute-grid and overlap invariants (both in `createTimeBlock` and in v8 backup restore validation), Avoidance exclusion from Time Blocks, Available Work derivation, Replan `needsReview` flagging without history rewrite, restrained reminder catch-up and failure-isolation semantics, and full v1-v8 schema/backup migration and round-trip coverage; production build. `cargo check` and a release Windows/MSVC Tauri build pass locally with the `tauri-plugin-notification` dependency and its `notification:default` capability. A merge-readiness corrective pass fixed five confirmed seams before merge (Task-duration-estimate rounding onto the 15-minute grid, Day Timeline's full 00:00-24:00 domain, `reminderFiredAt` clearing on explicit Date/Start/Reminder edits, reminder-failure isolation from the local-data startup/recovery path, and hardened v8 restore validation). Manually verified in a live browser preview: creating/editing a Time Block including a 23:30-24:00 late-night block, overlap rejection, Week mode showing the same block correctly, the Today's Plan summary, Task Detail reminder editing, and the Settings Shortcuts cheat sheet, with zero console errors. The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop Windows/MSVC (70/70 packaged-app smoke checks including the v8 backup restore/export round-trip, the Plan/Timeline Day and Week modes, the Settings/Shortcuts screen, shortcut behavior, and the notification boundary; 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
+- Milestone 13 verification (synthetic data): TypeScript checking; 142/142 automated tests across 24 suites, including Reflection Template persistence and free-form primacy (`reflectionTemplateService.test.ts`), On This Day month/day/year selection and past-years-only/source restriction (`onThisDayService.test.ts`), deterministic Reflection/Review Markdown export (`exportService.test.ts`), backup rotation/retention/atomic-write-failure-isolation semantics (`autoBackupService.test.ts`), update-check version comparison and non-throwing network-failure handling (`updateCheckService.test.ts`), and full v1-v9 schema/backup migration and round-trip coverage extended in `backupService.test.ts`; production build. `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle --target x86_64-pc-windows-msvc`) both pass locally with the new `tauri-plugin-http` (scoped to the single GitHub Releases endpoint) and `tauri-plugin-opener` dependencies, version-pinned to match their npm counterparts. The extended packaged-app smoke (`desktop-verify/desktop-smoke.mjs`) passed 103/103 checks against the real release executable: Reflection Template selection/save and `templateId` round-trip plus its Markdown export; On This Day rendering two seeded historical records (dated 1 and 2 years before the real run date, so the check is correct on any run date) grouped by year with working "Open original" navigation; Review Markdown export; 9 real "Back up now" invocations exercising genuine 7-backup retention pruning through the native write/list/delete commands; a full restore from a retained automatic backup through the shared restore-preview/confirm pipeline; and About & Updates settling into a real (not mocked) "Unable to check" state against the live GitHub API, since this repository does not yet publish a stable Release, without affecting app startup or any other check. A genuine finding from this run -- Automatic Backup's files live in the real, shared `%LOCALAPPDATA%\<identifier>\backups` directory, which the packaged-app smoke's isolated WebView2 profile does not cover -- was fixed by having `desktop-smoke.mjs` take the same safe, marker-based, always-cleaned-up ownership of that directory that `installer-smoke.mjs` already used, in place of the now-inapplicable "byte-identical real profile" invariant.
+- Milestone 13 merge-readiness corrective pass (synthetic data, PR #9): fixed three independently-confirmed seams without changing the v9 schema/backup contract or any other M13 behavior. (1) On This Day derived a Meditation's calendar day by slicing its UTC `createdAt` ISO string instead of reusing `toDateKey` (the app's existing local-calendar-day convention), which misfiled evening entries into the next local day and, near a year boundary, the wrong year; fixed in `onThisDayService.ts`. (2) The native `list_auto_backups` Tauri command listed every `.json` file in the backup directory rather than only ones matching the app's own `daily-canvas-auto-backup-*` naming convention, so retention pruning could delete an unrelated file; `list_auto_backups`/`delete_auto_backup` in `src-tauri/src/lib.rs` are now scoped strictly to that namespace, with 4 new Rust unit tests. (3) Reflection Markdown export wrote the internal i18n key literal (e.g. `template_dailyCheckin`) instead of the resolved, current-language template name, and Review Markdown export's filter metadata could show a raw `areaId`/`taskId` instead of the Area/Task's name (or, if unresolvable, now omits that line entirely); fixed in `exportService.ts` (`reflectionToMarkdown`, `reviewToMarkdown`). Automated coverage grew to 146/146 TypeScript/Vitest tests across the same 24 suites, plus 4 new Rust unit tests (`src-tauri/src/lib.rs`, `cargo test --lib`); TypeScript checking and the production build both pass. `desktop-verify/desktop-smoke.mjs` was extended with a sentinel non-namespaced `.json` file placed directly in the real backup directory during the existing 9-cycle retention exercise, asserting it is never listed and survives on disk untouched.
 
 ## Known Risks Entering v1.0
 
@@ -178,20 +189,22 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - The production build still has the previously recorded large-chunk advisory.
 - **Unresolved:** path-based CI routing can miss UI-driving verification. A change confined to `src/` classifies as `core` only and does not select the `desktop` tier, so the packaged-app and installer smokes — which drive the actual rendered UI through CDP — do not run even when the change reshapes every screen. M10-A demonstrated this directly: its navigation rewrite touched only `src/`, so CI never exercised the desktop smokes against it, and they were later found stale (selectors from the old ten-view shell) and had to be repaired by hand in M10-B before they would run at all. This is a real, currently open gap, not a solved risk. Any future milestone that changes UI structure or selectors should manually run or update the desktop smokes rather than relying on the classifier to select them.
 - Release-level accessibility (contrast audit, screen-reader pass, full keyboard journey) is still Milestone 14 work. M10 applied the structural requirements: labelled navigation, selection not conveyed by color alone, named and focus-managed dialogs, and keyboard alternatives to drag.
+- This repository does not yet publish a stable GitHub Release, so About & Updates currently and correctly resolves to "Unable to check" (a 404 from the Releases API, not a defect) against the real network; the "Update available" success path is covered by `updateCheckService.test.ts`'s injected-fake unit tests, not by an end-to-end live-network check, since CI must not depend on this repository's release history to stay green.
+- Automatic Backup's real files live under `%LOCALAPPDATA%\<identifier>\backups`, a genuine per-machine OS path that packaged-app smoke now takes safe, disposable ownership of (see Verification Status above); this is a new category of desktop-verify responsibility that Milestone 14 hardening should keep in mind if further native features write outside the WebView2-isolated profile.
 
 ## Next Engineering Objective
 
-Start **Milestone 13: Reflection, Preservation, and Desktop Utilities**. It has not started.
+Start **Milestone 14: Product Hardening and Full Regression**. It has not started. The v1.0 approved feature scope (Milestones 8–13) is fully implemented; Milestone 14 converges the complete system on release-level correctness, resilience, accessibility, and evidence before the explicit Feature Complete Gate acceptance and Milestone 15 (Release Candidate).
 
 ## Post-Merge Repository State
 
-- Branch: `main` has Milestone 12 integrated (developed from baseline `2cb9497c720a9c5dd608f46b70e44a2668594ed7` via PR #8).
+- Branch: `main` has Milestone 12 integrated (developed from baseline `2cb9497c720a9c5dd608f46b70e44a2668594ed7` via PR #8); Milestone 13 was developed on `milestone/13-reflection-preservation-desktop-utilities` from that same `main` baseline and is ready for PR integration.
 - Current application version: `0.7.0`
-- Current Dexie schema and backup format: `v8`
-- Current implementation baseline: Milestone 7.1 + Milestone 8 desktop foundation + Milestone 9 frozen blueprint + Milestone 10 desktop UI migration + Milestone 11 capture/task enrichment + Milestone 12 timeline/desktop execution
+- Current Dexie schema and backup format: `v9`
+- Current implementation baseline: Milestone 7.1 + Milestone 8 desktop foundation + Milestone 9 frozen blueprint + Milestone 10 desktop UI migration + Milestone 11 capture/task enrichment + Milestone 12 timeline/desktop execution + Milestone 13 reflection/preservation/desktop utilities
 - Desktop identifier: `io.github.peter-s-shi.dailycanvas`; packaged origin: `https://tauri.localhost` (both frozen)
 - Desktop build target: Windows/MSVC (`x86_64-pc-windows-msvc`), statically linked CRT
 - Local desktop development: `OPEN_DAILY_CANVAS_DEV.cmd` (requires Visual Studio Build Tools with the x64 MSVC toolset and a Windows SDK, the `stable-x86_64-pc-windows-msvc` Rust toolchain, Node.js, and pnpm)
-- v1.0 product scope: approved; Milestones 8–12 complete (of 15); Milestone 13 next, not started
-- Feature Complete: not reached
+- v1.0 product scope: approved; Milestones 8–13 complete (of 15); Milestone 14 next, not started
+- Feature Complete: implementation complete, explicit Gate acceptance pending
 - Feature Freeze: inactive

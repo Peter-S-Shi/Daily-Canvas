@@ -1,12 +1,18 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
 import { deleteAppearanceAsset, importBackground, setBackgroundPreference } from "../services/appearanceService";
 import { createBackup, downloadBackup, migrateBackup, restoreBackup } from "../services/backupService";
 import { updateSettings } from "../services/settingsService";
+import { runAutoBackup } from "../services/autoBackupService";
+import { backupDirectory, getDesktopInfo, listAutoBackups, openExternal, readAutoBackup, type BackupFileInfo } from "../desktop/desktopAdapter";
+import { checkForUpdate, type UpdateCheckResult } from "../services/updateCheckService";
+import packageJson from "../../package.json";
 import type { SectionId } from "../navigation/workspaceModel";
 import type { AppSettings, BackgroundSlot, Language, RestorePreview, Theme } from "../types";
+
+const FALLBACK_APP_VERSION = packageJson.version;
 
 type Operation = "idle" | "saving" | "exporting" | "reading" | "restoring";
 const slots: BackgroundSlot[] = ["app", "today", "calendar", "reflection"];
@@ -23,6 +29,19 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
   const { t } = useTranslation();
   const [message, setMessage] = useState(""); const [error, setError] = useState(""); const [operation, setOperation] = useState<Operation>("idle"); const [preview, setPreview] = useState<RestorePreview>(); const [slot, setSlot] = useState<BackgroundSlot>("app");
   const backgroundInput = useRef<HTMLInputElement>(null); const importInput = useRef<HTMLInputElement>(null);
+  const [autoBackups, setAutoBackups] = useState<BackupFileInfo[]>([]); const [backupDir, setBackupDir] = useState<string>();
+  const [runningAutoBackup, setRunningAutoBackup] = useState(false);
+  const [appVersion, setAppVersion] = useState(FALLBACK_APP_VERSION);
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult>();
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const refreshAutoBackups = () => { void listAutoBackups().then(setAutoBackups); void backupDirectory().then(setBackupDir); };
+  useEffect(() => { if (section === "settingsData") refreshAutoBackups(); }, [section]);
+  const runUpdateCheck = async (version: string) => { setCheckingUpdate(true); try { setUpdateResult(await checkForUpdate(version)); } finally { setCheckingUpdate(false); } };
+  // The desktop-native version (from desktop_info) is authoritative when available; the bundled package.json
+  // version is only a browser-mode fallback. The update check always waits for whichever version resolves first.
+  useEffect(() => { if (section !== "settingsAbout") return; void getDesktopInfo().then((info) => { const version = info?.appVersion ?? FALLBACK_APP_VERSION; setAppVersion(version); void runUpdateCheck(version); }); }, [section]);
+  const backupNow = async () => { setRunningAutoBackup(true); setError(""); try { const outcome = await runAutoBackup({ settings: { ...settings, autoBackupEnabled: true, lastAutoBackupAt: undefined } }); if (outcome.ran) { setMessage(t("automaticBackupSuccess")); refreshAutoBackups(); } else if (outcome.reason === "failed") setError(outcome.error); } finally { setRunningAutoBackup(false); } };
+  const restoreFromAutoBackup = async (fileName: string) => { setOperation("reading"); setPreview(undefined); setError(""); try { const content = await readAutoBackup(fileName); if (!content) throw new Error("unavailable"); setPreview(migrateBackup(JSON.parse(content))); } catch { setError(t("importError")); } finally { setOperation("idle"); } };
   const assets = useLiveQuery(() => db.appearanceAssets.toArray(), []) ?? [];
   const preference = settings.backgroundPreferences.find((item) => item.slot === slot)!;
   const asset = assets.find((item) => item.id === preference?.assetId);
@@ -33,7 +52,7 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
   const readImport = async (file?: File) => { if (!file) return; setOperation("reading"); setPreview(undefined); setError(""); try { setPreview(migrateBackup(JSON.parse(await file.text()))); } catch (caught) { setError(caught instanceof Error ? caught.message : t("importError")); } finally { setOperation("idle"); } };
   const confirmRestore = async () => { if (!preview) return; setOperation("restoring"); setError(""); try { if (!(await downloadBackup(await createBackup(), "daily-canvas-safety-backup"))) return; await restoreBackup(preview.payload); setPreview(undefined); setMessage(t("importSuccess")); } catch { setError(t("restoreError")); } finally { setOperation("idle"); } };
 
-  const heading = t(section === "settingsAppearance" ? "appearance" : section === "settingsData" ? "dataAndBackup" : section === "settingsShortcuts" ? "shortcuts" : "general");
+  const heading = t(section === "settingsAppearance" ? "appearance" : section === "settingsData" ? "dataAndBackup" : section === "settingsShortcuts" ? "shortcuts" : section === "settingsAbout" ? "aboutAndUpdates" : "general");
   const shortcuts: Array<{ keys: string; labelKey: string }> = [
     { keys: "Ctrl/⌘ K", labelKey: "shortcut_search" },
     { keys: "Ctrl/⌘ Shift K", labelKey: "shortcut_quickCapture" },
@@ -86,6 +105,30 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
             <p>{t("safetyBackupNotice")}</p>
             <div className="inline-actions"><button type="button" className="button secondary" onClick={() => setPreview(undefined)}>{t("cancel")}</button><button type="button" className="button primary" disabled={operation === "restoring"} onClick={confirmRestore}>{operation === "restoring" ? t("restoring") : t("confirmRestore")}</button></div>
           </div>}
+
+          <h3 className="settings-subheading">{t("automaticBackup")}</h3>
+          <SettingRow title={t("automaticBackupEnabled")} hint={t("automaticBackupHint")} control={<input className="switch" type="checkbox" aria-label={t("automaticBackupEnabled")} checked={settings.autoBackupEnabled} onChange={(event) => update({ autoBackupEnabled: event.target.checked })}/>}/>
+          <dl className="fact-list">
+            <div><dt>{t("lastAutoBackup")}</dt><dd>{settings.lastAutoBackupAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(settings.lastAutoBackupAt)) : t("neverYet")}</dd></div>
+            <div><dt>{t("backupLocation")}</dt><dd>{backupDir ?? t("desktopOnlyFeature")}</dd></div>
+          </dl>
+          <SettingRow title={t("backUpNow")} hint={t("backUpNowHint")} control={<button type="button" className="button secondary" disabled={runningAutoBackup} onClick={backupNow}>{runningAutoBackup ? t("exporting") : t("backUpNow")}</button>}/>
+          {autoBackups.length > 0 && <div className="backup-history" role="region" aria-label={t("backupHistory")}>
+            <h4>{t("backupHistory")}</h4>
+            <ul className="backup-history-list">{autoBackups.map((file) => <li key={file.fileName}><span>{file.fileName}</span><button type="button" className="button text-button" disabled={operation !== "idle"} onClick={() => restoreFromAutoBackup(file.fileName)}>{t("restoreFromThis")}</button></li>)}</ul>
+          </div>}
+        </>}
+
+        {section === "settingsAbout" && <>
+          <dl className="fact-list">
+            <div><dt>{t("installedVersion")}</dt><dd>{appVersion}</dd></div>
+          </dl>
+          <SettingRow title={t("checkForUpdates")} hint={t("checkForUpdatesHint")} control={<button type="button" className="button secondary" disabled={checkingUpdate} onClick={() => runUpdateCheck(appVersion)}>{checkingUpdate ? t("checkingForUpdates") : t("checkForUpdates")}</button>}/>
+          {updateResult && <p role="status" className={updateResult.state === "unable-to-check" ? "error-message" : "status-message"}>
+            {updateResult.state === "up-to-date" && t("upToDate")}
+            {updateResult.state === "unable-to-check" && t("unableToCheck")}
+            {updateResult.state === "update-available" && <>{t("updateAvailable", { version: updateResult.latestVersion })} <button type="button" className="link-button" onClick={() => openExternal(updateResult.releaseUrl)}>{t("viewRelease")}</button></>}
+          </p>}
         </>}
 
         {section === "settingsShortcuts" && <>

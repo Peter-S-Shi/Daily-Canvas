@@ -375,17 +375,18 @@ All exit criteria above are met.
 
 ---
 
-## Milestone 13: Reflection, Preservation, and Desktop Utilities
+## Milestone 13: Reflection, Preservation, and Desktop Utilities — Completed
 
 **Goal:** Strengthen long-term personal value and desktop reliability without turning the product into a cloud journal or self-tracking platform.
 
-### Planned scope
+### Delivered scope
 
-- Lightweight Reflection Templates while preserving unrestricted free-form Reflection.
-- On This Day / historical resurfacing from appropriate local history.
-- Local Reflection / Review export.
-- Automatic rotating local backups.
-- GitHub Release update awareness.
+- Three lightweight Reflection Templates (Free Write, Daily Check-in, Gratitude & Perspective) are optional writing scaffolding selected from Daily Reflection itself; every prompt is skippable, prompt text is never written into the saved `note`, and Free Write (no prompts) remains the default. `DailyReflection.templateId` is optional and additive.
+- On This Day is a real destination inside Reflect: a read-only lens over Daily Reflections and Meditations matching the exact month+day from prior years only (never the current year), grouped by year with the most recent year first, each entry offering "Open original" navigation to the real source record. It never modifies or duplicates a source record and produces no growth/emotion/analysis framing.
+- Local Reflection and Review export produce deterministic Markdown (`.md`) documents through the existing `saveBlob` desktop-adapter/native-Save-dialog seam; Review export uses the same period/filter selection the Review screen already shows. Neither export mutates source data, and the existing Meditation print/PDF/Word pipeline is untouched.
+- Automatic Rotating Backup is enabled by default, runs at most once per local calendar day on successful startup (failure-isolated from the startup/recovery path, exactly like M12 reminders), and is also exposed as "Back up now" in Settings -> Data & Backup, which shows the toggle, last successful backup time, backup location, and the retained history. Backups write to a temp file and atomically rename into place, retain only the most recent 7, and prune only after a new backup is confirmed written. Restoring from a retained automatic backup reuses the exact same parse -> validate/migrate -> preview/warnings -> safety-backup -> confirm -> transactional-restore pipeline as manual import. Four narrow native commands (write/list/read/delete, all `std::fs`, no filesystem plugin) back this; no general-purpose filesystem capability was granted to the web layer.
+- GitHub Release update awareness lives only in the new Settings -> About & Updates page: it shows the installed version and checks only on page open or an explicit "Check for updates" click (never on a timer or at startup), through the scoped `tauri-plugin-http` capability restricted to the single `GET /repos/Peter-S-Shi/Daily-Canvas/releases/latest` endpoint. States are Up to date / Update available (with "View Release", via the scoped `tauri-plugin-opener`) / Unable to check; a network failure is non-blocking.
+- Dexie schema and backup format move from v8 to v9. No new table was needed for Reflection Templates (`templateId` is an additive optional field); v9 exists to mark the settings default (`autoBackupEnabled`, `lastAutoBackupAt`) and keep the versioned-migration/backup-format pattern intact. v1-v8 forward migration, restore validation, and export/restore fidelity are preserved.
 
 ### Product rules
 
@@ -401,6 +402,16 @@ All exit criteria above are met.
 - A user can recover from ordinary local data-loss scenarios using understandable automatic backup history.
 - Reflection/Review material can be preserved locally without remote services.
 - Update availability is visible without introducing an account or custom update server.
+
+### Completion evidence
+
+- 146/146 automated TypeScript/Vitest tests across 24 suites, including Reflection Template persistence and free-form primacy, On This Day month/day/year selection and source restriction, deterministic Reflection/Review Markdown export, backup rotation/retention/atomic-write-failure semantics, restore-from-automatic-backup reuse of the manual pipeline, update-check version comparison and network-failure handling, and full v1-v9 schema/backup migration and round-trip coverage; plus 4 Rust unit tests (`src-tauri/src/lib.rs`) scoping the Automatic Backup native `list_auto_backups`/retention/delete commands to the app's own `daily-canvas-auto-backup-*` file-naming namespace.
+- TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
+- `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle --target x86_64-pc-windows-msvc`) pass with the new `tauri-plugin-http` (scoped to the single GitHub Release endpoint) and `tauri-plugin-opener` dependencies alongside the existing dialog/notification plugins.
+- The desktop packaged-app smoke (`desktop-verify/desktop-smoke.mjs`) was extended to exercise, on a disposable synthetic profile: Reflection Template selection/save/`templateId` round-trip and its Markdown export; On This Day as a real destination against two seeded historical records (1 and 2 years before the real run date) with year grouping and "Open original" navigation; Review Markdown export; Automatic Backup's native write/list/delete commands end to end, including 7-backup retention pruning, a sentinel non-namespaced `.json` file placed directly in the real backup directory that survives every cycle untouched and never appears in the backup history, and a full restore-from-automatic-backup through the shared restore pipeline; and About & Updates rendering one of its three defined states without blocking startup.
+- A post-merge-readiness corrective pass fixed three confirmed seams: On This Day derived a Meditation's calendar day from a UTC ISO-string slice instead of the app's local-calendar-day convention (misfiling evening entries into the next local day); the native `list_auto_backups` command returned every `.json` file in the backup directory rather than only ones this app wrote (so retention pruning could delete unrelated files); and Reflection/Review Markdown export wrote an internal i18n key (e.g. `template_dailyCheckin`) or a raw internal id (`areaId`/`taskId`) into user-facing exported files instead of a resolved, human-readable name, now omitting the line entirely when a name cannot be resolved.
+
+All exit criteria above are met.
 
 ---
 
