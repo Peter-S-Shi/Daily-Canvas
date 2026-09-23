@@ -23,7 +23,7 @@ export function ReviewView({ weekStartsOn, onInspectDate }: { weekStartsOn: 0 | 
   const language = i18n.language === "zh-CN" ? "zh-CN" : "en";
   const setShortcut = (next: ReviewPreset) => { setPreset(next); setShowAllEvidence(false); if (next !== "custom") setRange(rangeForPreset(next, new Date(), weekStartsOn)); };
   const copy = async () => { if (!model) return; await navigator.clipboard.writeText(reviewAsText(model, language)); setCopied(true); globalThis.setTimeout(() => setCopied(false), 1800); };
-  const exportMarkdown = async () => { if (!model) return; setExporting(true); try { await exportReview(model, filters, language); } finally { setExporting(false); } };
+  const exportMarkdown = async () => { if (!model) return; setExporting(true); try { await exportReview(model, filters, language, { areas: sources.areas, tasks: sources.tasks }); } finally { setExporting(false); } };
   const label = (date: string) => new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${date}T12:00:00`));
   const groups = model?.completionGroups ?? [];
   const shownGroups = showAllEvidence ? groups : groups.slice(0, evidencePreview);

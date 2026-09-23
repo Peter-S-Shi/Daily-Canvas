@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { selectOnThisDay } from "./onThisDayService";
 import type { DailyReflection, MeditationEntry } from "../types";
 
@@ -33,5 +33,25 @@ describe("onThisDayService", () => {
 
   it("never includes the current year even if the month+day matches (e.g. earlier today)", () => {
     expect(selectOnThisDay([reflection("2026-09-23")], [], "2026-09-23")).toEqual([]);
+  });
+
+  describe("Meditation date derivation uses the local calendar day, not the UTC slice", () => {
+    const originalTz = process.env.TZ;
+    beforeAll(() => { process.env.TZ = "America/New_York"; });
+    afterAll(() => { process.env.TZ = originalTz; });
+
+    it("buckets a late-evening local Meditation under its local day, even when that rolls the UTC date (and year) forward", () => {
+      // 2025-01-01T04:30:00.000Z is 2024-12-31 23:30 local time in America/New_York (UTC-5 in
+      // January): a Meditation "created" late in the evening of Dec 31, local time, but whose UTC
+      // instant already reads Jan 1 of the following year. `createdAt.slice(0, 10)` -- the old, buggy
+      // derivation -- would read this as "2025-01-01" and file it under the wrong month+day and the
+      // wrong (following) year. The local-day derivation must read it as 2024-12-31.
+      const lateEveningLocal = meditation("2025-01-01T04:30:00.000Z");
+      const groups = selectOnThisDay([], [lateEveningLocal], "2026-12-31");
+      expect(groups).toHaveLength(1);
+      expect(groups[0].year).toBe(2024); // local year, not the UTC-rolled 2025
+      expect(groups[0].entries).toHaveLength(1);
+      expect(groups[0].entries[0].date).toBe("2024-12-31"); // local day, not the UTC-rolled 2025-01-01
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { db } from "../db";
+import { toDateKey } from "../lib/dates";
 import type { DailyReflection, MeditationEntry } from "../types";
 
 /**
@@ -27,7 +28,10 @@ export function selectOnThisDay(reflections: DailyReflection[], meditations: Med
     entries.push({ source: "reflection", year, date: reflection.date, reflection });
   }
   for (const meditation of meditations) {
-    const createdKey = meditation.createdAt.slice(0, 10);
+    // Meditations only store a UTC creation instant (no local-day field), so the local calendar
+    // day must be derived the same way Daily Canvas derives it everywhere else -- never by slicing
+    // the UTC ISO string, which misfiles evening entries into the next UTC day.
+    const createdKey = toDateKey(new Date(meditation.createdAt));
     if (monthDay(createdKey) !== targetMonthDay) continue;
     const year = yearOf(createdKey);
     if (year >= currentYear) continue;

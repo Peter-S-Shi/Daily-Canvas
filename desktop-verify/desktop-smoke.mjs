@@ -161,6 +161,14 @@ const autoBackupToggledOn = await app.cdp.evaluate(`document.querySelector('.set
 check("Automatic Backup is enabled by default", autoBackupToggledOn === true, String(autoBackupToggledOn));
 const backupDir = await app.cdp.evaluate(`window.__TAURI_INTERNALS__.invoke('backup_directory')`);
 check("backup_directory adapter returns an explicit app-owned backups path", typeof backupDir === "string" && backupDir.toLowerCase().includes("backups"), backupDir);
+// Sentinel for the M13 corrective-pass fix: a non-namespaced .json file dropped directly into the
+// real (disposable, desktop-verify-owned -- see the Milestone 13 note at the top of this file)
+// backup directory, proving list/retention/delete stay scoped to the `daily-canvas-auto-backup-*`
+// namespace and never touch, count, or delete an unrelated file that happens to sit alongside it.
+const sentinelName = "unrelated-file-that-is-not-an-auto-backup.json";
+const sentinelPath = join(backupDir, sentinelName);
+mkdirSync(backupDir, { recursive: true });
+writeFileSync(sentinelPath, JSON.stringify({ note: "not a Daily Canvas auto-backup" }));
 // "Back up now" bypasses the once-per-day guard by design (a manual action), so clicking it repeatedly lets this
 // smoke run exercise real retention pruning end to end through the native write/list/delete commands.
 for (let i = 0; i < 9; i++) {
@@ -172,6 +180,8 @@ for (let i = 0; i < 9; i++) {
 }
 const retained = await app.cdp.evaluate(`window.__TAURI_INTERNALS__.invoke('list_auto_backups')`);
 check("retention keeps only the most recent 7 automatic backups", Array.isArray(retained) && retained.length === 7, `${retained?.length} files`);
+check("list_auto_backups never returns the non-namespaced sentinel file", Array.isArray(retained) && !retained.some((r) => r.fileName === sentinelName), JSON.stringify(retained?.map((r) => r.fileName)));
+check("the non-namespaced sentinel file survives 9 backup/retention cycles untouched on disk", existsSync(sentinelPath), sentinelPath);
 await sleep(300); await shot(app, "09-en-settings-data-backup-history");
 check("Settings shows the retained backup history", await app.cdp.evaluate(`document.querySelectorAll('.backup-history-list li').length`) === 7);
 const lastAutoBackupShown = await app.cdp.evaluate(`document.querySelector('.fact-list dd')?.textContent`);

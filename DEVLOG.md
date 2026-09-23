@@ -2,6 +2,16 @@
 
 ## Milestone 13: Reflection, Preservation, and Desktop Utilities — Completed
 
+### 2026-09-23 — Merge-readiness corrective pass (PR #9)
+
+Fixed three independently-confirmed correctness/data-safety seams before merge, with a minimal, TDD-covered fix for each; no new product features, no M14 scope, v9 schema/backup contract unchanged.
+
+- **On This Day / Meditation local day.** `onThisDayService.ts` derived a Meditation's day via `meditation.createdAt.slice(0, 10)`, treating the UTC ISO timestamp as the local calendar date; in UTC-crossing timezones this misfiled evening entries into the next local day (and, near midnight on Dec 31/Jan 1, the wrong year). Fixed by reusing `toDateKey(new Date(createdAt))` -- the same local-calendar-day helper the rest of the app already uses. Daily Reflection's own date-key semantics were untouched. New regression test pins `process.env.TZ` to exercise a real UTC/local day-and-year boundary.
+- **Automatic Backup namespace scoping.** The native `list_auto_backups` Tauri command returned every `.json` file in the backup directory, not just ones this app wrote; since retention prunes to the newest 7, an unrelated `.json` file sitting in that directory could be deleted. `list_auto_backups`/`delete_auto_backup` in `src-tauri/src/lib.rs` are now scoped strictly to the existing `daily-canvas-auto-backup-*` naming convention (no capability widening), with 4 new Rust unit tests against a real temp directory. `desktop-verify/desktop-smoke.mjs` was extended to place a sentinel non-namespaced `.json` file directly in the real backup directory during the existing 9-cycle retention exercise and assert it is never listed and survives untouched.
+- **Export internal-identifier leakage.** Reflection Markdown export wrote the internal i18n key literal (e.g. `template_dailyCheckin`) instead of the resolved, current-language template display name. Review Markdown export's filter metadata could show a raw `areaId`/`taskId` instead of the Area/Task's name. Both are fixed in `exportService.ts`: `reflectionToMarkdown` resolves the template name through the app's i18n instance for the current language; `reviewToMarkdown` now takes an `ExportNameLookup` (Areas/Tasks) and resolves each filter id to its display name, omitting the metadata line entirely rather than printing the id when it cannot be resolved (e.g. a dangling reference).
+
+Verification: 146/146 automated TypeScript/Vitest tests across the same 24 suites (up from 142, all in `onThisDayService.test.ts` and `exportService.test.ts`), plus 4 new Rust unit tests (`src-tauri/src/lib.rs`, `cargo test --lib`); TypeScript checking and the production build both pass. Each fix was verified red-before-green against the prior buggy behavior before being restored to the fixed state.
+
 ### 2026-09-23 — Reflection Templates, On This Day, local export, Automatic Backup, update awareness, and v9 backup
 
 - Three lightweight Reflection Templates (Free Write, Daily Check-in, Gratitude & Perspective) live inside the existing Daily Reflection flow: every prompt is skippable, prompt text is never written into the saved `note`, and Free Write remains the default. `DailyReflection.templateId` is an additive optional field.
