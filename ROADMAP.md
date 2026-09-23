@@ -365,7 +365,7 @@ All exit criteria above are met.
 
 ### Completion evidence
 
-- 106/106 automated tests across 18 suites, including 15-minute-grid and overlap invariants, Avoidance exclusion, Available Work derivation, Replan `needsReview` flagging without history rewrite, restrained reminder catch-up semantics, and full v1-v8 schema/backup migration and round-trip coverage.
+- 107/107 automated tests across 18 suites, including 15-minute-grid and overlap invariants, Avoidance exclusion, Available Work derivation, Replan `needsReview` flagging without history rewrite, restrained reminder catch-up semantics, and full v1-v8 schema/backup migration and round-trip coverage.
 - TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
 - `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle`) pass locally with the new `tauri-plugin-notification` dependency and its `notification:default` capability declaration.
 - Manually verified in a live browser preview: creating and editing a Time Block, overlap rejection, the Today's Plan summary, Task Detail reminder editing, and the Settings Shortcuts cheat sheet, with zero console errors.

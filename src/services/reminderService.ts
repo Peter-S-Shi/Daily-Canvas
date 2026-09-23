@@ -25,9 +25,19 @@ function blockEnd(block: TimeBlock): Date {
   return new Date(blockStart(block).getTime() + block.durationMinutes * 60_000);
 }
 
-/** Reminders due for live, in-app firing: notify time has passed and this block has not already fired. */
+/**
+ * A reminder is only worth surfacing while its block has not already ended -- otherwise it is
+ * stale, not "due" (this applies equally to the live 20-second checker and the startup catch-up:
+ * an old, unfired block from days ago must never suddenly notify just because the app is open).
+ */
+function isActionable(block: TimeBlock, now: Date): boolean {
+  const at = notifyAtFor(block);
+  return at !== undefined && at <= now && blockEnd(block) >= now;
+}
+
+/** Reminders due for live, in-app firing: notify time has passed, the block has not ended, and it has not already fired. */
 export function dueReminders(blocks: TimeBlock[], now: Date): TimeBlock[] {
-  return blocks.filter((block) => !block.reminderFiredAt).filter((block) => { const at = notifyAtFor(block); return at !== undefined && at <= now; });
+  return blocks.filter((block) => !block.reminderFiredAt && isActionable(block, now));
 }
 
 /**
@@ -35,10 +45,7 @@ export function dueReminders(blocks: TimeBlock[], now: Date): TimeBlock[] {
  * belongs to has not already ended (still real-world-actionable). Daily Canvas never wakes up
  * in the background to catch these -- this only runs once, on the next time the app is opened.
  */
-export function isDueForCatchUp(block: TimeBlock, now: Date): boolean {
-  const at = notifyAtFor(block);
-  return at !== undefined && at <= now && blockEnd(block) >= now;
-}
+export const isDueForCatchUp = isActionable;
 
 async function fire(block: TimeBlock, now: Date): Promise<void> {
   const task = await db.tasks.get(block.taskId);

@@ -29,6 +29,12 @@ describe("reminderService", () => {
     expect(dueReminders([due, notDue, off, fired], now).map((item) => item.id)).toEqual(["b1"]);
   });
 
+  it("never fires the live checker for a stale block whose window ended days ago (regression: PR #8 CI caught a synthetic fixture block mutating during a long-running smoke run)", () => {
+    const staleFromDaysAgo = block({ reminder: "at-start", date: "2026-01-01", startMinutes: 9 * 60, durationMinutes: 30 });
+    const now = new Date("2026-01-05T10:00:00");
+    expect(dueReminders([staleFromDaysAgo], now)).toEqual([]);
+  });
+
   it("restrained catch-up fires only while the block has not already ended", () => {
     const stillRunning = block({ reminder: "at-start", startMinutes: 9 * 60, durationMinutes: 60 });
     const alreadyEnded = block({ id: "b5", reminder: "at-start", startMinutes: 6 * 60, durationMinutes: 30 });
