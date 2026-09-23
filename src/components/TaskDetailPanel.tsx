@@ -7,10 +7,12 @@ import { supportsLifecycle, targetFor } from "../services/lifecycleService";
 import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
 import { calculateTaskStats } from "../services/statisticsService";
 import { deleteTask, updateTask } from "../services/taskService";
+import { canReplanTask, replanTask } from "../services/replanService";
+import { todayKey } from "../lib/dates";
 import type { CheckIn, Task } from "../types";
 
-type DetailTab = "overview" | "schedule" | "lifecycle" | "history";
-const tabs: DetailTab[] = ["overview", "schedule", "lifecycle", "history"];
+type DetailTab = "overview" | "schedule" | "checklist" | "notes" | "lifecycle" | "history";
+const tabs: DetailTab[] = ["overview", "schedule", "checklist", "notes", "lifecycle", "history"];
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 interface TaskDetailProps {
@@ -30,6 +32,7 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<DetailTab>("overview");
   const [error, setError] = useState("");
+  const [replanDate, setReplanDate] = useState("");
   useEffect(() => { setTab("overview"); setError(""); }, [task?.id]);
   const data = useLiveQuery(async () => (task ? { checkIns: await db.checkIns.where("taskId").equals(task.id).toArray(), lifecycle: await db.taskLifecycles.get(task.id), pauses: await db.pausePeriods.where("taskId").equals(task.id).toArray(), events: await db.milestoneEvents.where("taskId").equals(task.id).toArray(), areas: await db.areas.toArray(), settings: await db.settings.get("app") } : undefined), [task?.id]);
   if (!task) return <section className="task-detail-pane empty"><p>{t("selectTaskHint")}</p></section>;
@@ -92,6 +95,7 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
             <div><div className="stat-label">{t("scheduleSummary")}</div><div>{describeSchedule(task, t)}</div></div>
             <div><div className="stat-label">{primary.label}</div><div>{primary.value}</div></div>
             <div><div className="stat-label">{t("totalCompleted")}</div><div>{stats.completed}</div></div>
+            <div><div className="stat-label">{t("durationEstimate")}</div><div>{task.estimatedMinutes ? t("minutesEstimate", { count: task.estimatedMinutes }) : "—"}</div></div>
           </div>
           <dl className="fact-list">
             <div><dt>{t("startDate")}</dt><dd>{date(task.startDate)}</dd></div>
@@ -112,7 +116,14 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
           {task.schedule.mode === "quota" && <div><dt>{t("targetCount")}</dt><dd>{task.schedule.targetCount} · {t(task.schedule.period === "week" ? "weekly" : "monthly")}</dd></div>}
           {task.schedule.mode === "quota" && task.schedule.optionalEndDate && <div><dt>{t("endDate")}</dt><dd>{date(task.schedule.optionalEndDate)}</dd></div>}
           {supportsLifecycle(task) && <div><dt>{t(task.schedule.mode === "quota" ? "targetPeriods" : "targetDays")}</dt><dd>{targetFor(task)}</dd></div>}
+          {canReplanTask(task, data.checkIns) && (
+            <div className="replan-row"><dt>{t("replan")}</dt><dd><input type="date" min={todayKey()} value={replanDate} onChange={(event) => setReplanDate(event.target.value)}/><button type="button" className="button secondary" disabled={!replanDate} onClick={async () => { try { await replanTask(task.id, replanDate); setReplanDate(""); } catch { setError(t("saveError")); } }}>{t("replanFuture")}</button></dd></div>
+          )}
         </dl>}
+
+        {tab === "checklist" && ((task.checklist?.length ?? 0) === 0 ? <p className="muted">{t("noChecklistItems")}</p> : <ul className="checklist-list">{task.checklist!.map((item) => <li key={item.id}><label><input type="checkbox" checked={item.completed} onChange={() => updateTask(task.id, { checklist: task.checklist!.map((value) => value.id === item.id ? { ...value, completed: !value.completed, updatedAt: new Date().toISOString() } : value) })}/><span className={item.completed ? "strike" : ""}>{item.title}</span></label></li>)}</ul>)}
+
+        {tab === "notes" && <div className="task-notes"><h3>{t("taskNotes")}</h3>{task.notes ? <p>{task.notes}</p> : <p className="muted">{t("noTaskNotes")}</p>}</div>}
 
         {tab === "lifecycle" && (!supportsLifecycle(task) || !data.lifecycle ? <p className="muted">{t("lifecycleNotApplicable")}</p> : <>
           <dl className="fact-list">
@@ -146,5 +157,7 @@ function describeSchedule(task: Task, t: (key: string, options?: Record<string, 
   if (schedule.recurrence.type === "once") return t("oneTime");
   if (schedule.recurrence.type === "daily") return t("daily");
   if (schedule.recurrence.type === "interval") return t("everyNDays", { count: schedule.recurrence.intervalDays ?? 1 });
+  if (schedule.recurrence.type === "weeklyInterval") return t("everyNWeeks", { count: schedule.recurrence.intervalWeeks ?? 1, days: (schedule.recurrence.weekdays ?? []).map((day) => t(dayKeys[day])).join(" · ") });
+  if (schedule.recurrence.type === "monthlyDay") return t("monthlyOnDay", { day: schedule.recurrence.dayOfMonth ?? 1 });
   return (schedule.recurrence.weekdays ?? []).map((day) => t(dayKeys[day])).join(" · ");
 }

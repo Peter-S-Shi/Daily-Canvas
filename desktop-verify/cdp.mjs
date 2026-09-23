@@ -4,9 +4,9 @@ import { spawn, execFileSync } from "node:child_process";
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function launchApp(exe, { port = 9333, env = {} } = {}) {
+export async function launchApp(exe, { port = 9333, env = {}, userDataDir } = {}) {
   const child = spawn(exe, [], {
-    env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`, ...env },
+    env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`, ...(userDataDir ? { WEBVIEW2_USER_DATA_FOLDER: userDataDir } : {}), ...env },
     stdio: "ignore",
   });
   let exited = false; child.on("exit", () => { exited = true; });

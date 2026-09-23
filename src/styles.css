@@ -174,6 +174,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .workspace-controls { min-width: 0; display: flex; }
 .workspace-controls:empty { display: none; }
 .workspace-actions { margin-left: auto; flex: none; display: flex; align-items: center; gap: 10px; }
+.workspace-actions > span:empty { display: contents; }
+.workspace-actions kbd { margin-left: 6px; color: var(--muted); font: 600 11px/1 var(--font-body); }
+.inbox-list, .search-results, .checklist-list { display: grid; gap: 10px; }
+.inbox-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--surface-solid); }
+.inbox-row > div:first-child { display: grid; gap: 5px; min-width: 0; }
+.inbox-row strong, .inbox-row small { overflow-wrap: anywhere; }
+.inbox-row small { color: var(--muted); }
+.search-dialog > input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--surface); color: var(--ink); }
+.search-result { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 12px; border: 1px solid transparent; border-radius: var(--radius-small); background: transparent; color: var(--ink); text-align: left; }
+.search-result.active, .search-result:hover { border-color: var(--accent); background: var(--surface-muted); }
+.search-result > span:last-child { display: grid; gap: 3px; min-width: 0; }
+.search-result small { color: var(--muted); overflow-wrap: anywhere; }
+.meditation-card.search-highlight { outline: 2px solid var(--accent); outline-offset: 2px; }
+.checklist-list { list-style: none; padding: 0; }
+.checklist-list label { display: flex; gap: 10px; align-items: center; }
+.task-notes p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+.replan-row dd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* The personalized background layer is scaled past its box to hide blurred edges.
    It must bleed against a frame that clips, never inside the scroller, or the
@@ -604,6 +621,7 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
 }
 
 @media (max-width: 960px) {
+  .global-search kbd { display: none; }
   :root { --sidebar-w: 176px; --pad-x: 14px; }
   .shell-sidebar { padding-inline: 12px; }
   .brand { gap: 9px; padding-inline: 4px; }

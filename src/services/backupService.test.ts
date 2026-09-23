@@ -16,10 +16,10 @@ describe("backup migration", () => {
   it("upgrades a version 1 backup into Areas and fixed schedules without mutating task identity", () => {
     const result = migrateBackup(v1);
     expect(result.migrated).toBe(true);
-    expect(result.payload.version).toBe(6);
+    expect(result.payload.version).toBe(7);
     expect(result.payload.tasks[0].title).toBe("Example");
     expect(result.payload.tasks[0]).toMatchObject({ id: "example-task", colorOverride: "#f4a261", schedule: { mode: "fixed", recurrence: { type: "daily" } } });
-    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 6, onboardingComplete: true });
+    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 7, onboardingComplete: true });
   });
 
   it("migrates shared categories to one editable Area and preserves its visual color", () => {

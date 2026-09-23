@@ -293,19 +293,20 @@ All exit criteria above are met.
 
 ---
 
-## Milestone 11: Capture and Task Enrichment
+## Milestone 11: Capture and Task Enrichment — Completed
 
 **Goal:** Make it fast to capture work, find history, and add useful task detail without turning Daily Canvas into a recursive project manager.
 
-### Planned scope
+### Delivered scope
 
-- Quick Capture / Inbox with explicit triage into real task semantics.
-- Global Search across appropriate local content.
-- Task Notes.
-- One-level Checklist items.
-- Richer recurrence rules.
-- Task duration estimates.
-- Explicit Replan flow for unfinished work.
+- Quick Capture uses the frozen title-only flow: Save to Inbox, or explicitly open the full Task Editor.
+- Inbox persists lightweight unresolved captures separately from Tasks and removes one only after successful Fixed/Floating/Quota triage.
+- Local Global Search covers Task titles and notes, Daily Reflections, Meditations, and Areas; unresolved Inbox captures remain excluded and no authoritative index is stored.
+- Task-owned Notes, one-level Checklist items, and duration estimates extend Task Detail without independent Task semantics or tracked-time claims.
+- Habit/Avoidance recurrence adds every-N-weeks with selected weekdays and monthly day-of-month; short months use their final day. Regular Tasks remain one-time.
+- Replan updates the future Task plan and appends a durable event while preserving earlier check-ins and missed/unrecorded history.
+- Dexie schema and backup format v7 add Inbox captures and Replan events; v1-v6 restore compatibility is preserved and all new Task fields round-trip through backup.
+- The packaged-app smoke now always uses an explicit disposable WebView2 profile, refuses unsafe cleanup of an existing real profile, and verifies that the real profile metadata is unchanged.
 
 ### Product rules
 
@@ -320,6 +321,14 @@ All exit criteria above are met.
 - Users can find accumulated Tasks, Reflections, Meditations, and other approved searchable history without weakening privacy.
 - New task detail survives backup/migration correctly.
 - Current Fixed/Floating/Quota and lifecycle semantics remain intact.
+
+### Completion evidence
+ 
+- 86/86 automated tests across 15 suites, including focused recurrence, Inbox triage, Search exclusion, forward-only Replan with gap semantics and anchor transition, active start tracking, schema migration, and complete v7 backup/restore coverage.
+- TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
+- Windows/MSVC Tauri build passes. The isolated packaged-app smoke passes 58/58 checks, and installer/upgrade smoke passes 17/17 checks, including every M11 destination, v7 restore/export, bilingual operation, restart and forced-kill durability, and proof that the real Daily Canvas profile was not modified.
+- Independent GitHub Actions CI on the merged milestone branch/HEAD confirms all tiers green (Classify, Core, Desktop Windows/MSVC, PR Gate).
+- Feature Complete is not reached and Feature Freeze remains inactive; Milestones 12 and 13 plus the explicit Feature Complete Gate are still required.
 
 ---
 

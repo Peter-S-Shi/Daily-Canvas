@@ -1,9 +1,9 @@
 // Shared helpers for the packaged-app verification scripts (desktop-smoke, installer-smoke).
 // Synthetic data only. Talks to the app through a local WebView2 debug port and Win32 messages on its own dialogs.
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { extname, join } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import { sleep } from "./cdp.mjs";
 
 export const here = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -24,6 +24,24 @@ export function wipeAppDataSafely() {
   mkdirSync(dataRoot, { recursive: true });
   writeFileSync(marker, "created by desktop-verify; disposable test data\n");
   mkdirSync(downloads, { recursive: true });
+}
+
+/** Creates a disposable WebView2 profile strictly inside the caller-provided evidence directory. */
+export function prepareIsolatedWebViewData(outDir) {
+  const evidenceRoot = resolve(outDir); const isolated = resolve(evidenceRoot, "webview-user-data"); const relation = relative(evidenceRoot, isolated);
+  if (!relation || relation.startsWith("..") || resolve(isolated).toLowerCase() === resolve(dataRoot).toLowerCase()) throw new Error("Refusing unsafe WebView2 test-data path.");
+  rmSync(isolated, { recursive: true, force: true }); mkdirSync(isolated, { recursive: true }); writeFileSync(join(isolated, ".dc-verify-owned"), "disposable WebView2 smoke profile\n");
+  return isolated;
+}
+
+export const containsIndexedDb = (dir) => existsSync(dir) && readdirSyncRecursive(dir).some((file) => /IndexedDB/i.test(file));
+function readdirSyncRecursive(dir) { return readdirSync(dir, { withFileTypes: true, recursive: true }).filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name)); }
+/** Metadata-only fingerprint used to prove smoke did not mutate an existing real product profile. */
+export function treeMetadataStamp(dir) {
+  if (!existsSync(dir)) return "absent";
+  const rows = readdirSyncRecursive(dir).map((file) => { const stat = statSync(file); return `${relative(dir, file)}|${stat.size}|${stat.mtimeMs}`; }).sort();
+  if (rows.length === 0) return "absent";
+  return createHash("sha256").update(rows.join("\n")).digest("hex");
 }
 
 export const sha = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 16);

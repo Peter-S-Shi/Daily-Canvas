@@ -44,7 +44,7 @@ describe("Milestone 4 reflection services", () => {
   it("keeps appearance references consistent and includes all v4 private entities in backup restore", async () => {
     await db.appearanceAssets.put({ id: "local-image", kind: "background", mimeType: "image/png", dataUrl: "data:image/png;base64,c3ludGhldGlj", createdAt: "2026-07-20T00:00:00.000Z" }); await setBackgroundPreference("reflection", { assetId: "local-image", fit: "contain", overlayOpacity: .6 });
     await saveReflection({ date: "2026-07-20", emotionIds: [], note: "Private reflection" }); await saveExperience({ taskId: "habit", date: "2026-07-20", effort: 2 });
-    const backup = await createBackup(); expect(backup).toMatchObject({ version: 6, dailyReflections: [{ note: "Private reflection" }], appearanceAssets: [{ id: "local-image" }] });
+    const backup = await createBackup(); expect(backup).toMatchObject({ version: 7, dailyReflections: [{ note: "Private reflection" }], appearanceAssets: [{ id: "local-image" }] });
     await db.dailyReflections.clear(); await restoreBackup(backup); expect(await db.dailyReflections.get("2026-07-20")).toMatchObject({ note: "Private reflection" });
     await deleteAppearanceAsset("local-image"); expect((await db.settings.get("app"))?.backgroundPreferences.find((item) => item.slot === "reflection")?.assetId).toBeUndefined();
   });

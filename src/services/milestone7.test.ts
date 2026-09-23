@@ -111,7 +111,7 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
     expect(letterMarkup).toContain("@page { size: Letter; margin: 0; }");
   });
 
-  it("upgrades v5 backups with an empty collection and restores v6 content, order, and timestamps", async () => {
+  it("upgrades v5 backups with an empty collection and restores current content, order, and timestamps", async () => {
     const current = await createBackup();
     const { meditationEntries: _removed, ...v5Fields } = current;
     const migrated = migrateBackup({ ...v5Fields, version: 5, settings: current.settings.map((setting) => ({ ...setting, dataVersion: 5 })) });
@@ -120,7 +120,7 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
 
     await db.meditationEntries.bulkPut(entries);
     const backup = await createBackup();
-    expect(backup.version).toBe(6);
+    expect(backup.version).toBe(7);
     expect(backup.meditationEntries).toEqual(expect.arrayContaining(entries));
     await db.meditationEntries.clear();
     await restoreBackup(backup);

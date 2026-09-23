@@ -1,13 +1,15 @@
 export type Language = "zh-CN" | "en";
 export type Theme = "light" | "dark" | "system";
 export type TaskKind = "task" | "habit" | "avoidance";
-export type RecurrenceType = "once" | "daily" | "weekdays" | "interval";
+export type RecurrenceType = "once" | "daily" | "weekdays" | "interval" | "weeklyInterval" | "monthlyDay";
 export type CheckInStatus = "done" | "lapse" | "skipped";
 
 export interface Recurrence {
   type: RecurrenceType;
   weekdays?: number[];
   intervalDays?: number;
+  intervalWeeks?: number;
+  dayOfMonth?: number;
 }
 
 export interface FixedSchedule { mode: "fixed"; recurrence: Recurrence }
@@ -35,14 +37,29 @@ export interface Task {
   starred: boolean;
   archived: boolean;
   startDate: string;
+  replannedStartDate?: string;
+  replanHistory?: ReplanHistoryEntry[];
   endDate?: string;
   schedule: Schedule;
   targetDays?: number;
   targetPeriods?: number;
   stopReminderAtTarget: boolean;
+  notes?: string;
+  checklist?: ChecklistItem[];
+  estimatedMinutes?: number;
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ChecklistItem { id: string; title: string; completed: boolean; createdAt: string; updatedAt: string }
+export interface InboxCapture { id: string; title: string; createdAt: string; updatedAt: string }
+export interface ReplanHistoryEntry { replannedAt: string; previousStartDate: string; nextStartDate: string; note?: string }
+export interface ReplanEvent { id: string; taskId: string; replannedAt: string; previousStartDate: string; nextStartDate: string; note?: string }
+export type SearchResult =
+  | { type: "task"; id: string; title: string; excerpt?: string }
+  | { type: "reflection"; id: string; title: string; excerpt?: string }
+  | { type: "meditation"; id: string; title: string; excerpt?: string }
+  | { type: "area"; id: string; title: string; excerpt?: string };
 
 export interface LegacyTask extends Omit<Task, "schedule" | "areaId" | "colorOverride"> {
   category: string;
@@ -72,7 +89,7 @@ export interface MeditationEntry { id: string; content: string; sortOrder: numbe
 
 export interface AppSettings {
   id: "app";
-  dataVersion: 6;
+  dataVersion: 7;
   language: Language;
   theme: Theme;
   weekStartsOn: 0 | 1;
@@ -99,12 +116,13 @@ export interface BackupPayloadV2 extends BackupBase<LegacyTask, LegacySettings &
 export interface BackupPayloadV3 extends BackupBase<Task, LegacySettings & { dataVersion: 3 }> { version: 3; areas: Area[] }
 export interface BackupPayloadV4 { format: "daily-canvas-backup"; version: 4; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 4 }> }
 export interface BackupPayloadV5 { format: "daily-canvas-backup"; version: 5; exportedAt: string; areas: Area[]; tasks: Task[]; checkIns: CheckIn[]; experienceLogs: ExperienceLog[]; taskLifecycles: TaskLifecycle[]; pausePeriods: PausePeriod[]; milestoneEvents: MilestoneEvent[]; dailyOrders: DailyOrder[]; dailyReflections: DailyReflection[]; emotionDefinitions: EmotionDefinition[]; rewards: Reward[]; appearanceAssets: AppearanceAsset[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 5 }> }
-export interface BackupPayload extends Omit<BackupPayloadV5, "version" | "settings"> { version: 6; meditationEntries: MeditationEntry[]; settings: AppSettings[] }
+export interface BackupPayloadV6 extends Omit<BackupPayloadV5, "version" | "settings"> { version: 6; meditationEntries: MeditationEntry[]; settings: Array<Omit<AppSettings, "dataVersion"> & { dataVersion: 6 }> }
+export interface BackupPayload extends Omit<BackupPayloadV6, "version" | "settings"> { version: 7; inboxCaptures: InboxCapture[]; replanEvents: ReplanEvent[]; settings: AppSettings[] }
 
 export interface RestorePreview {
   payload: BackupPayload;
-  sourceVersion: 1 | 2 | 3 | 4 | 5 | 6;
+  sourceVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   migrated: boolean;
   warnings: string[];
-  counts: { areas: number; tasks: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; meditations: number; emotions: number; rewards: number; appearanceAssets: number };
+  counts: { areas: number; tasks: number; inboxCaptures: number; replanEvents: number; checkIns: number; experienceLogs: number; taskLifecycles: number; pausePeriods: number; milestoneEvents: number; dailyOrders: number; dailyReflections: number; meditations: number; emotions: number; rewards: number; appearanceAssets: number };
 }
