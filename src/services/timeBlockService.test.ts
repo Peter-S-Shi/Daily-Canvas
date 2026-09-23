@@ -22,6 +22,19 @@ describe("timeBlockService", () => {
     expect(b.durationMinutes).toBe(30);
   });
 
+  it("rounds a non-15-minute Task duration estimate onto the grid instead of producing an unsavable default (regression)", async () => {
+    // Task.estimatedMinutes accepts any positive integer, but a Time Block must land on the 15-minute grid.
+    const twenty = await saveTask(fixedTask({ title: "Twenty", estimatedMinutes: 20 }));
+    const seven = await saveTask(fixedTask({ title: "Seven", estimatedMinutes: 7 }));
+    const fortyOne = await saveTask(fixedTask({ title: "FortyOne", estimatedMinutes: 41 }));
+    const a = await createTimeBlock({ taskId: twenty.id, date: "2026-01-05", startMinutes: 9 * 60 });
+    const b = await createTimeBlock({ taskId: seven.id, date: "2026-01-05", startMinutes: 11 * 60 });
+    const c = await createTimeBlock({ taskId: fortyOne.id, date: "2026-01-05", startMinutes: 13 * 60 });
+    expect(a.durationMinutes).toBe(15); // nearest 15-multiple to 20
+    expect(b.durationMinutes).toBe(15); // clamped to the minimum, never 0
+    expect(c.durationMinutes).toBe(45); // nearest 15-multiple to 41
+  });
+
   it("rejects placement off the 15-minute grid", async () => {
     const task = await saveTask(fixedTask());
     await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 })).rejects.toThrow(/15-minute/);
@@ -49,6 +62,20 @@ describe("timeBlockService", () => {
     const second = await createTimeBlock({ taskId: task.id, date: "2026-01-06", startMinutes: 9 * 60, durationMinutes: 30 });
     expect((await db.timeBlocks.where("taskId").equals(task.id).toArray()).length).toBe(2);
     expect(second.date).toBe("2026-01-06");
+  });
+
+  it("clears a stale reminderFiredAt when Date, Start time, or Reminder is explicitly edited, so a new future reminder is not silently suppressed (regression)", async () => {
+    const task = await saveTask(fixedTask());
+    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, reminder: "at-start" });
+    await db.timeBlocks.update(block.id, { reminderFiredAt: "2026-01-05T09:00:00.000Z" });
+    const movedInTime = await updateTimeBlock(block.id, { startMinutes: 14 * 60 });
+    expect(movedInTime.reminderFiredAt).toBeUndefined();
+    await db.timeBlocks.update(block.id, { reminderFiredAt: "2026-01-05T14:00:00.000Z" });
+    const movedInDate = await updateTimeBlock(block.id, { date: "2026-01-06" });
+    expect(movedInDate.reminderFiredAt).toBeUndefined();
+    await db.timeBlocks.update(block.id, { reminderFiredAt: "2026-01-06T14:00:00.000Z" });
+    const reReminded = await updateTimeBlock(block.id, { reminder: "10" });
+    expect(reReminded.reminderFiredAt).toBeUndefined();
   });
 
   it("moving a block re-validates the grid and overlap invariants but never touches the task", async () => {

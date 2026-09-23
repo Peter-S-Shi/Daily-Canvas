@@ -46,8 +46,9 @@ export default function App() {
   const assets = useLiveQuery(() => db.appearanceAssets.toArray(), []) ?? [];
   const pendingLifecycle = useLiveQuery(() => db.taskLifecycles.where("celebrationPending").equals(1).first(), []);
   const pendingTask = useLiveQuery(() => pendingLifecycle ? db.tasks.get(pendingLifecycle.taskId) : undefined, [pendingLifecycle?.taskId]);
-  useEffect(() => { initializeDb().then(resumeExpiredPauses).then(() => setStartup("ready")).then(() => catchUpMissedReminders()).catch((error: unknown) => { setStartupError(error instanceof Error ? error.message : String(error)); setStartup("error"); }); }, []);
-  useEffect(() => { if (startup !== "ready") return; const id = setInterval(() => { void checkDueReminders(); }, REMINDER_CHECK_INTERVAL_MS); return () => clearInterval(id); }, [startup]);
+  useEffect(() => { initializeDb().then(resumeExpiredPauses).then(() => setStartup("ready")).catch((error: unknown) => { setStartupError(error instanceof Error ? error.message : String(error)); setStartup("error"); }); }, []);
+  // Reminders are an in-app-only assistive feature: a notification failure must never affect local-data startup/recovery, so this is deliberately kept out of the initializeDb chain above (reminderService also catches its own errors).
+  useEffect(() => { if (startup !== "ready") return; void catchUpMissedReminders(); const id = setInterval(() => { void checkDueReminders(); }, REMINDER_CHECK_INTERVAL_MS); return () => clearInterval(id); }, [startup]);
   /** Frozen desktop shortcut set (ROADMAP M12): Ctrl/Cmd+K Search, Ctrl/Cmd+Shift+K Quick Capture, Ctrl/Cmd+1 Today. Escape is handled locally by each Dialog. Guarded against editable targets so text editing is never hijacked. */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

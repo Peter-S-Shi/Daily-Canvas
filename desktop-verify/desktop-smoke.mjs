@@ -57,6 +57,17 @@ console.log("== Screens");
 // Every M11/M12 destination, addressed by workspace/section id (src/navigation/workspaceModel.ts).
 const views = [["today"], ["inbox"], ["plan", "floating"], ["plan", "calendar"], ["plan", "timeline"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"], ["settings", "settingsShortcuts"]];
 for (const [workspace, section] of views) { const name = section ?? workspace; const opened = await nav(app.cdp, workspace, section); await sleep(700); const len = await app.cdp.evaluate(`document.querySelector('.workspace-content').innerText.length`); await shot(app, `03-en-${name}`); check(`screen renders: ${name}`, opened && len > 20, `${len} chars`); }
+
+// ---------- Timeline Week mode (Day mode is already covered by the screens loop above) ----------
+console.log("== Timeline Week mode");
+await nav(app.cdp, "plan", "timeline"); await sleep(400);
+check("switch to Week mode", await clickText(app.cdp, "Week"));
+await sleep(500); await shot(app, "03b-en-timeline-week");
+const weekDayCount = await app.cdp.evaluate(`document.querySelectorAll('.timeline-week-day').length`);
+check("Week mode renders a seven-day grid", weekDayCount === 7, `${weekDayCount} day columns`);
+const weekLen = await app.cdp.evaluate(`document.querySelector('.timeline-week-grid').innerText.length`);
+check("Week mode content renders", weekLen > 20, `${weekLen} chars`);
+check("switch back to Day mode", await clickText(app.cdp, "Day"));
 const { windowId } = await app.cdp.send("Browser.getWindowForTarget"); await app.cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal", width: 900, height: 600 } }); await sleep(700);
 check("900x600 English shell has zero horizontal overflow", await app.cdp.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`));
 const bgApplied = await app.cdp.evaluate(`getComputedStyle(document.querySelector('.desktop-shell')).backgroundImage.startsWith('linear-gradient')`);

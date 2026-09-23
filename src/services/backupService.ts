@@ -4,6 +4,7 @@ import type { AppSettings, AppearanceAsset, Area, BackupPayload, BackupPayloadV1
 import { validateMeditationContent } from "./meditationService";
 import { calculateTaskStats } from "./statisticsService";
 import { validateTask } from "./taskService";
+import { validateTimeBlockInput } from "./timeBlockService";
 
 type UnknownRecord = Record<string, unknown>;
 const tables = [db.areas, db.tasks, db.inboxCaptures, db.replanEvents, db.timeBlocks, db.checkIns, db.experienceLogs, db.taskLifecycles, db.pausePeriods, db.milestoneEvents, db.dailyOrders, db.dailyReflections, db.meditationEntries, db.emotionDefinitions, db.rewards, db.appearanceAssets, db.settings] as const;
@@ -28,7 +29,22 @@ function validateCore(record: UnknownRecord): void {
   validateItems(areas, "Area", ["id", "name", "color"]); validateItems(tasks, "Task", ["id", "title", "kind", "startDate"]); validateItems(captures, "Inbox capture", ["id", "title", "createdAt", "updatedAt"]); validateItems(replans, "Replan event", ["id", "taskId", "replannedAt", "previousStartDate", "nextStartDate"]); validateItems(timeBlocks, "Time Block", ["id", "taskId", "date", "reminder"]); validateItems(checkIns, "Check-in", ["id", "taskId", "date", "status"]); validateItems(dailyOrders, "Daily order", ["date"]); validateItems(reflections, "Reflection", ["date"]); validateItems(experienceLogs, "Experience", ["id", "taskId", "date"]); validateItems(meditations, "Meditation", ["id", "content", "createdAt", "updatedAt"]); validateItems(emotions, "Emotion", ["id", "label", "normalizedLabel"]); validateItems(rewards, "Reward", ["id", "title", "trigger"]); validateItems(assets, "Appearance asset", ["id", "kind", "dataUrl"]); validateItems(lifecycles, "Lifecycle", ["taskId", "state"]); validateItems(pauses, "Pause", ["id", "taskId", "startDate", "type"]); validateItems(milestones, "Milestone", ["id", "taskId", "date", "type"]); validateItems(settings, "Settings", ["id", "language", "theme"]);
   tasks.forEach((item) => { const task = item as UnknownRecord; if (!["task", "habit", "avoidance"].includes(String(task.kind))) throw new Error("A task has an unsupported type."); if (Number(record.version) >= 3) { if (!isRecord(task.schedule) || !["fixed", "floating", "quota"].includes(String(task.schedule.mode))) throw new Error("A task has an unsupported schedule."); if (Number(record.version) >= 7) validateTask(item as Task); } else if (!isRecord(task.recurrence) || !["once", "daily", "weekdays", "interval"].includes(String(task.recurrence.type))) throw new Error("A task has an unsupported schedule."); });
   checkIns.forEach((item) => { if (!["done", "lapse", "skipped"].includes(String((item as UnknownRecord).status))) throw new Error("A check-in has an unsupported status."); });
-  timeBlocks.forEach((item) => { const block = item as UnknownRecord; if (!["off", "at-start", "5", "10", "15", "30", "60"].includes(String(block.reminder))) throw new Error("A Time Block has an unsupported reminder."); if (typeof block.startMinutes !== "number" || typeof block.durationMinutes !== "number") throw new Error("A Time Block is missing its placement."); });
+  timeBlocks.forEach((item) => {
+    const block = item as UnknownRecord;
+    if (!["off", "at-start", "5", "10", "15", "30", "60"].includes(String(block.reminder))) throw new Error("A Time Block has an unsupported reminder.");
+    if (typeof block.startMinutes !== "number" || typeof block.durationMinutes !== "number") throw new Error("A Time Block is missing its placement.");
+    // Restore must never let an imported backup bypass the same 15-minute grid / day-boundary invariant createTimeBlock enforces.
+    validateTimeBlockInput({ startMinutes: block.startMinutes, durationMinutes: block.durationMinutes });
+  });
+  const timeBlocksByDate = new Map<string, UnknownRecord[]>();
+  for (const item of timeBlocks) { const block = item as UnknownRecord; const date = String(block.date); timeBlocksByDate.set(date, [...(timeBlocksByDate.get(date) ?? []), block]); }
+  for (const [date, blocksOnDate] of timeBlocksByDate) {
+    for (let i = 0; i < blocksOnDate.length; i++) for (let j = i + 1; j < blocksOnDate.length; j++) {
+      const a = blocksOnDate[i], b = blocksOnDate[j];
+      const aStart = a.startMinutes as number, aEnd = aStart + (a.durationMinutes as number), bStart = b.startMinutes as number, bEnd = bStart + (b.durationMinutes as number);
+      if (aStart < bEnd && bStart < aEnd) throw new Error(`Time Blocks overlap on ${date}.`);
+    }
+  }
   meditations.forEach((item, index) => {
     const meditation = item as UnknownRecord;
     if (typeof meditation.sortOrder !== "number" || !Number.isFinite(meditation.sortOrder) || !Number.isInteger(meditation.sortOrder) || meditation.sortOrder < 0) throw new Error(`Meditation entry ${index + 1} has an invalid sort order.`);

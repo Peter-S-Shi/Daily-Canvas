@@ -11,7 +11,11 @@ export const DEFAULT_DURATION_MINUTES = 30;
 export const MINUTES_PER_DAY = 24 * 60;
 
 export const isEligibleForTimeBlock = (task: Task) => task.kind !== "avoidance";
-export const defaultDurationFor = (task: Task) => task.estimatedMinutes ?? DEFAULT_DURATION_MINUTES;
+/** Task.estimatedMinutes accepts any positive integer; a Time Block must land on the 15-minute grid, so the estimate is rounded onto it (never left to fail validation on first Save). */
+export const defaultDurationFor = (task: Task) => {
+  if (!task.estimatedMinutes) return DEFAULT_DURATION_MINUTES;
+  return Math.max(MINUTE_STEP, Math.round(task.estimatedMinutes / MINUTE_STEP) * MINUTE_STEP);
+};
 const onGrid = (value: number) => Number.isInteger(value) && value % MINUTE_STEP === 0;
 
 export interface TimeBlockInput { startMinutes: number; durationMinutes: number }
@@ -59,7 +63,9 @@ export async function updateTimeBlock(id: string, changes: UpdateTimeBlockInput)
   validateTimeBlockInput(next);
   await assertNoOverlap(next.date, next, id);
   const explicitAdjustment = changes.date !== undefined || changes.startMinutes !== undefined || changes.durationMinutes !== undefined;
-  const updated: TimeBlock = { ...existing, ...next, reminder: changes.reminder ?? existing.reminder, needsReview: explicitAdjustment ? false : existing.needsReview, updatedAt: now() };
+  // Date, Start time, and Reminder all change when the next notification should fire; a past firing must never suppress a newly-relevant future one.
+  const reminderTimingChanged = changes.date !== undefined || changes.startMinutes !== undefined || changes.reminder !== undefined;
+  const updated: TimeBlock = { ...existing, ...next, reminder: changes.reminder ?? existing.reminder, needsReview: explicitAdjustment ? false : existing.needsReview, reminderFiredAt: reminderTimingChanged ? undefined : existing.reminderFiredAt, updatedAt: now() };
   await db.timeBlocks.put(updated);
   return updated;
 }

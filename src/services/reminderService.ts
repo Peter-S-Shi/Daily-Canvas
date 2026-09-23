@@ -47,20 +47,38 @@ export function dueReminders(blocks: TimeBlock[], now: Date): TimeBlock[] {
  */
 export const isDueForCatchUp = isActionable;
 
+/**
+ * A failed notification (e.g. the native command errors) must never crash the checker or block
+ * other reminders: reminders are an in-app-only assistive feature, and the app's core (including
+ * startup) must stay usable regardless of notification delivery. A block whose notify attempt
+ * failed is left unfired so the next check retries it while it remains actionable.
+ */
 async function fire(block: TimeBlock, now: Date): Promise<void> {
-  const task = await db.tasks.get(block.taskId);
-  await notify(task?.title ?? "Daily Canvas", `Planned ${String(Math.floor(block.startMinutes / 60)).padStart(2, "0")}:${String(block.startMinutes % 60).padStart(2, "0")}`);
-  await db.timeBlocks.update(block.id, { reminderFiredAt: now.toISOString() });
+  try {
+    const task = await db.tasks.get(block.taskId);
+    await notify(task?.title ?? "Daily Canvas", `Planned ${String(Math.floor(block.startMinutes / 60)).padStart(2, "0")}:${String(block.startMinutes % 60).padStart(2, "0")}`);
+    await db.timeBlocks.update(block.id, { reminderFiredAt: now.toISOString() });
+  } catch (error) {
+    console.warn("Daily Canvas: a Time Block reminder could not be delivered; it will retry.", error);
+  }
 }
 
 /** Runs on an interval while the app is open. Daily Canvas promises reliable in-app triggering, not a resident background service. */
 export async function checkDueReminders(now = new Date()): Promise<void> {
-  const blocks = await db.timeBlocks.filter((block) => !block.reminderFiredAt).toArray();
-  for (const block of dueReminders(blocks, now)) await fire(block, now);
+  try {
+    const blocks = await db.timeBlocks.filter((block) => !block.reminderFiredAt).toArray();
+    for (const block of dueReminders(blocks, now)) await fire(block, now);
+  } catch (error) {
+    console.warn("Daily Canvas: the reminder check could not complete.", error);
+  }
 }
 
 /** Runs once at startup: a restrained, non-repeating catch-up for reminders missed while the app was closed. */
 export async function catchUpMissedReminders(now = new Date()): Promise<void> {
-  const blocks = await db.timeBlocks.filter((block) => !block.reminderFiredAt).toArray();
-  for (const block of blocks.filter((item) => isDueForCatchUp(item, now))) await fire(block, now);
+  try {
+    const blocks = await db.timeBlocks.filter((block) => !block.reminderFiredAt).toArray();
+    for (const block of blocks.filter((item) => isDueForCatchUp(item, now))) await fire(block, now);
+  } catch (error) {
+    console.warn("Daily Canvas: the startup reminder catch-up could not complete.", error);
+  }
 }

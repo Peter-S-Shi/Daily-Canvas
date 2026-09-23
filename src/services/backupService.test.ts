@@ -57,6 +57,22 @@ describe("backup migration", () => {
     expect(result.payload.settings[0].dataVersion).toBe(8);
   });
 
+  it("rejects a v8 backup whose Time Block is off the 15-minute grid, instead of silently importing a domain-invalid placement", () => {
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "Task", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", date: "2026-09-01", startMinutes: 541, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
+    expect(() => migrateBackup(v8)).toThrow(/15-minute/);
+  });
+
+  it("rejects a v8 backup whose Time Block extends past the end of its day", () => {
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "Task", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", date: "2026-09-01", startMinutes: 1425, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
+    expect(() => migrateBackup(v8)).toThrow(/end of/i);
+  });
+
+  it("rejects a v8 backup with two overlapping Time Blocks on the same date", () => {
+    const base = { date: "2026-09-01", durationMinutes: 60, reminder: "off" as const, needsReview: false, createdAt: "", updatedAt: "" };
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "One", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }, { id: "t2", title: "Two", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", startMinutes: 540, ...base }, { id: "b2", taskId: "t2", startMinutes: 570, ...base }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
+    expect(() => migrateBackup(v8)).toThrow(/overlap/i);
+  });
+
   it("drops orphan Time Blocks that reference a missing task and reports a warning", () => {
     const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "missing", date: "2026-09-01", startMinutes: 540, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
     const result = migrateBackup(v8);

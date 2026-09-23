@@ -1,6 +1,6 @@
 import { addDays, parseISO, startOfWeek } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../db";
 import { toDateKey, todayKey } from "../../lib/dates";
@@ -13,8 +13,11 @@ import { TaskPickerDialog } from "./TaskPickerDialog";
 import { TimeBlockDialog } from "./TimeBlockDialog";
 
 type Mode = "day" | "week";
-const DAY_START_HOUR = 6;
-const DAY_END_HOUR = 23;
+// The grid spans the full domain-legal 00:00-24:00 day: a Time Block may be placed anywhere in
+// that range, so the Day view must never clip a normally-created early-morning/late-night block.
+const DAY_START_HOUR = 0;
+const DAY_END_HOUR = 24;
+const DEFAULT_SCROLL_HOUR = 6;
 const ROW_MINUTES = 15;
 const ROW_HEIGHT_PX = 16;
 const timeLabel = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -23,6 +26,9 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<Mode>("day");
   const [selectedDate, setSelectedDate] = useState(initialDate);
+  const dayGridRef = useRef<HTMLDivElement>(null);
+  // The full day is rendered so every legal block stays visible; scroll to a conventional working-hour start by default (convenience only, never a domain restriction).
+  useEffect(() => { dayGridRef.current?.scrollTo({ top: DEFAULT_SCROLL_HOUR * (60 / ROW_MINUTES) * ROW_HEIGHT_PX }); }, [selectedDate, mode]);
   const [editingBlock, setEditingBlock] = useState<TimeBlock>();
   const [scheduling, setScheduling] = useState<{ task: Task; date: string; startMinutes?: number }>();
   const [pickerDate, setPickerDate] = useState<string>();
@@ -72,13 +78,15 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
               <button type="button" className="icon-button" aria-label={t("nextDay")} onClick={() => setSelectedDate(toDateKey(addDays(parseISO(selectedDate), 1)))}>›</button>
             </div>
           </div>
-          <div className="timeline-day-grid" style={{ height: rows.length * ROW_HEIGHT_PX }}>
-            {rows.map((minutes) => <div key={minutes} className={`timeline-row ${minutes % 60 === 0 ? "hour-row" : ""}`} style={{ height: ROW_HEIGHT_PX }}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => { const id = event.dataTransfer.getData("text/time-block-id"); if (id) void moveBlock(id, { date: selectedDate, startMinutes: minutes }); }}>
-              {minutes % 60 === 0 && <span className="timeline-hour-label">{timeLabel(minutes)}</span>}
-            </div>)}
-            {blocksOn(selectedDate).map((block) => <div key={block.id} className="timeline-block-position" style={{ top: (block.startMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX, height: block.durationMinutes / ROW_MINUTES * ROW_HEIGHT_PX }}><BlockChip block={block} /></div>)}
+          <div className="timeline-day-grid" ref={dayGridRef}>
+            <div className="timeline-day-grid-inner" style={{ height: rows.length * ROW_HEIGHT_PX }}>
+              {rows.map((minutes) => <div key={minutes} className={`timeline-row ${minutes % 60 === 0 ? "hour-row" : ""}`} style={{ height: ROW_HEIGHT_PX }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => { const id = event.dataTransfer.getData("text/time-block-id"); if (id) void moveBlock(id, { date: selectedDate, startMinutes: minutes }); }}>
+                {minutes % 60 === 0 && <span className="timeline-hour-label">{timeLabel(minutes)}</span>}
+              </div>)}
+              {blocksOn(selectedDate).map((block) => <div key={block.id} className="timeline-block-position" style={{ top: (block.startMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX, height: block.durationMinutes / ROW_MINUTES * ROW_HEIGHT_PX }}><BlockChip block={block} /></div>)}
+            </div>
           </div>
         </section>
         <section className="panel available-work-panel" aria-labelledby="available-work-heading">
