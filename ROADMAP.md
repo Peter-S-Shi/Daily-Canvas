@@ -370,7 +370,7 @@ All exit criteria above are met.
 - TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
 - `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle`) pass locally with the `tauri-plugin-notification` dependency and its `notification:default` capability declaration.
 - Manually verified in a live browser preview: creating and editing a Time Block including a 23:30-24:00 late-night block, overlap rejection, Week mode showing the same block correctly, the Today's Plan summary, Task Detail reminder editing, and the Settings Shortcuts cheat sheet, with zero console errors.
-- GitHub Actions CI on the merged PR #8 head (`9389c0b`, run `35820653400`) confirmed all tiers green: Classify, Core, Desktop Windows/MSVC (70/70 packaged-app smoke checks -- including the v8 backup restore/export round-trip, the Plan/Timeline Day and Week modes, the Settings/Shortcuts screen, shortcut behavior, and the notification boundary -- and 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
+- The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop Windows/MSVC (70/70 packaged-app smoke checks -- including the v8 backup restore/export round-trip, the Plan/Timeline Day and Week modes, the Settings/Shortcuts screen, shortcut behavior, and the notification boundary -- and 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
 - Feature Complete is not reached and Feature Freeze remains inactive; Milestone 13 plus the explicit Feature Complete Gate are still required.
 
 ---

@@ -24,7 +24,7 @@ Five seams confirmed independently before merge, all fixed with regression tests
 - v8 backup restore validation now rejects a Time Block that violates the 15-minute grid, the day boundary, or overlaps another block on the same date, instead of silently importing a domain-invalid placement.
 - Packaged-app smoke now actually switches Timeline to Week mode and verifies the seven-day grid, alongside the existing Day/shortcut/notification/v8-round-trip evidence.
 
-Verification: 114/114 automated tests across 19 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the notification plugin and capability; manually verified in a live browser preview (a 23:30-24:00 block created, visible, and correct in Week mode) with zero console errors. GitHub Actions CI on the merged PR #8 head (`9389c0b`, run `35820653400`) confirmed all tiers green: Classify, Core, Desktop (Windows/MSVC -- 70/70 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
+Verification: 114/114 automated tests across 19 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the notification plugin and capability; manually verified in a live browser preview (a 23:30-24:00 block created, visible, and correct in Week mode) with zero console errors. The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop (Windows/MSVC -- 70/70 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
 
 ## Milestone 11: Capture and Task Enrichment — Completed
 
