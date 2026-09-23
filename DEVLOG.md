@@ -12,7 +12,19 @@
 - Local, in-app-only reminders on the frozen Off/At-start/5-60-minute grammar belong to a Time Block; Task Detail can view/edit the reminder on a Task's upcoming blocks. A new narrow `send_notification` Tauri command (`tauri-plugin-notification`, minimal `notification:default` permission) fires while the app is running, with a restrained, non-repeating startup catch-up for reminders missed while closed — no resident process, tray, or OS task scheduler was added.
 - The frozen small shortcut set is live (`Ctrl/Cmd+K` Search, `Ctrl/Cmd+Shift+K` Quick Capture, `Ctrl/Cmd+1` Today, `Escape`), guarded against firing while an editable element is focused; Settings → Shortcuts is a read-only cheat sheet with no customization.
 - Dexie schema and backup format advanced to v8, adding the `timeBlocks` collection with complete v1–v7 migration compatibility and full export/restore fidelity.
-- Verification: 107/107 automated tests across 18 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the new notification plugin and capability; manually verified in a live browser preview with zero console errors. GitHub Actions CI on PR #8 (run `35811774014`) confirmed all tiers green: Classify, Core, Desktop (Windows/MSVC -- 66/66 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
+
+### 2026-09-23 — Merge-readiness corrective pass
+
+Five seams confirmed independently before merge, all fixed with regression tests:
+
+- `defaultDurationFor()` now rounds a `Task.estimatedMinutes` that isn't a 15-minute multiple onto the grid (nearest, floor 15) instead of producing a default Time Block that failed validation on first Save.
+- Day Timeline renders the full domain-legal 00:00-24:00 range in a bounded, internally-scrollable viewport (previously 06:00-23:00 with `overflow: hidden` silently dropped legitimate early-morning/late-night blocks); 900×600 stays usable.
+- `updateTimeBlock()` clears a stale `reminderFiredAt` whenever Date, Start time, or Reminder is explicitly edited, so a past firing can never suppress a newly-relevant future reminder.
+- Reminder/notification failures (native command, live checker, startup catch-up) are caught inside `reminderService` and kept structurally out of `App`'s `initializeDb`/recovery-screen chain: a notification failure can never send the app into local-data recovery or produce an unhandled rejection.
+- v8 backup restore validation now rejects a Time Block that violates the 15-minute grid, the day boundary, or overlaps another block on the same date, instead of silently importing a domain-invalid placement.
+- Packaged-app smoke now actually switches Timeline to Week mode and verifies the seven-day grid, alongside the existing Day/shortcut/notification/v8-round-trip evidence.
+
+Verification: 114/114 automated tests across 19 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the notification plugin and capability; manually verified in a live browser preview (a 23:30-24:00 block created, visible, and correct in Week mode) with zero console errors. GitHub Actions CI on the merged PR #8 head (`9389c0b`, run `35820653400`) confirmed all tiers green: Classify, Core, Desktop (Windows/MSVC -- 70/70 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
 
 ## Milestone 11: Capture and Task Enrichment — Completed
 

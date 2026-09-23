@@ -338,7 +338,7 @@ All exit criteria above are met.
 
 ### Delivered scope
 
-- Day Timeline and Week Timeline share one persistent Time Block collection: Day is the precise create/move/edit surface; Week shows a seven-day distribution and supports cross-day moves. Neither expands into a full calendar app.
+- Day Timeline and Week Timeline share one persistent Time Block collection: Day is the precise create/move/edit surface (rendering the full domain-legal 00:00-24:00 range in a bounded, scrollable viewport, never clipping an early-morning/late-night block); Week shows a seven-day distribution and supports cross-day moves. Neither expands into a full calendar app.
 - Available Work is a planning source list derived from existing Fixed/Floating/Quota Task data (never a second authoritative task store); completed, archived, and paused items never appear, and Avoidance habits are excluded (frozen Decision D2).
 - Every Time Block references a real Task, is placed and edited on a 15-minute grid, defaults its duration to `Task.estimatedMinutes` (else 30 minutes), and can never overlap another block on the same date -- a conflict is surfaced for the user to resolve explicitly, never auto-moved.
 - Deleting a Time Block never deletes its Task; a block ending is not an automatic Task completion; moving/resizing/re-reminding a block never changes the Task's recurrence, quota, or schedule.
@@ -365,11 +365,12 @@ All exit criteria above are met.
 
 ### Completion evidence
 
-- 107/107 automated tests across 18 suites, including 15-minute-grid and overlap invariants, Avoidance exclusion, Available Work derivation, Replan `needsReview` flagging without history rewrite, restrained reminder catch-up semantics, and full v1-v8 schema/backup migration and round-trip coverage.
+- A merge-readiness corrective pass fixed five confirmed seams before merge: Task duration estimates that aren't 15-minute multiples now round onto the grid instead of producing an unsavable default; Day Timeline renders the full 00:00-24:00 domain instead of clipping legitimate early-morning/late-night blocks; editing a block's Date, Start time, or Reminder clears a stale `reminderFiredAt` so a new future reminder is never suppressed; reminder/notification failures are caught inside `reminderService` and structurally isolated from the local-data startup/recovery path; and v8 backup restore now rejects a Time Block that violates the 15-minute grid, day boundary, or same-date overlap invariants rather than silently importing it.
+- 114/114 automated tests across 19 suites, including 15-minute-grid and overlap invariants (createTimeBlock and backup restore), Avoidance exclusion, Available Work derivation, Replan `needsReview` flagging without history rewrite, restrained reminder catch-up and failure-isolation semantics, and full v1-v8 schema/backup migration and round-trip coverage.
 - TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
-- `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle`) pass locally with the new `tauri-plugin-notification` dependency and its `notification:default` capability declaration.
-- Manually verified in a live browser preview: creating and editing a Time Block, overlap rejection, the Today's Plan summary, Task Detail reminder editing, and the Settings Shortcuts cheat sheet, with zero console errors.
-- GitHub Actions CI on PR #8 (branch `milestone/12-timeline-desktop-execution`, run `35811774014`) confirmed all tiers green: Classify, Core, Desktop Windows/MSVC (66/66 packaged-app smoke checks -- including the v8 backup restore/export round-trip, the Plan/Timeline and Settings/Shortcuts screens, shortcut behavior, and the notification boundary -- and 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
+- `cargo check` and a release Windows/MSVC Tauri build (`tauri build --no-bundle`) pass locally with the `tauri-plugin-notification` dependency and its `notification:default` capability declaration.
+- Manually verified in a live browser preview: creating and editing a Time Block including a 23:30-24:00 late-night block, overlap rejection, Week mode showing the same block correctly, the Today's Plan summary, Task Detail reminder editing, and the Settings Shortcuts cheat sheet, with zero console errors.
+- GitHub Actions CI on the merged PR #8 head (`9389c0b`, run `35820653400`) confirmed all tiers green: Classify, Core, Desktop Windows/MSVC (70/70 packaged-app smoke checks -- including the v8 backup restore/export round-trip, the Plan/Timeline Day and Week modes, the Settings/Shortcuts screen, shortcut behavior, and the notification boundary -- and 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
 - Feature Complete is not reached and Feature Freeze remains inactive; Milestone 13 plus the explicit Feature Complete Gate are still required.
 
 ---
