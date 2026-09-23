@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { migrateBackup } from "./backupService";
+import "fake-indexeddb/auto";
+import { beforeEach, describe, expect, it } from "vitest";
+import { createBackup, migrateBackup, restoreBackup } from "./backupService";
+import { db, initializeDb } from "../db";
+import { saveTask } from "./taskService";
+import { createTimeBlock } from "./timeBlockService";
+
+beforeEach(async () => { await db.delete(); await db.open(); await initializeDb(); });
 
 const task = {
   id: "example-task", title: "Example", kind: "habit", category: "", color: "#f4a261", starred: false, archived: false,
@@ -16,10 +22,11 @@ describe("backup migration", () => {
   it("upgrades a version 1 backup into Areas and fixed schedules without mutating task identity", () => {
     const result = migrateBackup(v1);
     expect(result.migrated).toBe(true);
-    expect(result.payload.version).toBe(7);
+    expect(result.payload.version).toBe(8);
+    expect(result.payload.timeBlocks).toEqual([]);
     expect(result.payload.tasks[0].title).toBe("Example");
     expect(result.payload.tasks[0]).toMatchObject({ id: "example-task", colorOverride: "#f4a261", schedule: { mode: "fixed", recurrence: { type: "daily" } } });
-    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 7, onboardingComplete: true });
+    expect(result.payload.settings[0]).toMatchObject({ dataVersion: 8, onboardingComplete: true });
   });
 
   it("migrates shared categories to one editable Area and preserves its visual color", () => {
@@ -39,5 +46,32 @@ describe("backup migration", () => {
     const result = migrateBackup({ ...v1, checkIns: [{ id: "orphan", taskId: "missing", date: "2026-07-01", status: "done", updatedAt: "" }] });
     expect(result.payload.checkIns).toHaveLength(0);
     expect(result.warnings.some((warning) => warning.includes("missing tasks"))).toBe(true);
+  });
+
+  it("upgrades a version 7 backup to version 8 by adding an empty Time Block collection", () => {
+    const v7 = { format: "daily-canvas-backup", version: 7, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [{ id: "app", dataVersion: 7, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }] };
+    const result = migrateBackup(v7);
+    expect(result.migrated).toBe(true);
+    expect(result.payload.version).toBe(8);
+    expect(result.payload.timeBlocks).toEqual([]);
+    expect(result.payload.settings[0].dataVersion).toBe(8);
+  });
+
+  it("drops orphan Time Blocks that reference a missing task and reports a warning", () => {
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "missing", date: "2026-09-01", startMinutes: 540, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
+    const result = migrateBackup(v8);
+    expect(result.payload.timeBlocks).toHaveLength(0);
+    expect(result.warnings.some((warning) => warning.includes("Time Block"))).toBe(true);
+  });
+
+  it("round-trips a Time Block through export and restore without loss", async () => {
+    const task = await saveTask({ title: "Write report", kind: "task", starred: false, archived: false, startDate: "2026-01-05", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
+    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 45, reminder: "10" });
+    const backup = await createBackup();
+    expect(backup.version).toBe(8);
+    expect(backup.timeBlocks).toHaveLength(1);
+    await db.delete(); await db.open(); await initializeDb();
+    await restoreBackup(backup);
+    expect(await db.timeBlocks.get(block.id)).toMatchObject({ taskId: task.id, date: "2026-01-05", startMinutes: 540, durationMinutes: 45, reminder: "10" });
   });
 });

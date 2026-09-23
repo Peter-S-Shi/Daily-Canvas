@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { afterEach, describe, expect, it } from "vitest";
-import { storesV2, storesV3, storesV4, storesV5, storesV6, storesV7, upgradeDataToV3, upgradeDataToV4, upgradeDataToV5, upgradeDataToV6, upgradeDataToV7, upgradeSettingsToV2 } from "./db";
+import { storesV2, storesV3, storesV4, storesV5, storesV6, storesV7, storesV8, upgradeDataToV3, upgradeDataToV4, upgradeDataToV5, upgradeDataToV6, upgradeDataToV7, upgradeDataToV8, upgradeSettingsToV2 } from "./db";
 
 const databaseName = "DailyCanvasMigrationTest";
 afterEach(async () => { await Dexie.delete(databaseName); });
@@ -67,5 +67,15 @@ describe("Dexie schema migration", () => {
     expect(await newDb.table("tasks").get("habit")).toMatchObject({ title: "Walk" });
     expect(await newDb.table("inboxCaptures").count()).toBe(0); expect(await newDb.table("replanEvents").count()).toBe(0);
     expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 7 }); newDb.close();
+  });
+
+  it("adds the v8 Time Block collection without changing v7 records", async () => {
+    const oldDb = new Dexie(databaseName); oldDb.version(7).stores(storesV7);
+    await oldDb.table("tasks").put({ id: "habit", title: "Walk", kind: "habit", starred: false, archived: false, startDate: "2026-07-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
+    await oldDb.table("settings").put({ id: "app", dataVersion: 7, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }); oldDb.close();
+    const newDb = new Dexie(databaseName); newDb.version(7).stores(storesV7); newDb.version(8).stores(storesV8).upgrade(upgradeDataToV8); await newDb.open();
+    expect(await newDb.table("tasks").get("habit")).toMatchObject({ title: "Walk" });
+    expect(await newDb.table("timeBlocks").count()).toBe(0);
+    expect(await newDb.table("settings").get("app")).toMatchObject({ dataVersion: 8 }); newDb.close();
   });
 });
