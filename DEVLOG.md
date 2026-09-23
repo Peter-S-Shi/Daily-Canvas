@@ -1,5 +1,19 @@
 # Development log
 
+## Milestone 11: Capture and Task Enrichment — Completed
+
+### 2026-09-22 — Capture, task enrichment, recurrence/replan correctness, and v7 backup
+
+- Quick Capture implements the frozen title-only flow with Save to Inbox and direct Task Editor paths.
+- Inbox persists lightweight unresolved captures separately from Tasks and removes records only upon explicit triage into Fixed, Floating, or Quota semantics.
+- Local Global Search derives results across Task titles/notes, Daily Reflections, Meditations, and Areas; unresolved Inbox captures remain excluded and no duplicate authoritative index is stored.
+- Task-owned Notes, one-level Checklist items, and duration estimates extend read-first Task Detail without independent Task semantics or tracked-time claims.
+- Richer Habit/Avoidance recurrence supports every-N-weeks with selected weekdays and monthly day-of-month with short-month final-day fallback.
+- Replan updates future Task plans and appends durable ReplanEvents while preserving historical check-ins, hiatus gaps, active start tracking, and anchor transitions across multiple replans. Completed one-time/floating tasks are protected against replanning.
+- Dexie schema and backup format advanced to v7 with complete v1–v6 migration compatibility.
+- Desktop verification uses an isolated WebView2 profile, protects real user profiles with metadata fingerprint comparison, and executes 58/58 packaged-app smoke checks and 17/17 installer/upgrade smoke checks.
+- Verification: 86/86 automated tests across 15 suites, TypeScript checking, production build, and full GitHub Actions CI green across Classify, Core, Desktop (Windows/MSVC), and PR Gate. Milestone 12 is next and has not started.
+
 ## Milestone 10: Desktop UI Migration — Completed
 
 ### 2026-09-22 — Milestone 10 Exit Review acceptance and PR merge

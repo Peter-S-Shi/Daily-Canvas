@@ -323,10 +323,11 @@ All exit criteria above are met.
 - Current Fixed/Floating/Quota and lifecycle semantics remain intact.
 
 ### Completion evidence
-
-- 79/79 automated tests, including focused recurrence, Inbox triage, Search exclusion, forward-only Replan, schema migration, and complete v7 backup/restore coverage.
+ 
+- 86/86 automated tests across 15 suites, including focused recurrence, Inbox triage, Search exclusion, forward-only Replan with gap semantics and anchor transition, active start tracking, schema migration, and complete v7 backup/restore coverage.
 - TypeScript checking and production build pass; the existing large-chunk advisory remains unchanged.
-- Windows/MSVC Tauri build passes. The isolated packaged-app smoke passes 56/56 checks, including every M11 destination, v7 restore/export, bilingual operation, restart and forced-kill durability, and proof that the real Daily Canvas profile was not modified.
+- Windows/MSVC Tauri build passes. The isolated packaged-app smoke passes 58/58 checks, and installer/upgrade smoke passes 17/17 checks, including every M11 destination, v7 restore/export, bilingual operation, restart and forced-kill durability, and proof that the real Daily Canvas profile was not modified.
+- Independent GitHub Actions CI on the merged milestone branch/HEAD confirms all tiers green (Classify, Core, Desktop Windows/MSVC, PR Gate).
 - Feature Complete is not reached and Feature Freeze remains inactive; Milestones 12 and 13 plus the explicit Feature Complete Gate are still required.
 
 ---

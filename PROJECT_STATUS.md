@@ -153,7 +153,7 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 - Milestone 10 (local, synthetic data): TypeScript checking; 72 automated tests, including the end-to-end UI flow driven through the new workspace composition, a navigation-IA suite, and dialog focus/dismissal tests; production build. Every M10 surface was measured at 1280×820 and at the 900×600 minimum, in English and Chinese, with zero horizontal overflow. It was inspected in light and dark themes, over a personal background, and in the real Tauri window launched through `OPEN_DAILY_CANVAS_DEV.cmd`. Domain services, Dexie schema, backup format v6, and the Tauri adapter boundary were unchanged at that historical milestone.
 - The packaged-app and installer smokes (`desktop-verify/`) drive the UI and were ported to the new workspace composition in M10-B. They had been stale since M10-A, because M10-A changed no desktop-routed path and CI never ran them. Screen coverage grew to 11 destinations, so the packaged-app smoke has 54 checks.
 - Milestone 10 final PR CI (run on the merged head of PR #4) and the independent post-merge CI run `35782091580` on `main` at `2730bbf` both passed in full: Classify, Core, Desktop (Windows/MSVC), and PR Gate all green, including the 54-check packaged-app smoke and the 17-check installer/upgrade smoke.
-- Milestone 11 local verification (synthetic data): TypeScript checking; 79/79 automated tests; production build; Windows/MSVC Tauri build; 56/56 packaged-app checks using an isolated WebView2 profile. Coverage includes schema/backup v7, v1-v6 migration, Inbox triage, approved Search sources and Inbox exclusion, recurrence boundaries, forward-only Replan, all 12 M11 desktop surfaces, bilingual operation, print/Word, restart persistence, and forced-kill durability. The smoke verifies that the real Daily Canvas profile metadata fingerprint is unchanged.
+- Milestone 11 verification (synthetic data): TypeScript checking; 86/86 automated tests across 15 suites; production build; Windows/MSVC Tauri build; packaged-app smoke 58/58 checks passed using an isolated WebView2 profile; NSIS installer/upgrade/data-retention smoke 17/17 checks passed. Coverage includes schema/backup format v7, v1-v6 migration, Inbox triage, approved Search sources and Inbox exclusion, recurrence boundaries, forward-only Replan with anchor transition and gap semantics, active start tracking, all 12 M11 desktop surfaces, bilingual operation, print/Word, restart persistence, and forced-kill durability. The smoke verifies that the real Daily Canvas profile metadata fingerprint is unchanged. Remote GitHub Actions CI confirms all tiers green (Classify, Core, Desktop Windows/MSVC, PR Gate).
 
 ## Known Risks Entering v1.0
 
@@ -169,11 +169,11 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 
 ## Next Engineering Objective
 
-Start **Milestone 12: Timeline and Desktop Execution** only after the M11 PR is independently reviewed and merged. Scope: optional Day/Week Timeline, simple Time Blocks, local reminders, and the approved small shortcut set while preserving schedule semantics.
+Start **Milestone 12: Timeline and Desktop Execution**. Scope: optional Day/Week Timeline, simple Time Blocks, local reminders, and the approved small shortcut set while preserving schedule semantics. It has not started.
 
 ## Post-Merge Repository State
 
-- Branch: `main` with the Milestone 11 merge commit (merge SHA assigned by GitHub); M11 started from verified baseline `98129cdae48b0441b4970d771d86a59c763eeca7`.
+- Branch: `main` (Milestone 11 integrated; developed from baseline `98129cdae48b0441b4970d771d86a59c763eeca7` via PR #6)
 - Current application version: `0.7.0`
 - Current Dexie schema and backup format: `v7`
 - Current implementation baseline: Milestone 7.1 + Milestone 8 desktop foundation + Milestone 9 frozen blueprint + Milestone 10 desktop UI migration + Milestone 11 capture/task enrichment
