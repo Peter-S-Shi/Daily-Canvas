@@ -8,8 +8,11 @@ import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/qu
 import { calculateTaskStats } from "../services/statisticsService";
 import { deleteTask, updateTask } from "../services/taskService";
 import { canReplanTask, replanTask } from "../services/replanService";
+import { updateTimeBlock } from "../services/timeBlockService";
 import { todayKey } from "../lib/dates";
-import type { CheckIn, Task } from "../types";
+import type { CheckIn, ReminderOffset, Task, TimeBlock } from "../types";
+
+const reminderOptions: ReminderOffset[] = ["off", "at-start", "5", "10", "15", "30", "60"];
 
 type DetailTab = "overview" | "schedule" | "checklist" | "notes" | "lifecycle" | "history";
 const tabs: DetailTab[] = ["overview", "schedule", "checklist", "notes", "lifecycle", "history"];
@@ -34,7 +37,7 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
   const [error, setError] = useState("");
   const [replanDate, setReplanDate] = useState("");
   useEffect(() => { setTab("overview"); setError(""); }, [task?.id]);
-  const data = useLiveQuery(async () => (task ? { checkIns: await db.checkIns.where("taskId").equals(task.id).toArray(), lifecycle: await db.taskLifecycles.get(task.id), pauses: await db.pausePeriods.where("taskId").equals(task.id).toArray(), events: await db.milestoneEvents.where("taskId").equals(task.id).toArray(), areas: await db.areas.toArray(), settings: await db.settings.get("app") } : undefined), [task?.id]);
+  const data = useLiveQuery(async () => (task ? { checkIns: await db.checkIns.where("taskId").equals(task.id).toArray(), lifecycle: await db.taskLifecycles.get(task.id), pauses: await db.pausePeriods.where("taskId").equals(task.id).toArray(), events: await db.milestoneEvents.where("taskId").equals(task.id).toArray(), areas: await db.areas.toArray(), settings: await db.settings.get("app"), futureBlocks: (await db.timeBlocks.where("taskId").equals(task.id).toArray()).filter((block) => block.date >= todayKey()).sort((a, b) => a.date.localeCompare(b.date) || a.startMinutes - b.startMinutes) } : undefined), [task?.id]);
   if (!task) return <section className="task-detail-pane empty"><p>{t("selectTaskHint")}</p></section>;
   if (!data) return <section className="task-detail-pane" aria-busy="true"/>;
 
@@ -120,6 +123,18 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
             <div className="replan-row"><dt>{t("replan")}</dt><dd><input type="date" min={todayKey()} value={replanDate} onChange={(event) => setReplanDate(event.target.value)}/><button type="button" className="button secondary" disabled={!replanDate} onClick={async () => { try { await replanTask(task.id, replanDate); setReplanDate(""); } catch { setError(t("saveError")); } }}>{t("replanFuture")}</button></dd></div>
           )}
         </dl>}
+
+        {tab === "schedule" && data.futureBlocks.length > 0 && <div className="upcoming-blocks">
+          <h3>{t("upcomingTimeBlocks")}</h3>
+          <ul className="task-history">
+            {data.futureBlocks.map((block: TimeBlock) => <li key={block.id}>
+              <span>{date(block.date)} · {String(Math.floor(block.startMinutes / 60)).padStart(2, "0")}:{String(block.startMinutes % 60).padStart(2, "0")}</span>
+              <label className="field inline-field"><span className="sr-only">{t("reminder")}</span>
+                <select value={block.reminder} onChange={(event) => void updateTimeBlock(block.id, { reminder: event.target.value as ReminderOffset })}>{reminderOptions.map((option) => <option key={option} value={option}>{t(`reminder_${option}`)}</option>)}</select>
+              </label>
+            </li>)}
+          </ul>
+        </div>}
 
         {tab === "checklist" && ((task.checklist?.length ?? 0) === 0 ? <p className="muted">{t("noChecklistItems")}</p> : <ul className="checklist-list">{task.checklist!.map((item) => <li key={item.id}><label><input type="checkbox" checked={item.completed} onChange={() => updateTask(task.id, { checklist: task.checklist!.map((value) => value.id === item.id ? { ...value, completed: !value.completed, updatedAt: new Date().toISOString() } : value) })}/><span className={item.completed ? "strike" : ""}>{item.title}</span></label></li>)}</ul>)}
 

@@ -6,6 +6,7 @@ export type SectionId =
   | "inboxCaptures"
   | "floating"
   | "calendar"
+  | "timeline"
   | "allTasks"
   | "areas"
   | "lifecycle"
@@ -15,7 +16,8 @@ export type SectionId =
   | "periodReview"
   | "settingsGeneral"
   | "settingsAppearance"
-  | "settingsData";
+  | "settingsData"
+  | "settingsShortcuts";
 
 export interface WorkspaceSection {
   id: SectionId;
@@ -36,11 +38,10 @@ export interface Workspace {
 }
 
 /**
- * The M11-active subset of the frozen M9 target information architecture
+ * The M11/M12-active subset of the frozen M9 target information architecture
  * (`docs/m9-desktop-ui-blueprint/`, behavior spec Appendix A).
  *
- * Timeline, On This Day, Notifications, Shortcuts, and About & Updates belong
- * to M12-M13. Frozen Decision D4 requires
+ * On This Day, Notifications, and About & Updates remain M13. Frozen Decision D4 requires
  * that a destination appear only once it is real and usable, so they are absent
  * here rather than rendered as disabled placeholders: adding one later means
  * adding its entry below in the same change that makes it work.
@@ -48,11 +49,11 @@ export interface Workspace {
 export const workspaces: Workspace[] = [
   { id: "today", labelKey: "today", icon: "today", sections: [{ id: "todayExecution", labelKey: "today", backgroundSlot: "today" }] },
   { id: "inbox", labelKey: "inbox", icon: "inbox", sections: [{ id: "inboxCaptures", labelKey: "inbox" }] },
-  { id: "plan", labelKey: "plan", icon: "plan", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }] },
+  { id: "plan", labelKey: "plan", icon: "plan", sections: [{ id: "floating", labelKey: "floating" }, { id: "calendar", labelKey: "calendar", backgroundSlot: "calendar" }, { id: "timeline", labelKey: "timeline" }] },
   { id: "tasks", labelKey: "ws_tasks", icon: "tasks", sections: [{ id: "allTasks", labelKey: "allTasks" }, { id: "areas", labelKey: "areas" }, { id: "lifecycle", labelKey: "lifecycle" }, { id: "rewards", labelKey: "rewards" }] },
   { id: "reflect", labelKey: "ws_reflect", icon: "reflect", sections: [{ id: "dailyReflection", labelKey: "dailyReflection", backgroundSlot: "reflection" }, { id: "meditations", labelKey: "meditations" }] },
   { id: "review", labelKey: "review", icon: "review", sections: [{ id: "periodReview", labelKey: "review" }] },
-  { id: "settings", labelKey: "settings", icon: "settings", anchored: true, sectionPlacement: "page", sections: [{ id: "settingsGeneral", labelKey: "general" }, { id: "settingsAppearance", labelKey: "appearance" }, { id: "settingsData", labelKey: "dataAndBackup" }] },
+  { id: "settings", labelKey: "settings", icon: "settings", anchored: true, sectionPlacement: "page", sections: [{ id: "settingsGeneral", labelKey: "general" }, { id: "settingsAppearance", labelKey: "appearance" }, { id: "settingsData", labelKey: "dataAndBackup" }, { id: "settingsShortcuts", labelKey: "shortcuts" }] },
 ];
 
 export const primaryWorkspaces = workspaces.filter((workspace) => !workspace.anchored);

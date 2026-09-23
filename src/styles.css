@@ -603,6 +603,28 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
 .template-card small, .privacy-line { color: var(--muted); }
 .onboarding-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .privacy-line { display: block; text-align: right; font-size: 12px; }
+/* ---------- Timeline (M12) ---------- */
+.timeline-day-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
+.timeline-day-grid { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.timeline-row { position: relative; border-bottom: 1px solid var(--line); }
+.timeline-row.hour-row { border-bottom-color: var(--line-strong); }
+.timeline-hour-label { position: absolute; top: -7px; left: 8px; padding: 0 4px; background: var(--surface); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.timeline-block-position { position: absolute; left: 76px; right: 8px; }
+.time-block-chip { display: grid; gap: 2px; width: 100%; height: 100%; padding: 4px 8px; border: 0; border-left: 3px solid var(--task-color, var(--accent)); border-radius: 6px; background: var(--selected); text-align: left; overflow: hidden; cursor: pointer; }
+.time-block-chip strong { font-size: 12px; line-height: 1.2; }
+.time-block-chip span { color: var(--muted); font-size: 11px; }
+.time-block-chip.needs-review { outline: 2px solid var(--warning-line); }
+.available-work-panel .item-copy { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; border-left: 3px solid var(--task-color, var(--line)); background: var(--surface); }
+.timeline-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.timeline-week-day { min-height: 160px; }
+.week-block-list { display: grid; gap: 6px; }
+.week-block-list .time-block-chip { height: auto; }
+.todays-plan .plan-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-align: left; }
+.pill-warning.compact { padding: 1px 6px; font-size: 10px; }
+.inline-field { display: inline-flex; align-items: center; }
+.upcoming-blocks { margin-top: 14px; }
+.shortcuts-list kbd { padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-soft); font: 700 12px/1.4 var(--font-mono, monospace); }
+
 .recovery-screen { align-content: center; justify-items: center; gap: 12px; text-align: center; }
 .recovery-screen h1 { font: 700 26px/1.25 var(--font-display); }
 .recovery-screen p { max-width: 620px; color: var(--muted); line-height: 1.6; }
@@ -618,6 +640,7 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
   .detail-tabs { gap: 15px; }
   .calendar-layout { grid-template-columns: minmax(0, 1fr); }
   .date-detail { position: static; }
+  .timeline-day-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 960px) {
@@ -653,6 +676,7 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
   .tasks-shell { grid-template-columns: 220px minmax(0, 1fr); }
   .quota-grid, .reward-grid, .field-pair, .background-options, .template-grid { grid-template-columns: minmax(0, 1fr); }
   .settings-layout { grid-template-columns: minmax(0, 1fr); }
+  .timeline-week-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------- Motion ---------- */
