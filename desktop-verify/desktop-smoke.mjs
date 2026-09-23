@@ -1,22 +1,29 @@
 // End-to-end evidence run against the PACKAGED Daily Canvas desktop exe (Windows).
 // Usage: node desktop-verify/desktop-smoke.mjs <exe> <fixtureDir> <outDir>
 // Synthetic data only. Uses a disposable WebView2 profile under outDir; never points at the real product profile.
+//
+// Milestone 13 note: Automatic Backup writes real files to the app-owned `app_local_data_dir()/backups`
+// directory (`dataRoot`), which is a genuine OS per-user-per-identifier path, NOT covered by the isolated
+// WebView2 `userDataDir` above (that only isolates IndexedDB/browser storage). This smoke run therefore
+// takes ownership of `dataRoot` the same safe way installer-smoke.mjs already does (refuse unless empty
+// or previously created by desktop-verify; always clean up afterward) instead of asserting it stays
+// byte-identical, which would be incompatible with a legitimate desktop-native feature that needs it.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launchApp, closeApp, sleep } from "./cdp.mjs";
-import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, prepareIsolatedWebViewData, containsIndexedDb, treeMetadataStamp, SHELL } from "./lib.mjs";
+import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, prepareIsolatedWebViewData, containsIndexedDb, wipeAppDataSafely, SHELL } from "./lib.mjs";
 
 const [exe, fixtureDir, outDir] = process.argv.slice(2).map((p) => resolve(p));
 mkdirSync(outDir, { recursive: true });
 const userDataDir = prepareIsolatedWebViewData(outDir);
-const realDataStampBefore = treeMetadataStamp(dataRoot);
+wipeAppDataSafely(); // takes safe, disposable ownership of dataRoot (see Milestone 13 note above) for Automatic Backup's real files
 const { results, check } = createReporter(); const t0 = Date.now();
 const shot = async (app, name) => writeFileSync(join(outDir, `${name}.png`), await app.cdp.screenshot());
 const pdfInfo = (b64) => { const raw = Buffer.from(b64, "base64").toString("latin1"); const m = raw.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/); return { width: m && Math.round(Number(m[1])), height: m && Math.round(Number(m[2])), pages: (raw.match(/\/Type\s*\/Page[^s]/g) ?? []).length, bytes: raw.length }; };
 
 if (!existsSync(exe)) throw new Error(`exe not found: ${exe}`);
-const fixturePath = join(fixtureDir, "synthetic-v8-backup.json");
+const fixturePath = join(fixtureDir, "synthetic-v9-backup.json");
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
 const expected = { areas: fixture.areas.length, tasks: fixture.tasks.length, checkIns: fixture.checkIns.length, dailyReflections: fixture.dailyReflections.length, meditationEntries: fixture.meditationEntries.length, appearanceAssets: fixture.appearanceAssets.length, experienceLogs: fixture.experienceLogs.length, timeBlocks: fixture.timeBlocks.length };
 
@@ -37,13 +44,13 @@ check("fresh start shows onboarding (empty DB)", await clickText(app.cdp, "Start
 check("WebView2 data is isolated from the real product directory", containsIndexedDb(userDataDir) && resolve(userDataDir).toLowerCase() !== resolve(dataRoot).toLowerCase(), userDataDir);
 await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 15000, "main shell");
 
-// ---------- Restore synthetic v8 backup through the real Settings UI ----------
-console.log("== Restore v8 backup (11 MB synthetic) via Settings");
+// ---------- Restore synthetic v9 backup through the real Settings UI ----------
+console.log("== Restore v9 backup (11 MB synthetic) via Settings");
 await nav(app.cdp, "settings", "settingsData"); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
 await app.cdp.setFiles('input[type=file][accept="application/json"]', [fixturePath]);
 await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 30000, "restore preview");
 const previewText = await app.cdp.evaluate(`document.querySelector('.restore-preview').innerText`);
-check("restore preview parsed the v8 backup", /tasks|Tasks|任务/.test(previewText) || previewText.length > 20, previewText.replace(/\s+/g, " ").slice(0, 160));
+check("restore preview parsed the v9 backup", /tasks|Tasks|任务/.test(previewText) || previewText.length > 20, previewText.replace(/\s+/g, " ").slice(0, 160));
 const safetyPath = join(outDir, "safety-backup.json");
 const saved = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.restore-preview button')].find(b=>b.classList.contains('primary'));if(!b)return false;b.click();return true})()`, safetyPath);
 check("safety backup goes through the native Save dialog", saved.exists && saved.size > 0 && /SAVED_INVOKED/.test(saved.dialog), `${saved.size} bytes; ${saved.dialog.split(/\r?\n/)[1] ?? ""}`);
@@ -55,7 +62,7 @@ await shot(app, "02-after-restore-settings");
 // ---------- Representative screens (English) ----------
 console.log("== Screens");
 // Every M11/M12 destination, addressed by workspace/section id (src/navigation/workspaceModel.ts).
-const views = [["today"], ["inbox"], ["plan", "floating"], ["plan", "calendar"], ["plan", "timeline"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"], ["settings", "settingsShortcuts"]];
+const views = [["today"], ["inbox"], ["plan", "floating"], ["plan", "calendar"], ["plan", "timeline"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "onThisDay"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"], ["settings", "settingsShortcuts"], ["settings", "settingsAbout"]];
 for (const [workspace, section] of views) { const name = section ?? workspace; const opened = await nav(app.cdp, workspace, section); await sleep(700); const len = await app.cdp.evaluate(`document.querySelector('.workspace-content').innerText.length`); await shot(app, `03-en-${name}`); check(`screen renders: ${name}`, opened && len > 20, `${len} chars`); }
 
 // ---------- Timeline Week mode (Day mode is already covered by the screens loop above) ----------
@@ -96,10 +103,98 @@ const exportPath = join(outDir, "export-v7.json");
 const exp = await saveVia(app, `(()=>{const b=document.querySelector('.settings-panel .setting-control .button.primary');if(!b)return false;b.click();return true})()`, exportPath);
 check("JSON export saved through native dialog (11 MB over IPC)", exp.exists && exp.size > 1_000_000 && /^daily-canvas-backup-\d{4}-\d{2}-\d{2}\.json$/.test(exp.name ?? ""), `${exp.name}, ${exp.size} bytes`);
 const exported = JSON.parse(readFileSync(exportPath, "utf8"));
-check("exported backup is format v8", exported.version === 8 && exported.format === "daily-canvas-backup");
+check("exported backup is format v9", exported.version === 9 && exported.format === "daily-canvas-backup");
 const same = (key) => sha(Buffer.from(JSON.stringify(exported[key].map((x) => JSON.stringify(x)).sort()))) === sha(Buffer.from(JSON.stringify(fixture[key].map((x) => JSON.stringify(x)).sort())));
 for (const key of ["areas", "tasks", "checkIns", "dailyReflections", "meditationEntries", "experienceLogs", "timeBlocks"]) check(`round-trip identical: ${key}`, same(key), `${exported[key].length} records`);
 check("round-trip identical: 2 large appearance assets", exported.appearanceAssets.length === 2 && exported.appearanceAssets.every((a) => fixture.appearanceAssets.find((f) => f.id === a.id)?.dataUrl === a.dataUrl), `${exported.appearanceAssets.map((a) => a.dataUrl.length).join("+")} chars`);
+
+// ---------- Milestone 13: Reflection Templates ----------
+console.log("== Reflection Templates");
+await nav(app.cdp, "reflect", "dailyReflection"); await sleep(500);
+check("pick the Daily Check-in template", await clickText(app.cdp, "Daily Check-in"));
+await app.cdp.evaluate(`(()=>{const ta=document.getElementById('daily-journal');const set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,'Smoke-test reflection using the Daily Check-in template.');ta.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
+check("save the templated reflection", await clickText(app.cdp, "Save daily reflection"));
+await app.cdp.waitFor(`document.querySelector('[role=status]') && document.querySelector('[role=status]').textContent.includes('Reflection saved')`, 10000, "reflection saved status");
+const templateRoundTrip = await app.cdp.evaluate(`new Promise((res)=>{const today=new Date().toISOString().slice(0,10);const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const q=r.result.transaction("dailyReflections").objectStore("dailyReflections").get(today);q.onsuccess=()=>{r.result.close();res(q.result&&q.result.templateId)}}})`);
+check("templateId round-trips into the saved Daily Reflection", templateRoundTrip === "daily-checkin", String(templateRoundTrip));
+const reflectionMdPath = join(outDir, "reflection-export.md");
+const reflectionMd = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.journal-actions button')].find(b=>b.textContent.includes('Export as Markdown'));if(!b)return false;b.click();return true})()`, reflectionMdPath);
+check("Reflection exported as a real local .md file via the native Save dialog", reflectionMd.exists && reflectionMd.size > 0 && /\.md$/.test(reflectionMd.name ?? ""), `${reflectionMd.name}, ${reflectionMd.size} bytes`);
+if (reflectionMd.exists) { const md = readFileSync(reflectionMdPath, "utf8"); check("Reflection .md contains the user's own unedited text", md.includes("Smoke-test reflection using the Daily Check-in template.")); }
+
+// ---------- Milestone 13: On This Day ----------
+console.log("== On This Day");
+// Seed two historical entries dated exactly 1 and 2 years before real "today" (wall-clock, computed in-app) so the
+// check is correct regardless of which calendar day this smoke run actually happens on.
+const seeded = await app.cdp.evaluate(`new Promise((res)=>{
+  const today=new Date(); const y1=new Date(today); y1.setFullYear(y1.getFullYear()-1); const y2=new Date(today); y2.setFullYear(y2.getFullYear()-2);
+  const key=(d)=>d.toISOString().slice(0,10);
+  const r=indexedDB.open("DailyCanvas"); r.onsuccess=()=>{
+    const db=r.result; const tx=db.transaction(["dailyReflections","meditationEntries"],"readwrite");
+    tx.objectStore("dailyReflections").put({date:key(y1),emotionIds:[],note:"On This Day smoke reflection (1 year ago)",createdAt:y1.toISOString(),updatedAt:y1.toISOString()});
+    tx.objectStore("meditationEntries").put({id:"otd-smoke-meditation",content:"On This Day smoke meditation (2 years ago)",sortOrder:9999,createdAt:y2.toISOString(),updatedAt:y2.toISOString()});
+    tx.oncomplete=()=>{db.close();res({y1:key(y1),y2:key(y2)})};
+  };
+})`);
+await nav(app.cdp, "reflect", "onThisDay"); await sleep(600); await shot(app, "03c-en-on-this-day");
+const otdGroups = await app.cdp.evaluate(`document.querySelectorAll('.on-this-day-group').length`);
+check("On This Day groups the seeded entries by year (2 groups: 1 and 2 years ago)", otdGroups === 2, `${otdGroups} groups`);
+const otdText = await app.cdp.evaluate(`document.querySelector('.on-this-day-page').innerText`);
+check("On This Day shows both the Reflection and Meditation excerpts", otdText.includes("On This Day smoke reflection") && otdText.includes("On This Day smoke meditation"));
+check("Open original navigates back to the source Daily Reflection", await clickText(app.cdp, "Open original"));
+await sleep(400);
+const openedDate = await app.cdp.evaluate(`document.querySelector('.date-jump input')?.value`);
+check("Open original opened the exact source date", openedDate === seeded.y1, `${openedDate} vs ${seeded.y1}`);
+
+// ---------- Milestone 13: Review Markdown export ----------
+console.log("== Review Markdown export");
+await nav(app.cdp, "review"); await sleep(600);
+const reviewMdPath = join(outDir, "review-export.md");
+const reviewMd = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.review-filters button')].find(b=>b.textContent.includes('Export as Markdown'));if(!b)return false;b.click();return true})()`, reviewMdPath);
+check("Review exported as a real local .md file via the native Save dialog", reviewMd.exists && reviewMd.size > 0 && /\.md$/.test(reviewMd.name ?? ""), `${reviewMd.name}, ${reviewMd.size} bytes`);
+if (reviewMd.exists) { const md = readFileSync(reviewMdPath, "utf8"); check("Review .md contains the period and a Completed section", /Daily Canvas Review/.test(md) && md.includes("Completed")); }
+
+// ---------- Milestone 13: Automatic Backup (native adapter + rotation + restore-from-automatic-backup) ----------
+console.log("== Automatic Backup");
+await nav(app.cdp, "settings", "settingsData"); await sleep(500);
+const autoBackupToggledOn = await app.cdp.evaluate(`document.querySelector('.setting-row input.switch[aria-label="Enable automatic backup"]')?.checked`);
+check("Automatic Backup is enabled by default", autoBackupToggledOn === true, String(autoBackupToggledOn));
+const backupDir = await app.cdp.evaluate(`window.__TAURI_INTERNALS__.invoke('backup_directory')`);
+check("backup_directory adapter returns an explicit app-owned backups path", typeof backupDir === "string" && backupDir.toLowerCase().includes("backups"), backupDir);
+// "Back up now" bypasses the once-per-day guard by design (a manual action), so clicking it repeatedly lets this
+// smoke run exercise real retention pruning end to end through the native write/list/delete commands.
+for (let i = 0; i < 9; i++) {
+  check(`Back up now (${i + 1}/9)`, await clickText(app.cdp, "Back up now"));
+  // Wait for the async write+prune to actually finish (button re-enabled) rather than a fixed sleep, so
+  // consecutive clicks never race ahead of the previous write while it is still in flight.
+  await app.cdp.waitFor(`[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Back up now'&&!b.disabled)`, 15000, `backup ${i + 1} button re-enabled`);
+  await sleep(150);
+}
+const retained = await app.cdp.evaluate(`window.__TAURI_INTERNALS__.invoke('list_auto_backups')`);
+check("retention keeps only the most recent 7 automatic backups", Array.isArray(retained) && retained.length === 7, `${retained?.length} files`);
+await sleep(300); await shot(app, "09-en-settings-data-backup-history");
+check("Settings shows the retained backup history", await app.cdp.evaluate(`document.querySelectorAll('.backup-history-list li').length`) === 7);
+const lastAutoBackupShown = await app.cdp.evaluate(`document.querySelector('.fact-list dd')?.textContent`);
+check("Settings shows a last-successful-backup time", Boolean(lastAutoBackupShown) && lastAutoBackupShown !== "Not yet run", lastAutoBackupShown);
+// ---- Restore from one retained automatic backup, through the SAME preview/confirm pipeline as manual import ----
+check("open Restore from this backup on the newest retained automatic backup", await clickText(app.cdp, "Restore from this backup"));
+await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 15000, "restore preview from an automatic backup");
+const autoSafety = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.restore-preview button')].find(b=>b.classList.contains('primary'));if(!b)return false;b.click();return true})()`, join(outDir, "auto-backup-safety.json"));
+check("safety backup before an automatic-backup restore goes through the native Save dialog", autoSafety.exists && autoSafety.size > 0);
+await app.cdp.waitFor(`document.querySelector('.status-message')`, 60000, "restore-from-automatic-backup status");
+const afterAutoRestore = await idbCounts(app.cdp);
+check("restoring from an automatic backup lands on a consistent, non-empty dataset", afterAutoRestore.tasks > 0 && afterAutoRestore.dailyReflections > 0, JSON.stringify(afterAutoRestore));
+
+// ---------- Milestone 13: About & Updates ----------
+console.log("== About & Updates");
+await nav(app.cdp, "settings", "settingsAbout"); await sleep(500);
+const shownVersion = await app.cdp.evaluate(`document.querySelector('.fact-list dd')?.textContent`);
+check("About & Updates shows the installed version", /^\d+\.\d+\.\d+$/.test(shownVersion ?? ""), shownVersion);
+check("Check for updates is clickable", await clickText(app.cdp, "Check for updates"));
+await app.cdp.waitFor(`document.querySelector('[role=status]')`, 20000, "update-check result");
+await sleep(500); await shot(app, "10-en-about-updates");
+const updateStatusText = await app.cdp.evaluate(`document.querySelector('[role=status]')?.textContent`);
+check("update check settles into one of the three defined states without blocking the app", /Up to date|Unable to check|Update available/.test(updateStatusText ?? ""), updateStatusText);
 
 // ---------- Appearance image import through file input ----------
 console.log("== Appearance import (4 MB PNG)");
@@ -184,7 +279,7 @@ const exeBytes = statSync(exe).size; console.log(`   exe size: ${(exeBytes / 1e6
 const mem = execFileSync("powershell", ["-NoProfile", "-Command", `$p=Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -eq ${app.pid} -or $_.ParentProcessId -eq ${app.pid} }; ($p | Measure-Object WorkingSetSize -Sum).Sum`], { encoding: "utf8" }).trim();
 console.log(`   working set (app + direct children): ${(Number(mem) / 1e6).toFixed(0)} MB`);
 const finalProblems = app.cdp.problems(); check("no console errors after restart runs", finalProblems.length === 0, finalProblems.slice(0, 3).join(" ‖ "));
-check("real Daily Canvas profile was not modified", treeMetadataStamp(dataRoot) === realDataStampBefore, "metadata fingerprint unchanged");
+check("Automatic Backup wrote only inside the disposable, desktop-verify-owned data folder", existsSync(join(dataRoot, "backups")) && existsSync(join(dataRoot, ".dc-verify-owned")), dataRoot);
 // ---------- Print through the desktop adapter (native WebView2 print surface) ----------
 console.log("== Print adapter (last: the print surface is modal)");
 await nav(app.cdp, "reflect", "meditations"); await sleep(600); await clickText(app.cdp, "导出全部"); await sleep(800);
@@ -195,6 +290,7 @@ const printState = await Promise.race([app.cdp.evaluate(`window.__printResult`),
 const cap = ps("capture-window.ps1", "-ProcessId", String(app.pid), "-Out", join(outDir, "07-print-surface.png")); console.log("   capture:", cap.stdout.trim());
 
 const closeHow = await closeApp(app, { force: true }); console.log(`   final close: ${closeHow}`);
+rmSync(dataRoot, { recursive: true, force: true }); // Automatic Backup's real files live here; always clean up (see Milestone 13 note at top of file)
 
 const failed = results.filter((r) => !r.ok);
 writeFileSync(join(outDir, "results.json"), JSON.stringify({ when: new Date().toISOString(), exe, exeBytes, userDataDir, dataMB: total / 1e6, results }, null, 2));

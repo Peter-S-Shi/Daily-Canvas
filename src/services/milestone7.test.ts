@@ -120,7 +120,7 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
 
     await db.meditationEntries.bulkPut(entries);
     const backup = await createBackup();
-    expect(backup.version).toBe(8);
+    expect(backup.version).toBe(9);
     expect(backup.meditationEntries).toEqual(expect.arrayContaining(entries));
     await db.meditationEntries.clear();
     await restoreBackup(backup);

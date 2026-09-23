@@ -53,7 +53,7 @@ it("generates the synthetic v8 fixture", async () => {
     if (i % 25 === 0) logs.push({ id: `log-${i}`, taskId: "t-french", date, comparison: "easier", effort: 2, note: "Felt lighter today 今天轻松一些", updatedAt: now });
   }
   await db.checkIns.bulkAdd(checkIns); await db.experienceLogs.bulkAdd(logs);
-  const reflections: DailyReflection[] = Array.from({ length: 120 }, (_, i) => ({ date: day(i), emotionIds: ["system-calm"], intensity: 2, note: `Reflection ${i}: 今天我学到了很多 — steady progress 🌱`, createdAt: now, updatedAt: now }));
+  const reflections: DailyReflection[] = Array.from({ length: 120 }, (_, i) => ({ date: day(i), emotionIds: ["system-calm"], intensity: 2, note: `Reflection ${i}: 今天我学到了很多 — steady progress 🌱`, templateId: i === 0 ? "gratitude" : undefined, createdAt: now, updatedAt: now }));
   await db.dailyReflections.bulkAdd(reflections);
   const meditations: MeditationEntry[] = [
     "静坐片刻，先照顾好呼吸。\n\nStart small, stay kind.",
@@ -72,9 +72,9 @@ it("generates the synthetic v8 fixture", async () => {
   const payload = await createBackup();
   // the fixture must itself be a valid, current-version backup (this is also a cheap migration/backup regression)
   const preview = migrateBackup(JSON.parse(JSON.stringify(payload)));
-  if (preview.sourceVersion !== 8 || preview.migrated || preview.warnings.length) throw new Error(`fixture is not a clean v8 backup: ${JSON.stringify(preview.warnings)}`);
+  if (preview.sourceVersion !== 9 || preview.migrated || preview.warnings.length) throw new Error(`fixture is not a clean v9 backup: ${JSON.stringify(preview.warnings)}`);
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(`${OUT}/synthetic-v8-backup.json`, JSON.stringify(payload, null, 2));
+  writeFileSync(`${OUT}/synthetic-v9-backup.json`, JSON.stringify(payload, null, 2));
   writeFileSync(`${OUT}/upload-image.png`, makePng(1500, 950, 3));
   console.log(JSON.stringify({ tasks: payload.tasks.length, checkIns: payload.checkIns.length, reflections: payload.dailyReflections.length, meditations: payload.meditationEntries.length, assets: payload.appearanceAssets.length, timeBlocks: payload.timeBlocks.length, assetChars: assets.map((a) => a.dataUrl.length) }));
 });

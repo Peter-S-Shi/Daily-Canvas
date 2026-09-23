@@ -687,6 +687,20 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
 
+/* ---------- Milestone 13: Reflection Templates, On This Day, Automatic Backup, About & Updates ---------- */
+.reflection-template-prompts { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.reflection-template-prompts li { font: italic 15px/1.4 var(--font-display); color: var(--accent-ink); }
+.on-this-day-group { margin-top: 20px; }
+.on-this-day-group h3 { font: 700 16px/1.2 var(--font-display); margin: 0 0 8px; }
+.on-this-day-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.on-this-day-entry { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 6px; }
+.on-this-day-kind { font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.on-this-day-excerpt { margin: 0; color: var(--ink); line-height: 1.5; }
+.settings-subheading { margin: 24px 0 4px; font: 700 15px/1.2 var(--font-display); }
+.backup-history { margin-top: 12px; }
+.backup-history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.backup-history-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+
 /* ---------- Print (Meditations print/PDF contract, M7/M7.1 — unchanged) ---------- */
 @media print {
   @page { margin: 0; }

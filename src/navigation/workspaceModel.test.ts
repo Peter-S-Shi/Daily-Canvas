@@ -2,21 +2,21 @@ import { describe, expect, it } from "vitest";
 import { calendarEvidenceFor, reflectionFor } from "./useWorkspaceNavigation";
 import { anchoredWorkspaces, primaryWorkspaces, workspaceOf, workspaces, type SectionId } from "./workspaceModel";
 
-describe("M11/M12 workspace information architecture", () => {
+describe("M11/M12/M13 workspace information architecture", () => {
   it("exposes the M11/M12-active primary destinations in blueprint order, with Settings anchored", () => {
     expect(primaryWorkspaces.map((workspace) => workspace.id)).toEqual(["today", "inbox", "plan", "tasks", "reflect", "review"]);
     expect(anchoredWorkspaces.map((workspace) => workspace.id)).toEqual(["settings"]);
   });
 
-  it("activates Timeline and the Shortcuts cheat sheet while keeping M13 destinations out of live navigation", () => {
+  it("activates Timeline, the Shortcuts cheat sheet, On This Day, and About & Updates, while keeping out-of-scope desktop Notifications absent", () => {
     const sections = workspaces.flatMap((workspace) => workspace.sections.map((section) => section.id as string));
     expect(workspaceOf("inboxCaptures").id).toBe("inbox");
     expect(workspaceOf("timeline").id).toBe("plan");
     expect(workspaceOf("settingsShortcuts").id).toBe("settings");
-    for (const deferred of ["onThisDay", "notifications", "aboutUpdates"]) {
-      expect(workspaces.some((workspace) => workspace.id === deferred)).toBe(false);
-      expect(sections).not.toContain(deferred);
-    }
+    expect(workspaceOf("onThisDay").id).toBe("reflect");
+    expect(workspaceOf("settingsAbout").id).toBe("settings");
+    expect(workspaces.some((workspace) => (workspace.id as string) === "notifications")).toBe(false);
+    expect(sections).not.toContain("notifications");
   });
 
   it("groups the existing surfaces under their frozen workspaces without renaming the domain", () => {

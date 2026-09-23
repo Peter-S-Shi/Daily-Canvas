@@ -1,7 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Main window: only application commands, plus local notifications for Time Block reminders; no filesystem, shell or network plugin access.",
+  "description": "Main window: application commands, local notifications for Time Block reminders, opening the GitHub Release page (Milestone 13 About & Updates) and a single scoped HTTP endpoint for its release-metadata check. No filesystem or general shell/network plugin access -- Automatic Backup uses narrow custom commands (see src/lib.rs), never the fs plugin.",
   "windows": ["main"],
-  "permissions": ["notification:default"]
+  "permissions": [
+    "notification:default",
+    "opener:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://api.github.com/repos/Peter-S-Shi/Daily-Canvas/releases/latest" }]
+    }
+  ]
 }

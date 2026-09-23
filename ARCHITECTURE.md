@@ -4,7 +4,7 @@
 
 Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-The current implementation is v0.7.0 plus the completed Milestone 11–12 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. The v1.0 target adds the remaining approved reflection/preservation and desktop-native capabilities (Milestone 13) on top of this accepted foundation.
+The current implementation is v0.7.0 plus the completed Milestone 11–13 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. Milestone 13 completed the approved v1.0 reflection/preservation and desktop-native capability set on top of this accepted foundation.
 
 The architecture supports five connected layers:
 
@@ -88,9 +88,9 @@ Timeline and Time Blocking help users who want clock-based planning, but they mu
 
 ---
 
-## 3. Current Persistent Model Through Milestone 12
+## 3. Current Persistent Model Through Milestone 13
 
-The current authoritative persistent model is Dexie schema / backup format v8.
+The current authoritative persistent model is Dexie schema / backup format v9.
 
 ```text
 Area
@@ -116,17 +116,20 @@ DailyReflection[date]
   ├── emotionIds[]
   ├── optional intensity
   ├── note
-  └── promptId
+  ├── promptId
+  └── optional templateId
 
 EmotionDefinition
 AppearanceAsset
 AppSettings
+  ├── autoBackupEnabled
+  └── optional lastAutoBackupAt
 MeditationEntry
 ```
 
-Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, Available Work, reminders, and backup/migration logic.
+Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, Available Work, reminders, On This Day, Reflection/Review Markdown export, automatic backup rotation, update-check version comparison, and backup/migration logic.
 
-Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations. Milestone 11 added separate unresolved Inbox captures, Task-owned enrichment fields, and append-only Replan events; Search remains derived. Milestone 12 added the `TimeBlock` collection (each referencing exactly one Task, never a second authoritative task store) and local, Time-Block-owned reminders; Available Work remains derived, not stored.
+Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations. Milestone 11 added separate unresolved Inbox captures, Task-owned enrichment fields, and append-only Replan events; Search remains derived. Milestone 12 added the `TimeBlock` collection (each referencing exactly one Task, never a second authoritative task store) and local, Time-Block-owned reminders; Available Work remains derived, not stored. Milestone 13 added `DailyReflection.templateId` and `AppSettings.autoBackupEnabled`/`lastAutoBackupAt` (both additive fields on existing tables -- no new Dexie table was needed); On This Day, Reflection/Review export, and retained automatic-backup history all remain derived (from existing tables or from the app-owned backup directory listing) rather than materialized as a second authoritative store.
 
 The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive hierarchy.
 
@@ -154,11 +157,13 @@ Desktop App
    └── desktop adapters
           ├── local file / backup adapter    (M8: save-file dialog + print surface — src/desktop/desktopAdapter.ts)
           ├── notification adapter           (M12: local Time Block reminders, tauri-plugin-notification)
-          ├── release-awareness adapter      (planned: Milestone 13, GitHub Release update awareness)
+          ├── automatic-backup adapter       (M13: write/list/read/delete, std::fs only — no filesystem plugin)
+          ├── release-awareness adapter      (M13: GitHub Release update check, scoped tauri-plugin-http)
+          ├── external-link adapter          (M13: "View Release", scoped tauri-plugin-opener)
           └── packaging / app metadata adapter (M8: desktop_info command — version, identifier, data paths)
 ```
 
-Domain services do not depend directly on shell-specific APIs: `src/desktop/desktopAdapter.ts` and four narrow Rust commands (`save_export`, `print_page`, `desktop_info`, `send_notification`) are the only points where the web layer talks to the shell. In a plain browser the same call sites keep their original behavior (anchor download, `window.print()`, Web Notification API). Beyond these commands the web layer is granted only the minimal `notification:default` permission (`src-tauri/capabilities/default.json`); no filesystem, shell, or network capability is granted, and the packaged app's Content-Security-Policy disallows outbound network requests from page script.
+Domain services do not depend directly on shell-specific APIs: `src/desktop/desktopAdapter.ts` and the Rust commands in `src-tauri/src/lib.rs` (`save_export`, `print_page`, `desktop_info`, `send_notification`, `backup_directory`, `write_auto_backup`, `list_auto_backups`, `read_auto_backup`, `delete_auto_backup`) are the only points where the web layer talks to the shell, plus two plugin capabilities (`tauri-plugin-http`, scoped to the single GitHub Releases endpoint; `tauri-plugin-opener`, for "View Release"). In a plain browser the same call sites keep their original behavior (anchor download, `window.print()`, Web Notification API, ordinary `fetch`, `window.open`) and Automatic Backup is a no-op (there is no app-owned backup directory in a browser). Beyond these, the web layer is granted only the minimal `notification:default`, `http:default` (scoped), and `opener:default` permissions (`src-tauri/capabilities/default.json`); no filesystem or general shell/network capability is granted -- Automatic Backup's four commands use `std::fs` directly, never the `tauri-plugin-fs` capability -- and the packaged app's Content-Security-Policy disallows outbound network requests from page script (the GitHub Release check goes through the plugin's own IPC-mediated request, not through page-script `fetch`, so it is unaffected by that CSP and does not appear in the page's resource-timing entries).
 
 ### 4.2 Desktop Identity — Frozen
 
@@ -185,7 +190,7 @@ The following are understandable and were tested end to end (Windows/MSVC, GitHu
 - a silent per-user uninstall removes the application files but currently leaves IndexedDB in place (the NSIS default; whether to add an explicit data-delete uninstall option is an open product decision, not yet built);
 - a reinstall after uninstall re-attaches to any data that uninstall left behind;
 - how browser-era v1–v6 backups migrate into a desktop install: unchanged from the existing `backupService` migration path (only v6 was driven end to end in M8; v1–v6 migration itself has its own unit tests, unaffected by the desktop shell);
-- automatic backups do not exist yet (Milestone 13); today, manual export/import through Settings is the same in the browser and the desktop build, routed through the local-file adapter.
+- automatic local backups (Milestone 13) write to `%LOCALAPPDATA%\io.github.peter-s-shi.dailycanvas\backups` (shown verbatim in Settings -> Data & Backup); manual export/import through Settings remains unchanged and identical in the browser and the desktop build, routed through the local-file adapter.
 
 ### 4.6 Desktop UI Composition — Established Baseline (M9 blueprint, M10 migration, M11 activation)
 
@@ -196,7 +201,7 @@ The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, wh
 - **Header slots** (`src/components/shell/WorkspaceHeader.tsx`): a surface portals its own controls (for example, Review's period presets) and its own primary action into the workspace header. Actions are therefore named for the surface that owns them; there is no global creation action.
 - **Dialog** (`src/components/Dialog.tsx`): every modal is named, focus-managed, and dismissible with Escape only when that is safe. Decisions such as milestone choices cannot be dismissed implicitly.
 
-Components continue to call domain services; presentation seams do not own product semantics. Milestone 11 activated Inbox, Search, Quick Capture, Task Notes, Checklist, duration estimates, richer recurrence, and Replan through those established seams. Milestone 12 activated Timeline (Day/Week, Available Work, Time Blocks), local reminders, and the fixed desktop shortcut set. On This Day, automatic backup, and update awareness remain absent until Milestone 13.
+Components continue to call domain services; presentation seams do not own product semantics. Milestone 11 activated Inbox, Search, Quick Capture, Task Notes, Checklist, duration estimates, richer recurrence, and Replan through those established seams. Milestone 12 activated Timeline (Day/Week, Available Work, Time Blocks), local reminders, and the fixed desktop shortcut set. Milestone 13 activated On This Day (Reflect) and About & Updates (Settings) through the same workspace-model seam, and added Reflection Templates, local Reflection/Review export, and Automatic Backup to their existing surfaces (Daily Reflection, Review, Settings -> Data & Backup) without new primary destinations.
 
 ---
 
@@ -347,16 +352,14 @@ Quantitative habits with multiple units per day are intentionally deferred beyon
 
 A CheckIn records what happened. An ExperienceLog records how it felt. A DailyReflection records broader daily reflection. These layers remain separate.
 
-v1.0 Reflection Templates must remain optional and lightweight.
+Reflection Templates (`src/services/reflectionTemplateService.ts`) are optional and lightweight: Free Write (no prompts, the default), Daily Check-in, and Gratitude & Perspective. A template supplies only a set of i18n prompt keys the UI renders as skippable hints above the same free-form textarea Daily Reflection has always had; prompt text is never written into the saved `note`, and `DailyReflection.templateId` is an optional field that only records which template was used. Templates:
 
-Templates may prefill or structure a reflection session, but they must not:
+- never make free-form writing second-class -- Free Write remains the default entry point;
+- never force completion of every field -- there are no fields to complete, only optional prompts;
+- never become clinical questionnaires;
+- never convert missing answers into negative evidence -- there is no completion state to be "missing" from.
 
-- make free-form writing second-class;
-- force completion of every field;
-- become clinical questionnaires;
-- convert missing answers into negative evidence.
-
-On This Day is a derived resurfacing feature. It should select from appropriate historical records without mutating them or creating duplicate authoritative copies.
+On This Day (`src/services/onThisDayService.ts`) is a derived resurfacing feature: a pure function over the existing `dailyReflections` and `meditationEntries` tables that selects exact month+day matches from years strictly before the current one, grouped by year (most recent first). It is read-only -- it never mutates a source record or creates a duplicate authoritative copy -- and produces no growth/emotion/personality/causal framing; "Open original" is its only action.
 
 ---
 
@@ -406,7 +409,7 @@ Guardrails remain unchanged:
 - the product may describe counts, distributions, and supported recorded patterns;
 - it must not diagnose, prescribe, claim causation, or predict mental state.
 
-Local Reflection / Review export is derived output and must not mutate source records.
+Local Reflection / Review export (`src/services/exportService.ts`) produces deterministic Markdown (`.md`) for the current Reflection or the Review screen's current period/filter selection, through the same `saveBlob` desktop-adapter seam as every other export; it is derived output and never mutates source records, and the existing Meditation print/PDF/Word pipeline is untouched.
 
 ---
 
@@ -432,7 +435,7 @@ Global Search and On This Day may surface Meditations only if the approved produ
 
 The manual backup payload remains versioned and portable.
 
-Current v8 includes Areas, enriched Tasks, unresolved Inbox captures, Replan events, Time Blocks, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings. Restore migrates supported v1-v7 backups in memory before transactional replacement.
+Current v9 includes Areas, enriched Tasks, unresolved Inbox captures, Replan events, Time Blocks, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections (with an optional `templateId`), Meditations, emotions, rewards, appearance assets, and settings (with `autoBackupEnabled`/`lastAutoBackupAt`). Restore migrates supported v1-v8 backups in memory before transactional replacement.
 
 Restore remains:
 
@@ -456,17 +459,18 @@ Restore transactionally
 Run integrity checks
 ```
 
-v1.0 Automatic Local Backup extends this contract rather than replacing it.
+Automatic Local Backup (`src/services/autoBackupService.ts`, `src/desktop/desktopAdapter.ts`, `src-tauri/src/lib.rs`) extends this contract rather than replacing it:
 
-Rules:
+- enabled by default (`AppSettings.autoBackupEnabled`); at most one successful automatic backup per local calendar day, checked on successful app startup, and also available on demand as "Back up now" in Settings -> Data & Backup (which bypasses the once-per-day guard, since it is an explicit user action, not the automatic schedule);
+- retention is bounded (the most recent 7 successful backups) and understandable -- `pruneCandidates` only ever removes files beyond the 7 most recent by their sortable timestamped file name, and pruning runs strictly after a new backup is confirmed written, never before;
+- backup files live at an explicit, shown location (`%LOCALAPPDATA%\<identifier>\backups`, returned by the `backup_directory` command and displayed in Settings), not a hidden temp path;
+- the native `write_auto_backup` command writes to a temporary file in that directory and then renames it into place, so a crash mid-write can never leave a torn backup file visible to `list_auto_backups`;
+- manual export/import remains unchanged and fully available;
+- restoring from a retained automatic backup (`read_auto_backup` -> `migrateBackup` -> the same restore-preview/confirm UI) reuses the identical parse/validate/migrate/preview/safety-backup/confirm/transactional-restore pipeline as manual import -- there is only one restore code path;
+- any failure inside `runAutoBackup` is caught and reported as a non-throwing outcome, exactly like reminder delivery failures (§15) -- it can never corrupt the active IndexedDB store and never blocks app startup;
+- no personal data is uploaded; this is a local file-write feature only.
 
-- automatic backups remain local;
-- retention is bounded and understandable;
-- backup files use a recoverable documented location;
-- manual export remains available;
-- restore uses the same validation/migration guarantees as manual backups where practical;
-- failures must not corrupt the active store;
-- personal data must not be uploaded merely to implement backup convenience.
+No resident process, tray icon, or OS task scheduler entry was added -- like local reminders, this only runs while Daily Canvas is open.
 
 ---
 
@@ -490,30 +494,30 @@ Do not create a large shortcut-customization subsystem unless later evidence jus
 
 ## 16. Update Awareness
 
-v1.0 update awareness follows a simple release-detection model:
+Update awareness (`src/services/updateCheckService.ts`, Settings -> About & Updates) follows a simple release-detection model:
 
 ```text
 Installed version
       ↓
-query stable GitHub Release metadata
+query stable GitHub Release metadata (GET /repos/Peter-S-Shi/Daily-Canvas/releases/latest)
       ↓
-compare semantic versions
+compare semantic versions (compareVersions)
       ↓
-Up to date / Update available
+Up to date / Update available / Unable to check
       ↓
-View Release
+View Release (opens the release URL via the scoped tauri-plugin-opener)
 ```
 
-Boundaries:
+The check runs only when Settings -> About & Updates is opened or "Check for updates" is clicked -- never on a timer, never at startup, matching frozen Decision D4's staging discipline (the page was only added once genuinely functional). It reads only the tag name and release URL -- no other repository or personal metadata. Boundaries, all enforced:
 
 - no silent auto-download;
 - no silent application replacement;
 - no automatic restart to finish an update;
 - no custom update backend;
 - no account requirement;
-- offline failure must be non-blocking.
+- offline/network failure resolves to "Unable to check" rather than throwing, and never blocks or delays app startup.
 
-A full self-updater is post-v1.
+A full self-updater remains post-v1.
 
 ---
 
@@ -554,7 +558,7 @@ Established by Milestone 8, exercised on Windows/MSVC through synthetic data in 
 - local data location behavior — verified (`%LOCALAPPDATA%\<identifier>\EBWebView\...\IndexedDB`; nothing under `%APPDATA%`);
 - packaged local export — verified (JSON backup and Meditation `.docx` export through the native save dialog);
 - installer/upgrade/uninstall behavior — verified at the foundation level (same-identifier upgrade without orphaning data, silent uninstall/reinstall); RC-level installer polish remains for Milestone 15;
-- automatic backup creation and restoration — not yet implemented (Milestone 13);
+- automatic backup creation, retention, and restoration — implemented and verified (Milestone 13: atomic native write/list/read/delete commands, 7-backup retention pruning, and a full restore-from-automatic-backup through the shared restore pipeline, all exercised in the packaged-app smoke against the real app-owned backup directory);
 - local notification adapter behavior — implemented and verified (Milestone 12: `send_notification` command, in-app-only firing, restrained startup catch-up).
 
 ### CI topology — established (`.github/workflows/ci.yml`)
