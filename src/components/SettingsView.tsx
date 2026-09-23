@@ -36,8 +36,10 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const refreshAutoBackups = () => { void listAutoBackups().then(setAutoBackups); void backupDirectory().then(setBackupDir); };
   useEffect(() => { if (section === "settingsData") refreshAutoBackups(); }, [section]);
-  useEffect(() => { if (section !== "settingsAbout") return; void getDesktopInfo().then((info) => { if (info) setAppVersion(info.appVersion); }); void runUpdateCheck(); }, [section]);
-  const runUpdateCheck = async () => { setCheckingUpdate(true); try { setUpdateResult(await checkForUpdate(appVersion)); } finally { setCheckingUpdate(false); } };
+  const runUpdateCheck = async (version: string) => { setCheckingUpdate(true); try { setUpdateResult(await checkForUpdate(version)); } finally { setCheckingUpdate(false); } };
+  // The desktop-native version (from desktop_info) is authoritative when available; the bundled package.json
+  // version is only a browser-mode fallback. The update check always waits for whichever version resolves first.
+  useEffect(() => { if (section !== "settingsAbout") return; void getDesktopInfo().then((info) => { const version = info?.appVersion ?? FALLBACK_APP_VERSION; setAppVersion(version); void runUpdateCheck(version); }); }, [section]);
   const backupNow = async () => { setRunningAutoBackup(true); setError(""); try { const outcome = await runAutoBackup({ settings: { ...settings, autoBackupEnabled: true, lastAutoBackupAt: undefined } }); if (outcome.ran) { setMessage(t("automaticBackupSuccess")); refreshAutoBackups(); } else if (outcome.reason === "failed") setError(outcome.error); } finally { setRunningAutoBackup(false); } };
   const restoreFromAutoBackup = async (fileName: string) => { setOperation("reading"); setPreview(undefined); setError(""); try { const content = await readAutoBackup(fileName); if (!content) throw new Error("unavailable"); setPreview(migrateBackup(JSON.parse(content))); } catch { setError(t("importError")); } finally { setOperation("idle"); } };
   const assets = useLiveQuery(() => db.appearanceAssets.toArray(), []) ?? [];
@@ -121,7 +123,7 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
           <dl className="fact-list">
             <div><dt>{t("installedVersion")}</dt><dd>{appVersion}</dd></div>
           </dl>
-          <SettingRow title={t("checkForUpdates")} hint={t("checkForUpdatesHint")} control={<button type="button" className="button secondary" disabled={checkingUpdate} onClick={runUpdateCheck}>{checkingUpdate ? t("checkingForUpdates") : t("checkForUpdates")}</button>}/>
+          <SettingRow title={t("checkForUpdates")} hint={t("checkForUpdatesHint")} control={<button type="button" className="button secondary" disabled={checkingUpdate} onClick={() => runUpdateCheck(appVersion)}>{checkingUpdate ? t("checkingForUpdates") : t("checkForUpdates")}</button>}/>
           {updateResult && <p role="status" className={updateResult.state === "unable-to-check" ? "error-message" : "status-message"}>
             {updateResult.state === "up-to-date" && t("upToDate")}
             {updateResult.state === "unable-to-check" && t("unableToCheck")}
