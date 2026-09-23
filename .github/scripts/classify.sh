@@ -6,7 +6,15 @@
 #   docs_only  every changed path is documentation
 #   core       typecheck + tests + production build
 #   migration  data / backup contract touched -> targeted regression job as well
-#   desktop    desktop shell / packaging / CI itself touched -> Windows MSVC build + smoke as well
+#   desktop    desktop shell / packaging / CI itself touched, OR the change could plausibly reshape
+#              rendered UI/selectors -> Windows MSVC build + packaged/installer smoke as well
+#
+# Fail-closed UI routing (M14): a change confined to src/ used to classify as core-only unless it hit
+# an explicit desktop/data path, so a UI-reshaping change (e.g. src/components/**, src/navigation/**)
+# could skip the desktop tier entirely -- the packaged-app/installer smokes never drove the real
+# rendered UI against it. This bit the project once (M10-A). The fix inverts the default for src/:
+# only an explicit, narrow allowlist of non-visual, pure-logic paths stays core-only; every other
+# src/ path -- including anything new or unanticipated -- routes to desktop as well.
 set -euo pipefail
 
 docs_only=true core=false migration=false desktop=false
@@ -23,14 +31,22 @@ while IFS= read -r path; do
   docs_only=false
   case "$path" in
     # ---- CI / desktop shell / packaging ----
-    .github/workflows/*|.github/scripts/*|src-tauri/*|src/desktop/*|desktop-verify/*|start-daily-canvas.cmd|OPEN_DAILY_CANVAS_DEV.cmd)
+    .github/workflows/*|.github/scripts/*|src-tauri/*|src/desktop/*|desktop-verify/*|start-daily-canvas.cmd|OPEN_DAILY_CANVAS_DEV.cmd|index.html)
       desktop=true ;;
     # ---- shared dependency manifests affect both the web app and the shell ----
     package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
       core=true; desktop=true ;;
-    # ---- data / backup contract ----
+    # ---- data / backup contract (pure logic, no rendered UI of its own) ----
     src/db.ts|src/dbMigration.test.ts|src/types.ts|src/services/backupService.ts|src/services/backupService.test.ts)
       core=true; migration=true ;;
+    # ---- narrow allowlist: non-visual, pure-logic src/ paths stay core-only ----
+    src/services/*|src/lib/*|src/vite-env.d.ts)
+      core=true ;;
+    # ---- everything else under src/ can plausibly reshape rendered UI or selectors:
+    #      components, navigation, shell entry points, i18n strings, global styles, and any
+    #      new/unanticipated src/ path not covered above -- fail closed and run desktop too ----
+    src/*)
+      core=true; desktop=true ;;
     # ---- everything else is app code ----
     *)
       core=true ;;

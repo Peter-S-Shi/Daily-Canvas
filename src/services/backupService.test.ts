@@ -48,6 +48,18 @@ describe("backup migration", () => {
     expect(result.warnings.some((warning) => warning.includes("missing tasks"))).toBe(true);
   });
 
+  it("drops rewards that reference missing tasks and reports a warning, while keeping date-triggered rewards without a taskId", () => {
+    const result = migrateBackup({
+      ...v1,
+      rewards: [
+        { id: "orphan-reward", title: "Broken", taskId: "missing", trigger: "streak", streakDays: 7, createdAt: "2026-07-01T00:00:00.000Z" },
+        { id: "date-reward", title: "Fine", trigger: "date", rewardDate: "2026-08-01", createdAt: "2026-07-01T00:00:00.000Z" },
+      ],
+    });
+    expect(result.payload.rewards.map((item) => item.id)).toEqual(["date-reward"]);
+    expect(result.warnings.some((warning) => warning.includes("Reward") && warning.includes("missing tasks"))).toBe(true);
+  });
+
   it("upgrades a version 7 backup all the way to the current format, adding an empty Time Block collection along the way", () => {
     const v7 = { format: "daily-canvas-backup", version: 7, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [], inboxCaptures: [], replanEvents: [], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [{ id: "app", dataVersion: 7, language: "en", theme: "system", weekStartsOn: 1, reduceMotion: false, onboardingComplete: true, reflectionPromptsEnabled: true, backgroundPreferences: [] }] };
     const result = migrateBackup(v7);
