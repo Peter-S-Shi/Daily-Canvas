@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
-// Builds a synthetic, privacy-safe v7 backup via the real services (fixture only; never committed).
+// Builds a synthetic, privacy-safe v8 backup via the real services (fixture only; never committed).
 import "fake-indexeddb/auto";
 import { deflateSync } from "node:zlib";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { it } from "vitest";
 import { db, defaultSettings, initializeDb } from "../src/db";
 import { createBackup, migrateBackup } from "../src/services/backupService";
+import { createTimeBlock } from "../src/services/timeBlockService";
 import type { CheckIn, DailyReflection, ExperienceLog, MeditationEntry, Task } from "../src/types";
 
 const OUT = process.env.FIXTURE_DIR ?? "desktop-verify/out";
@@ -23,7 +24,7 @@ function makePng(width: number, height: number, seed: number): Buffer {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw, { level: 1 })), chunk("IEND", Buffer.alloc(0))]);
 }
 
-it("generates the synthetic v7 fixture", async () => {
+it("generates the synthetic v8 fixture", async () => {
   await initializeDb();
   const now = iso(new Date(Date.UTC(2026, 8, 20, 12)));
   await db.settings.clear(); await db.settings.put({ ...defaultSettings(), onboardingComplete: true });
@@ -66,12 +67,14 @@ it("generates the synthetic v7 fixture", async () => {
   await db.appearanceAssets.bulkAdd(assets);
   const settings = (await db.settings.get("app"))!;
   await db.settings.put({ ...settings, backgroundPreferences: settings.backgroundPreferences.map((p) => p.slot === "app" ? { ...p, assetId: "asset-0" } : p.slot === "today" ? { ...p, assetId: "asset-1" } : p) });
+  // A single synthetic Time Block (M12): t-french is a daily habit, so day(0) is always a real occurrence.
+  await createTimeBlock({ taskId: "t-french", date: day(0), startMinutes: 9 * 60, durationMinutes: 30, reminder: "15" });
   const payload = await createBackup();
   // the fixture must itself be a valid, current-version backup (this is also a cheap migration/backup regression)
   const preview = migrateBackup(JSON.parse(JSON.stringify(payload)));
-  if (preview.sourceVersion !== 7 || preview.migrated || preview.warnings.length) throw new Error(`fixture is not a clean v7 backup: ${JSON.stringify(preview.warnings)}`);
+  if (preview.sourceVersion !== 8 || preview.migrated || preview.warnings.length) throw new Error(`fixture is not a clean v8 backup: ${JSON.stringify(preview.warnings)}`);
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(`${OUT}/synthetic-v7-backup.json`, JSON.stringify(payload, null, 2));
+  writeFileSync(`${OUT}/synthetic-v8-backup.json`, JSON.stringify(payload, null, 2));
   writeFileSync(`${OUT}/upload-image.png`, makePng(1500, 950, 3));
-  console.log(JSON.stringify({ tasks: payload.tasks.length, checkIns: payload.checkIns.length, reflections: payload.dailyReflections.length, meditations: payload.meditationEntries.length, assets: payload.appearanceAssets.length, assetChars: assets.map((a) => a.dataUrl.length) }));
+  console.log(JSON.stringify({ tasks: payload.tasks.length, checkIns: payload.checkIns.length, reflections: payload.dailyReflections.length, meditations: payload.meditationEntries.length, assets: payload.appearanceAssets.length, timeBlocks: payload.timeBlocks.length, assetChars: assets.map((a) => a.dataUrl.length) }));
 });

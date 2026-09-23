@@ -6,6 +6,7 @@
 use serde::Serialize;
 use tauri::{ipc::Request, AppHandle, Manager, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_notification::NotificationExt;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -83,10 +84,29 @@ fn print_page(window: WebviewWindow) -> Result<(), String> {
     window.print().map_err(|e| e.to_string())
 }
 
+/// Local Time Block reminder notification. Fires only while Daily Canvas is running and the
+/// process is calling this command directly -- no resident service, tray, or OS task scheduler
+/// is registered behind it.
+#[tauri::command]
+fn send_notification(app: AppHandle, title: String, body: String) -> Result<(), String> {
+    app.notification()
+        .builder()
+        .title(title)
+        .body(body)
+        .show()
+        .map_err(|e| e.to_string())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![desktop_info, save_export, print_page])
+        .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![
+            desktop_info,
+            save_export,
+            print_page,
+            send_notification
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Daily Canvas");
 }
