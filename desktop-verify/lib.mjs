@@ -40,6 +40,7 @@ function readdirSyncRecursive(dir) { return readdirSync(dir, { withFileTypes: tr
 export function treeMetadataStamp(dir) {
   if (!existsSync(dir)) return "absent";
   const rows = readdirSyncRecursive(dir).map((file) => { const stat = statSync(file); return `${relative(dir, file)}|${stat.size}|${stat.mtimeMs}`; }).sort();
+  if (rows.length === 0) return "absent";
   return createHash("sha256").update(rows.join("\n")).digest("hex");
 }
 

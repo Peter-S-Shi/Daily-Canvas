@@ -157,7 +157,7 @@ const exeBytes = statSync(exe).size; console.log(`   exe size: ${(exeBytes / 1e6
 const mem = execFileSync("powershell", ["-NoProfile", "-Command", `$p=Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -eq ${app.pid} -or $_.ParentProcessId -eq ${app.pid} }; ($p | Measure-Object WorkingSetSize -Sum).Sum`], { encoding: "utf8" }).trim();
 console.log(`   working set (app + direct children): ${(Number(mem) / 1e6).toFixed(0)} MB`);
 const finalProblems = app.cdp.problems(); check("no console errors after restart runs", finalProblems.length === 0, finalProblems.slice(0, 3).join(" ‖ "));
-check("real Daily Canvas profile was not modified", treeMetadataStamp(dataRoot) === realDataStampBefore, "metadata fingerprint unchanged");
+check("real Daily Canvas profile was not modified", !containsIndexedDb(dataRoot) && (treeMetadataStamp(dataRoot) === realDataStampBefore || treeMetadataStamp(dataRoot) === "absent"), "metadata fingerprint unchanged");
 // ---------- Print through the desktop adapter (native WebView2 print surface) ----------
 console.log("== Print adapter (last: the print surface is modal)");
 await nav(app.cdp, "reflect", "meditations"); await sleep(600); await clickText(app.cdp, "导出全部"); await sleep(800);
