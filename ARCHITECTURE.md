@@ -4,7 +4,7 @@
 
 Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-The current implementation is v0.7.0 plus the completed Milestone 11 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. The v1.0 target adds the remaining approved planning/execution and desktop-native capabilities (Milestones 12–13) on top of this accepted foundation.
+The current implementation is v0.7.0 plus the completed Milestone 11–12 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. The v1.0 target adds the remaining approved reflection/preservation and desktop-native capabilities (Milestone 13) on top of this accepted foundation.
 
 The architecture supports five connected layers:
 
@@ -88,9 +88,9 @@ Timeline and Time Blocking help users who want clock-based planning, but they mu
 
 ---
 
-## 3. Current Persistent Model Through Milestone 11
+## 3. Current Persistent Model Through Milestone 12
 
-The current authoritative persistent model is Dexie schema / backup format v7.
+The current authoritative persistent model is Dexie schema / backup format v8.
 
 ```text
 Area
@@ -101,6 +101,7 @@ Area
        ├── TaskLifecycle
        ├── PausePeriod[]
        ├── MilestoneEvent[]
+       ├── TimeBlock[taskId][]
        └── Reward[taskId?]
        ├── notes
        ├── estimatedMinutes
@@ -123,9 +124,9 @@ AppSettings
 MeditationEntry
 ```
 
-Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, and backup/migration logic.
+Derived services currently include scheduling, quota evaluation, statistics, review generation, prompts, Meditations, exports, appearance, Available Work, reminders, and backup/migration logic.
 
-Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations. Milestone 11 added separate unresolved Inbox captures, Task-owned enrichment fields, and append-only Replan events; Search remains derived.
+Milestone 5 added no persistent review table; reviews remain derived. Milestone 6 added lifecycle/pause/event records. Milestone 7 added independent ordered Meditations. Milestone 11 added separate unresolved Inbox captures, Task-owned enrichment fields, and append-only Replan events; Search remains derived. Milestone 12 added the `TimeBlock` collection (each referencing exactly one Task, never a second authoritative task store) and local, Time-Block-owned reminders; Available Work remains derived, not stored.
 
 The model remains intentionally shallow. An Area contains Tasks; Tasks do not form an unlimited recursive hierarchy.
 
@@ -152,12 +153,12 @@ Desktop App
    │
    └── desktop adapters
           ├── local file / backup adapter    (M8: save-file dialog + print surface — src/desktop/desktopAdapter.ts)
-          ├── notification adapter           (planned: Milestone 12, local reminders)
+          ├── notification adapter           (M12: local Time Block reminders, tauri-plugin-notification)
           ├── release-awareness adapter      (planned: Milestone 13, GitHub Release update awareness)
           └── packaging / app metadata adapter (M8: desktop_info command — version, identifier, data paths)
 ```
 
-Domain services do not depend directly on shell-specific APIs: `src/desktop/desktopAdapter.ts` and three narrow Rust commands (`save_export`, `print_page`, `desktop_info`) are the only points where the web layer talks to the shell. In a plain browser the same call sites keep their original behavior (anchor download, `window.print()`). No filesystem, shell, or network capability is granted to the web layer beyond these commands (`src-tauri/capabilities/default.json` declares no permissions), and the packaged app's Content-Security-Policy disallows outbound network requests from page script.
+Domain services do not depend directly on shell-specific APIs: `src/desktop/desktopAdapter.ts` and four narrow Rust commands (`save_export`, `print_page`, `desktop_info`, `send_notification`) are the only points where the web layer talks to the shell. In a plain browser the same call sites keep their original behavior (anchor download, `window.print()`, Web Notification API). Beyond these commands the web layer is granted only the minimal `notification:default` permission (`src-tauri/capabilities/default.json`); no filesystem, shell, or network capability is granted, and the packaged app's Content-Security-Policy disallows outbound network requests from page script.
 
 ### 4.2 Desktop Identity — Frozen
 
@@ -195,7 +196,7 @@ The UI follows the frozen M9 artifact set in `docs/m9-desktop-ui-blueprint/`, wh
 - **Header slots** (`src/components/shell/WorkspaceHeader.tsx`): a surface portals its own controls (for example, Review's period presets) and its own primary action into the workspace header. Actions are therefore named for the surface that owns them; there is no global creation action.
 - **Dialog** (`src/components/Dialog.tsx`): every modal is named, focus-managed, and dismissible with Escape only when that is safe. Decisions such as milestone choices cannot be dismissed implicitly.
 
-Components continue to call domain services; presentation seams do not own product semantics. Milestone 11 activated Inbox, Search, Quick Capture, Task Notes, Checklist, duration estimates, richer recurrence, and Replan through those established seams. Timeline, reminders, shortcuts, On This Day, automatic backup, and update awareness remain absent until their milestones.
+Components continue to call domain services; presentation seams do not own product semantics. Milestone 11 activated Inbox, Search, Quick Capture, Task Notes, Checklist, duration estimates, richer recurrence, and Replan through those established seams. Milestone 12 activated Timeline (Day/Week, Available Work, Time Blocks), local reminders, and the fixed desktop shortcut set. On This Day, automatic backup, and update awareness remain absent until Milestone 13.
 
 ---
 
@@ -431,7 +432,7 @@ Global Search and On This Day may surface Meditations only if the approved produ
 
 The manual backup payload remains versioned and portable.
 
-Current v7 includes Areas, enriched Tasks, unresolved Inbox captures, Replan events, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings. Restore migrates supported v1-v6 backups in memory before transactional replacement.
+Current v8 includes Areas, enriched Tasks, unresolved Inbox captures, Replan events, Time Blocks, CheckIns, ExperienceLogs, lifecycle records, pause records, milestone events, daily order, Daily Reflections, Meditations, emotions, rewards, appearance assets, and settings. Restore migrates supported v1-v7 backups in memory before transactional replacement.
 
 Restore remains:
 
@@ -554,7 +555,7 @@ Established by Milestone 8, exercised on Windows/MSVC through synthetic data in 
 - packaged local export — verified (JSON backup and Meditation `.docx` export through the native save dialog);
 - installer/upgrade/uninstall behavior — verified at the foundation level (same-identifier upgrade without orphaning data, silent uninstall/reinstall); RC-level installer polish remains for Milestone 15;
 - automatic backup creation and restoration — not yet implemented (Milestone 13);
-- local notification adapter behavior — not yet implemented (Milestone 12).
+- local notification adapter behavior — implemented and verified (Milestone 12: `send_notification` command, in-app-only firing, restrained startup catch-up).
 
 ### CI topology — established (`.github/workflows/ci.yml`)
 

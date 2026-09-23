@@ -1,5 +1,19 @@
 # Development log
 
+## Milestone 12: Timeline and Desktop Execution — Completed
+
+### 2026-09-22 — Day/Week Timeline, Time Blocks, local reminders, shortcuts, and v8 backup
+
+- Day and Week Timeline (`Plan → Timeline`) share one persistent Time Block collection; Available Work derives eligible Fixed/Floating/Quota work from existing Task data without a second authoritative store, excluding completed/archived/paused items and Avoidance habits (frozen Decision D2).
+- Time Blocks reference real Tasks only, snap to a 15-minute grid, default duration to `Task.estimatedMinutes` (else 30 minutes), and reject overlaps explicitly instead of auto-moving either block. Deleting a block never deletes its Task; a block ending never auto-completes the Task; moving/resizing/re-reminding a block never touches recurrence, quota, or schedule.
+- Every block has a fully keyboard-accessible Date/Start time/Duration/Reminder dialog; drag-and-drop (within Day, across days in Week) is an optional convenience layered on top.
+- Replan flags a Task's existing future blocks `needsReview` when they no longer fit the new plan, without moving, deleting, or silently repairing them, preserving historical truth.
+- Today gained an optional "Today's Plan" summary that appears only when Time Blocks exist for the day and disappears entirely otherwise; Today remains independently complete.
+- Local, in-app-only reminders on the frozen Off/At-start/5-60-minute grammar belong to a Time Block; Task Detail can view/edit the reminder on a Task's upcoming blocks. A new narrow `send_notification` Tauri command (`tauri-plugin-notification`, minimal `notification:default` permission) fires while the app is running, with a restrained, non-repeating startup catch-up for reminders missed while closed — no resident process, tray, or OS task scheduler was added.
+- The frozen small shortcut set is live (`Ctrl/Cmd+K` Search, `Ctrl/Cmd+Shift+K` Quick Capture, `Ctrl/Cmd+1` Today, `Escape`), guarded against firing while an editable element is focused; Settings → Shortcuts is a read-only cheat sheet with no customization.
+- Dexie schema and backup format advanced to v8, adding the `timeBlocks` collection with complete v1–v7 migration compatibility and full export/restore fidelity.
+- Verification: 106/106 automated tests across 18 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the new notification plugin and capability; manually verified in a live browser preview with zero console errors. GitHub Actions CI (PR #8) covers Classify, Core, Desktop (Windows/MSVC, including the updated v8 packaged-app/installer smokes), and PR Gate. Milestone 13 is next and has not started.
+
 ## Milestone 11: Capture and Task Enrichment — Completed
 
 ### 2026-09-22 — Capture, task enrichment, recurrence/replan correctness, and v7 backup
@@ -12,7 +26,7 @@
 - Replan updates future Task plans and appends durable ReplanEvents while preserving historical check-ins, hiatus gaps, active start tracking, and anchor transitions across multiple replans. Completed one-time/floating tasks are protected against replanning.
 - Dexie schema and backup format advanced to v7 with complete v1–v6 migration compatibility.
 - Desktop verification uses an isolated WebView2 profile, protects real user profiles with metadata fingerprint comparison, and executes 58/58 packaged-app smoke checks and 17/17 installer/upgrade smoke checks.
-- Verification: 86/86 automated tests across 15 suites, TypeScript checking, production build, and full GitHub Actions CI green across Classify, Core, Desktop (Windows/MSVC), and PR Gate. Milestone 12 is next and has not started.
+- Verification: 86/86 automated tests across 15 suites, TypeScript checking, production build, and full GitHub Actions CI green across Classify, Core, Desktop (Windows/MSVC), and PR Gate.
 
 ## Milestone 10: Desktop UI Migration — Completed
 
