@@ -17,8 +17,8 @@ const marker = join(dataRoot, ".dc-verify-owned");
  * (fresh CI runner) or was created by these scripts; otherwise refuse unless explicitly forced.
  */
 export function wipeAppDataSafely() {
-  if (existsSync(dataRoot) && !existsSync(marker)) {
-    throw new Error(`Refusing to wipe ${dataRoot}: it exists and was not created by desktop-verify. Installer smoke must run on a disposable Windows profile or clean CI runner.`);
+  if (existsSync(dataRoot) && !existsSync(marker) && process.env.DC_VERIFY_WIPE_DATA !== "1") {
+    throw new Error(`Refusing to wipe ${dataRoot}: it exists and was not created by desktop-verify. Set DC_VERIFY_WIPE_DATA=1 only if it holds disposable data.`);
   }
   rmSync(dataRoot, { recursive: true, force: true });
   mkdirSync(dataRoot, { recursive: true });

@@ -160,6 +160,7 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           DC_INSTALLER_TEST: "1"
+          DC_VERIFY_WIPE_DATA: "1"
         run: |
           node desktop-verify/installer-smoke.mjs \
             "$(ls "$RUNNER_TEMP"/installers/*installer-test.1*setup.exe)" \

@@ -112,7 +112,7 @@ const docx = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.e
 check("Word (.docx) generated locally and saved via native dialog", docx.exists && docx.size > 2000, `${docx.size} bytes`);
 if (docx.exists) {
   const zip = join(outDir, "meditations.docx.zip"); const dir = join(outDir, "docx-x"); copyFileSync(docxPath, zip); rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
-  execFileSync("tar", ["-xf", zip, "-C", dir]);
+  execFileSync("tar", ["--force-local", "-xf", zip, "-C", dir]);
   const xml = readFileSync(join(dir, "word", "document.xml"), "utf8");
   check("docx OpenXML keeps Chinese + English text, mixed paragraphs, A4 size", xml.includes("日拱一卒") && xml.includes("Consistency beats intensity") && /w:pgSz[^>]*w:w="11906"/.test(xml), `${xml.length} chars XML`);
 }

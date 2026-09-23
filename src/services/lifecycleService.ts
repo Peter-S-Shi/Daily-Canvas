@@ -55,7 +55,7 @@ export async function addPause(taskId: string, startDate: string, endDate: strin
 }
 
 export async function resumeTask(taskId: string): Promise<void> {
-  const lifecycle = await db.taskLifecycles.get(taskId); if (!lifecycle || lifecycle.state !== "paused") return; const resumedAt = now(); const resumeDate = resumedAt.slice(0, 10);
+  const lifecycle = await db.taskLifecycles.get(taskId); if (!lifecycle || lifecycle.state !== "paused") return; const resumedAt = now(); const resumeDate = todayKey();
   await db.transaction("rw", db.pausePeriods, db.taskLifecycles, db.milestoneEvents, async () => {
     const pauses = await db.pausePeriods.where("taskId").equals(taskId).toArray();
     await Promise.all(pauses.filter((pause) => isPausedOn([pause], resumeDate)).map((pause) => db.pausePeriods.update(pause.id, { resumedAt, updatedAt: resumedAt })));
