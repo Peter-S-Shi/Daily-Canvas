@@ -145,7 +145,7 @@ Feature Freeze can begin only after the approved v1.0 scope is implemented and t
 
 ## Verification Status of Current Baseline
 
-- Milestone 7.1 remains the latest completed **product-feature** baseline; Milestone 8 added the desktop foundation around it without changing product semantics.
+- Milestone 11 is the latest completed **product-feature** baseline; Milestones 8–10 added the desktop foundation, frozen UI blueprint, and UI migration around the prior Milestone 7.1 baseline without changing product semantics.
 - The v0.7 baseline passed TypeScript checking, 60 automated tests, production build, focused print checks, live print-dialog validation, and the earlier bilingual/OpenXML checks recorded in project history.
 - Dexie migrations and backup compatibility are implemented through version 6, unchanged by Milestone 8.
 - Milestone 8 desktop verification (Windows/MSVC, GitHub Actions, synthetic data): packaged-app smoke 53/53 checks passed (launch, all 10 existing screens, v6 backup restore/export round-trip, large-image import, bilingual switch, Meditation print/PDF page sizing and `.docx` OpenXML content, CSP/no-outbound-network, graceful-restart and forced-kill persistence, data-boundary location); NSIS installer/upgrade/data-retention smoke 17/17 checks passed (install, first launch, restart, same-identifier upgrade without orphaning IndexedDB, same-version reinstall, silent uninstall with data retention, reinstall re-attaching to kept data).
