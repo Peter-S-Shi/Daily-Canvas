@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Main window: only application commands; no filesystem, shell or network plugin access.",
+  "description": "Main window: only application commands, plus local notifications for Time Block reminders; no filesystem, shell or network plugin access.",
   "windows": ["main"],
-  "permissions": []
+  "permissions": ["notification:default"]
 }

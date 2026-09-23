@@ -33,7 +33,13 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
   const readImport = async (file?: File) => { if (!file) return; setOperation("reading"); setPreview(undefined); setError(""); try { setPreview(migrateBackup(JSON.parse(await file.text()))); } catch (caught) { setError(caught instanceof Error ? caught.message : t("importError")); } finally { setOperation("idle"); } };
   const confirmRestore = async () => { if (!preview) return; setOperation("restoring"); setError(""); try { if (!(await downloadBackup(await createBackup(), "daily-canvas-safety-backup"))) return; await restoreBackup(preview.payload); setPreview(undefined); setMessage(t("importSuccess")); } catch { setError(t("restoreError")); } finally { setOperation("idle"); } };
 
-  const heading = t(section === "settingsAppearance" ? "appearance" : section === "settingsData" ? "dataAndBackup" : "general");
+  const heading = t(section === "settingsAppearance" ? "appearance" : section === "settingsData" ? "dataAndBackup" : section === "settingsShortcuts" ? "shortcuts" : "general");
+  const shortcuts: Array<{ keys: string; labelKey: string }> = [
+    { keys: "Ctrl/⌘ K", labelKey: "shortcut_search" },
+    { keys: "Ctrl/⌘ Shift K", labelKey: "shortcut_quickCapture" },
+    { keys: "Ctrl/⌘ 1", labelKey: "shortcut_today" },
+    { keys: "Esc", labelKey: "shortcut_escape" },
+  ];
   return (
     <div className="page settings-layout">
       {nav}
@@ -80,6 +86,11 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
             <p>{t("safetyBackupNotice")}</p>
             <div className="inline-actions"><button type="button" className="button secondary" onClick={() => setPreview(undefined)}>{t("cancel")}</button><button type="button" className="button primary" disabled={operation === "restoring"} onClick={confirmRestore}>{operation === "restoring" ? t("restoring") : t("confirmRestore")}</button></div>
           </div>}
+        </>}
+
+        {section === "settingsShortcuts" && <>
+          <p className="settings-intro">{t("shortcutsIntro")}</p>
+          <dl className="fact-list shortcuts-list">{shortcuts.map((item) => <div key={item.labelKey}><dt>{t(item.labelKey)}</dt><dd><kbd>{item.keys}</kbd></dd></div>)}</dl>
         </>}
 
         {message && <p className="status-message" role="status">{message}</p>}

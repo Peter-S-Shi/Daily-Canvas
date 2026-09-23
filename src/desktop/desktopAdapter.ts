@@ -39,3 +39,17 @@ export async function printPage(): Promise<void> {
   if (isDesktop()) await invoke("print_page");
   else globalThis.print();
 }
+
+/**
+ * Local, in-app reminder notification. Fires only while Daily Canvas is running; there is no
+ * resident process, tray, or OS task scheduler behind this. In a plain browser it falls back to
+ * the Web Notification API and quietly does nothing if permission was never granted.
+ */
+export async function notify(title: string, body: string): Promise<void> {
+  if (isDesktop()) {
+    await invoke("send_notification", { title, body });
+    return;
+  }
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission === "granted") new Notification(title, { body });
+}

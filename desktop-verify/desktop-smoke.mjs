@@ -16,9 +16,9 @@ const shot = async (app, name) => writeFileSync(join(outDir, `${name}.png`), awa
 const pdfInfo = (b64) => { const raw = Buffer.from(b64, "base64").toString("latin1"); const m = raw.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/); return { width: m && Math.round(Number(m[1])), height: m && Math.round(Number(m[2])), pages: (raw.match(/\/Type\s*\/Page[^s]/g) ?? []).length, bytes: raw.length }; };
 
 if (!existsSync(exe)) throw new Error(`exe not found: ${exe}`);
-const fixturePath = join(fixtureDir, "synthetic-v7-backup.json");
+const fixturePath = join(fixtureDir, "synthetic-v8-backup.json");
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
-const expected = { areas: fixture.areas.length, tasks: fixture.tasks.length, checkIns: fixture.checkIns.length, dailyReflections: fixture.dailyReflections.length, meditationEntries: fixture.meditationEntries.length, appearanceAssets: fixture.appearanceAssets.length, experienceLogs: fixture.experienceLogs.length };
+const expected = { areas: fixture.areas.length, tasks: fixture.tasks.length, checkIns: fixture.checkIns.length, dailyReflections: fixture.dailyReflections.length, meditationEntries: fixture.meditationEntries.length, appearanceAssets: fixture.appearanceAssets.length, experienceLogs: fixture.experienceLogs.length, timeBlocks: fixture.timeBlocks.length };
 
 // ---------- Launch 1: fresh install state ----------
 console.log("== Launch 1 (fresh data folder)");
@@ -37,13 +37,13 @@ check("fresh start shows onboarding (empty DB)", await clickText(app.cdp, "Start
 check("WebView2 data is isolated from the real product directory", containsIndexedDb(userDataDir) && resolve(userDataDir).toLowerCase() !== resolve(dataRoot).toLowerCase(), userDataDir);
 await app.cdp.waitFor(`document.querySelector('${SHELL}')`, 15000, "main shell");
 
-// ---------- Restore synthetic v7 backup through the real Settings UI ----------
-console.log("== Restore v7 backup (11 MB synthetic) via Settings");
+// ---------- Restore synthetic v8 backup through the real Settings UI ----------
+console.log("== Restore v8 backup (11 MB synthetic) via Settings");
 await nav(app.cdp, "settings", "settingsData"); await app.cdp.waitFor(`document.querySelector('input[type=file][accept="application/json"]')`);
 await app.cdp.setFiles('input[type=file][accept="application/json"]', [fixturePath]);
 await app.cdp.waitFor(`document.querySelector('.restore-preview')`, 30000, "restore preview");
 const previewText = await app.cdp.evaluate(`document.querySelector('.restore-preview').innerText`);
-check("restore preview parsed the v7 backup", /tasks|Tasks|任务/.test(previewText) || previewText.length > 20, previewText.replace(/\s+/g, " ").slice(0, 160));
+check("restore preview parsed the v8 backup", /tasks|Tasks|任务/.test(previewText) || previewText.length > 20, previewText.replace(/\s+/g, " ").slice(0, 160));
 const safetyPath = join(outDir, "safety-backup.json");
 const saved = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.restore-preview button')].find(b=>b.classList.contains('primary'));if(!b)return false;b.click();return true})()`, safetyPath);
 check("safety backup goes through the native Save dialog", saved.exists && saved.size > 0 && /SAVED_INVOKED/.test(saved.dialog), `${saved.size} bytes; ${saved.dialog.split(/\r?\n/)[1] ?? ""}`);
@@ -54,13 +54,40 @@ await shot(app, "02-after-restore-settings");
 
 // ---------- Representative screens (English) ----------
 console.log("== Screens");
-// Every M11 destination, addressed by workspace/section id (src/navigation/workspaceModel.ts).
-const views = [["today"], ["inbox"], ["plan", "floating"], ["plan", "calendar"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"]];
+// Every M11/M12 destination, addressed by workspace/section id (src/navigation/workspaceModel.ts).
+const views = [["today"], ["inbox"], ["plan", "floating"], ["plan", "calendar"], ["plan", "timeline"], ["tasks", "allTasks"], ["tasks", "areas"], ["tasks", "lifecycle"], ["tasks", "rewards"], ["reflect", "dailyReflection"], ["reflect", "meditations"], ["review"], ["settings", "settingsGeneral"], ["settings", "settingsShortcuts"]];
 for (const [workspace, section] of views) { const name = section ?? workspace; const opened = await nav(app.cdp, workspace, section); await sleep(700); const len = await app.cdp.evaluate(`document.querySelector('.workspace-content').innerText.length`); await shot(app, `03-en-${name}`); check(`screen renders: ${name}`, opened && len > 20, `${len} chars`); }
+
+// ---------- Timeline Week mode (Day mode is already covered by the screens loop above) ----------
+console.log("== Timeline Week mode");
+await nav(app.cdp, "plan", "timeline"); await sleep(400);
+check("switch to Week mode", await clickText(app.cdp, "Week"));
+await sleep(500); await shot(app, "03b-en-timeline-week");
+const weekDayCount = await app.cdp.evaluate(`document.querySelectorAll('.timeline-week-day').length`);
+check("Week mode renders a seven-day grid", weekDayCount === 7, `${weekDayCount} day columns`);
+const weekLen = await app.cdp.evaluate(`document.querySelector('.timeline-week-grid').innerText.length`);
+check("Week mode content renders", weekLen > 20, `${weekLen} chars`);
+check("switch back to Day mode", await clickText(app.cdp, "Day"));
 const { windowId } = await app.cdp.send("Browser.getWindowForTarget"); await app.cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal", width: 900, height: 600 } }); await sleep(700);
 check("900x600 English shell has zero horizontal overflow", await app.cdp.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`));
 const bgApplied = await app.cdp.evaluate(`getComputedStyle(document.querySelector('.desktop-shell')).backgroundImage.startsWith('linear-gradient')`);
 check("restored 4 MB background asset applies (data URL)", bgApplied);
+
+// ---------- Keyboard shortcuts (frozen M12 set) ----------
+console.log("== Keyboard shortcuts");
+const dispatchShortcut = (key, shift = false) => app.cdp.evaluate(`(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(key)},ctrlKey:true,shiftKey:${shift},bubbles:true,cancelable:true}));return true})()`);
+await nav(app.cdp, "tasks", "allTasks"); await sleep(300);
+await dispatchShortcut("k", true); await sleep(400);
+check("Ctrl+Shift+K opens Quick Capture", await app.cdp.evaluate(`document.getElementById('quick-capture-title')!==null`));
+await app.cdp.evaluate(`(()=>{document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));return true})()`); await sleep(300);
+check("Escape closes the transient Quick Capture dialog", await app.cdp.evaluate(`document.getElementById('quick-capture-title')===null`));
+await dispatchShortcut("1"); await sleep(400);
+check("Ctrl+1 navigates to Today", await app.cdp.evaluate(`document.querySelector('.nav-button[data-workspace="today"].active')!==null`));
+
+// ---------- Notification boundary (local, in-app reminders only) ----------
+console.log("== Notification boundary");
+const notifyResult = await app.cdp.evaluate(`window.__TAURI_INTERNALS__.invoke('send_notification',{title:'Daily Canvas smoke',body:'synthetic reminder check'}).then(()=>'ok',(e)=>'error: '+e)`);
+check("send_notification command completes without throwing", notifyResult === "ok", notifyResult);
 
 // ---------- JSON export through native dialog + fidelity ----------
 console.log("== JSON export");
@@ -69,9 +96,9 @@ const exportPath = join(outDir, "export-v7.json");
 const exp = await saveVia(app, `(()=>{const b=document.querySelector('.settings-panel .setting-control .button.primary');if(!b)return false;b.click();return true})()`, exportPath);
 check("JSON export saved through native dialog (11 MB over IPC)", exp.exists && exp.size > 1_000_000 && /^daily-canvas-backup-\d{4}-\d{2}-\d{2}\.json$/.test(exp.name ?? ""), `${exp.name}, ${exp.size} bytes`);
 const exported = JSON.parse(readFileSync(exportPath, "utf8"));
-check("exported backup is format v7", exported.version === 7 && exported.format === "daily-canvas-backup");
+check("exported backup is format v8", exported.version === 8 && exported.format === "daily-canvas-backup");
 const same = (key) => sha(Buffer.from(JSON.stringify(exported[key].map((x) => JSON.stringify(x)).sort()))) === sha(Buffer.from(JSON.stringify(fixture[key].map((x) => JSON.stringify(x)).sort())));
-for (const key of ["areas", "tasks", "checkIns", "dailyReflections", "meditationEntries", "experienceLogs"]) check(`round-trip identical: ${key}`, same(key), `${exported[key].length} records`);
+for (const key of ["areas", "tasks", "checkIns", "dailyReflections", "meditationEntries", "experienceLogs", "timeBlocks"]) check(`round-trip identical: ${key}`, same(key), `${exported[key].length} records`);
 check("round-trip identical: 2 large appearance assets", exported.appearanceAssets.length === 2 && exported.appearanceAssets.every((a) => fixture.appearanceAssets.find((f) => f.id === a.id)?.dataUrl === a.dataUrl), `${exported.appearanceAssets.map((a) => a.dataUrl.length).join("+")} chars`);
 
 // ---------- Appearance image import through file input ----------

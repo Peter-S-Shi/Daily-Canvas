@@ -62,7 +62,7 @@ describe("Milestone 6 lifecycle decisions", () => {
 
   it("upgrades a v4 backup with lifecycle defaults while retaining all source records", () => {
     const result = migrateBackup({ format: "daily-canvas-backup", version: 4, exportedAt: stamp, areas: [], tasks: [task], checkIns: [check("2026-07-01")], experienceLogs: [], dailyOrders: [], dailyReflections: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [{ ...defaultSettings(), dataVersion: 4 }] });
-    expect(result.payload.version).toBe(7); expect(result.payload.checkIns).toHaveLength(1); expect(result.payload.taskLifecycles).toEqual([expect.objectContaining({ taskId: task.id, personalBest: 1 })]); expect(result.payload.pausePeriods).toEqual([]); expect(result.payload.meditationEntries).toEqual([]);
+    expect(result.payload.version).toBe(8); expect(result.payload.checkIns).toHaveLength(1); expect(result.payload.taskLifecycles).toEqual([expect.objectContaining({ taskId: task.id, personalBest: 1 })]); expect(result.payload.pausePeriods).toEqual([]); expect(result.payload.meditationEntries).toEqual([]);
   });
 });
 

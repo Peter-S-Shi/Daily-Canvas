@@ -1,5 +1,31 @@
 # Development log
 
+## Milestone 12: Timeline and Desktop Execution — Completed
+
+### 2026-09-22 — Day/Week Timeline, Time Blocks, local reminders, shortcuts, and v8 backup
+
+- Day and Week Timeline (`Plan → Timeline`) share one persistent Time Block collection; Available Work derives eligible Fixed/Floating/Quota work from existing Task data without a second authoritative store, excluding completed/archived/paused items and Avoidance habits (frozen Decision D2).
+- Time Blocks reference real Tasks only, snap to a 15-minute grid, default duration to `Task.estimatedMinutes` (else 30 minutes), and reject overlaps explicitly instead of auto-moving either block. Deleting a block never deletes its Task; a block ending never auto-completes the Task; moving/resizing/re-reminding a block never touches recurrence, quota, or schedule.
+- Every block has a fully keyboard-accessible Date/Start time/Duration/Reminder dialog; drag-and-drop (within Day, across days in Week) is an optional convenience layered on top.
+- Replan flags a Task's existing future blocks `needsReview` when they no longer fit the new plan, without moving, deleting, or silently repairing them, preserving historical truth.
+- Today gained an optional "Today's Plan" summary that appears only when Time Blocks exist for the day and disappears entirely otherwise; Today remains independently complete.
+- Local, in-app-only reminders on the frozen Off/At-start/5-60-minute grammar belong to a Time Block; Task Detail can view/edit the reminder on a Task's upcoming blocks. A new narrow `send_notification` Tauri command (`tauri-plugin-notification`, minimal `notification:default` permission) fires while the app is running, with a restrained, non-repeating startup catch-up for reminders missed while closed — no resident process, tray, or OS task scheduler was added.
+- The frozen small shortcut set is live (`Ctrl/Cmd+K` Search, `Ctrl/Cmd+Shift+K` Quick Capture, `Ctrl/Cmd+1` Today, `Escape`), guarded against firing while an editable element is focused; Settings → Shortcuts is a read-only cheat sheet with no customization.
+- Dexie schema and backup format advanced to v8, adding the `timeBlocks` collection with complete v1–v7 migration compatibility and full export/restore fidelity.
+
+### 2026-09-23 — Merge-readiness corrective pass
+
+Five seams confirmed independently before merge, all fixed with regression tests:
+
+- `defaultDurationFor()` now rounds a `Task.estimatedMinutes` that isn't a 15-minute multiple onto the grid (nearest, floor 15) instead of producing a default Time Block that failed validation on first Save.
+- Day Timeline renders the full domain-legal 00:00-24:00 range in a bounded, internally-scrollable viewport (previously 06:00-23:00 with `overflow: hidden` silently dropped legitimate early-morning/late-night blocks); 900×600 stays usable.
+- `updateTimeBlock()` clears a stale `reminderFiredAt` whenever Date, Start time, or Reminder is explicitly edited, so a past firing can never suppress a newly-relevant future reminder.
+- Reminder/notification failures (native command, live checker, startup catch-up) are caught inside `reminderService` and kept structurally out of `App`'s `initializeDb`/recovery-screen chain: a notification failure can never send the app into local-data recovery or produce an unhandled rejection.
+- v8 backup restore validation now rejects a Time Block that violates the 15-minute grid, the day boundary, or overlaps another block on the same date, instead of silently importing a domain-invalid placement.
+- Packaged-app smoke now actually switches Timeline to Week mode and verifies the seven-day grid, alongside the existing Day/shortcut/notification/v8-round-trip evidence.
+
+Verification: 114/114 automated tests across 19 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the notification plugin and capability; manually verified in a live browser preview (a 23:30-24:00 block created, visible, and correct in Week mode) with zero console errors. The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop (Windows/MSVC -- 70/70 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
+
 ## Milestone 11: Capture and Task Enrichment — Completed
 
 ### 2026-09-22 — Capture, task enrichment, recurrence/replan correctness, and v7 backup
@@ -12,7 +38,7 @@
 - Replan updates future Task plans and appends durable ReplanEvents while preserving historical check-ins, hiatus gaps, active start tracking, and anchor transitions across multiple replans. Completed one-time/floating tasks are protected against replanning.
 - Dexie schema and backup format advanced to v7 with complete v1–v6 migration compatibility.
 - Desktop verification uses an isolated WebView2 profile, protects real user profiles with metadata fingerprint comparison, and executes 58/58 packaged-app smoke checks and 17/17 installer/upgrade smoke checks.
-- Verification: 86/86 automated tests across 15 suites, TypeScript checking, production build, and full GitHub Actions CI green across Classify, Core, Desktop (Windows/MSVC), and PR Gate. Milestone 12 is next and has not started.
+- Verification: 86/86 automated tests across 15 suites, TypeScript checking, production build, and full GitHub Actions CI green across Classify, Core, Desktop (Windows/MSVC), and PR Gate.
 
 ## Milestone 10: Desktop UI Migration — Completed
 

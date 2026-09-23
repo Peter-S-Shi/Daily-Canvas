@@ -44,10 +44,12 @@ function TodayItem({ task, record, checkIns, pauses, lifecycle, areas, onOpen, o
   );
 }
 
-export function TodayView({ onCreateTask, onOpenTask }: { onCreateTask: () => void; onOpenTask: (taskId: string) => void }) {
+export function TodayView({ onCreateTask, onOpenTask, onOpenTimeline }: { onCreateTask: () => void; onOpenTask: (taskId: string) => void; onOpenTimeline: () => void }) {
   const { t, i18n } = useTranslation();
   const [experienceTask, setExperienceTask] = useState<Task>();
   const date = todayKey();
+  const todaysBlocks = useLiveQuery(async () => (await db.timeBlocks.where("date").equals(date).toArray()).sort((a, b) => a.startMinutes - b.startMinutes), [date]) ?? [];
+  const blockTasks = useLiveQuery(async () => db.tasks.bulkGet(todaysBlocks.map((block) => block.taskId)), [todaysBlocks.map((block) => block.taskId).join(",")]) ?? [];
   const rawTasks = useLiveQuery(async () => (await db.tasks.toArray()).filter((task) => !task.archived), []) ?? [];
   const lifecycles = useLiveQuery(() => db.taskLifecycles.toArray(), []) ?? [];
   const pauses = useLiveQuery(() => db.pausePeriods.toArray(), []) ?? [];
@@ -73,6 +75,13 @@ export function TodayView({ onCreateTask, onOpenTask }: { onCreateTask: () => vo
         <div className="section-head"><h3 id="fixed-today-heading">{t("fixedToday")}</h3>{fixedTasks.length > 1 && <span className="section-hint">{t("dragHint")}</span>}</div>
         {fixedTasks.length === 0 ? <div className="empty-state"><p>{t("emptyToday")}</p></div> : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={fixedTasks.map((task) => task.id)} strategy={verticalListSortingStrategy}><div className="item-list">{fixedTasks.map((task) => <TodayItem key={task.id} task={task} record={todayRecords.get(task.id)} checkIns={checkIns.filter((item) => item.taskId === task.id)} pauses={pauses.filter((item) => item.taskId === task.id)} lifecycle={lifecycles.find((item) => item.taskId === task.id)} areas={areas} onOpen={() => onOpenTask(task.id)} onReflect={setExperienceTask}/>)}</div></SortableContext></DndContext>}
       </section>
+      {todaysBlocks.length > 0 && <section aria-labelledby="todays-plan-heading" className="todays-plan">
+        <div className="section-head"><h3 id="todays-plan-heading">{t("todaysPlan")}</h3><button type="button" className="button secondary compact" onClick={onOpenTimeline}>{t("openTimeline")}</button></div>
+        <div className="item-list">{todaysBlocks.map((block, index) => { const task = blockTasks[index]; if (!task) return null; return <button type="button" key={block.id} className="item-copy plan-summary-row" onClick={onOpenTimeline}>
+          <span className="item-title">{task.title}</span>
+          <span className="item-sub">{String(Math.floor(block.startMinutes / 60)).padStart(2, "0")}:{String(block.startMinutes % 60).padStart(2, "0")}–{String(Math.floor((block.startMinutes + block.durationMinutes) / 60)).padStart(2, "0")}:{String((block.startMinutes + block.durationMinutes) % 60).padStart(2, "0")}</span>
+        </button>; })}</div>
+      </section>}
       {quotas.length > 0 && <section aria-labelledby="quota-today-heading">
         <div className="section-head"><h3 id="quota-today-heading">{t("quotaGoals")}</h3><span className="section-hint">{t("quotaTodayHint")}</span></div>
         <div className="quota-grid">{quotas.map((task) => {
