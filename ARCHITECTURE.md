@@ -571,6 +571,8 @@ A cheap classifier (`.github/scripts/classify.sh`, self-tested on every run) det
 - desktop/CI/dependency changes: core + Windows/MSVC Tauri build + runtime-dependency check + packaged-app smoke + NSIS installer/upgrade smoke;
 - RC/release installer/clean-install/upgrade/artifact checks remain for Milestone 15.
 
+Routing under `src/` is fail-closed (Milestone 14): only an explicit allowlist of non-visual, pure-logic paths (`src/services/*`, `src/lib/*`, `src/vite-env.d.ts`, plus the dedicated migration/backup-contract paths) stays core-only. Every other `src/` path — components, navigation, the app shell, i18n strings, global styles, and any new or unanticipated path — also selects the desktop tier, so a UI-reshaping change can no longer skip real packaged-app/installer evidence the way M10-A's navigation rewrite once did.
+
 A stable final `PR Gate` job always runs and fails closed: it requires every job the classifier marked as needed to have succeeded, and every job it marked as unneeded to have been skipped — never silently run, never silently failed. Superseded runs are cancelled (`concurrency: cancel-in-progress`).
 
 ---

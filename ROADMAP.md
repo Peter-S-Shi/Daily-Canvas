@@ -417,6 +417,8 @@ All exit criteria above are met.
 
 # Feature Complete Gate
 
+**Status: accepted.** Milestones 8–13 are implemented, and the v1.0 Feature Complete Gate was explicitly accepted at the start of Milestone 14. This acceptance is recorded here and in `PROJECT_STATUS.md`.
+
 The v1.0 program becomes feature-complete only when Milestones 8–13 are implemented and explicitly accepted.
 
 The gate requires:
@@ -433,6 +435,8 @@ Feature Complete does not mean Release Ready.
 
 # Feature Freeze Policy
 
+**Status: active**, since the v1.0 Feature Complete Gate above was accepted. Milestone 14 was executed entirely under this policy: it added no new features and fixed only release-blocking and hardening-class defects.
+
 Feature Freeze begins only after the v1.0 Feature Complete Gate is explicitly accepted and recorded in both `ROADMAP.md` and `PROJECT_STATUS.md`.
 
 During freeze:
@@ -445,7 +449,7 @@ During freeze:
 
 ---
 
-## Milestone 14: Product Hardening and Full Regression
+## Milestone 14: Product Hardening and Full Regression — Completed
 
 **Goal:** Converge the complete desktop v1.0 system on release-level correctness, resilience, accessibility, privacy, performance, and evidence.
 
@@ -468,6 +472,17 @@ During freeze:
 - Critical fixes have regression coverage or a repeatable documented verification procedure.
 - Deferred issues are recorded.
 - README files, `ROADMAP.md`, `PROJECT_STATUS.md`, `ARCHITECTURE.md`, and release notes agree.
+
+### Completion evidence
+
+- A systematic audit against a release-hardening evidence matrix (built from `ROADMAP.md`'s exit criteria, `PROJECT_STATUS.md`'s Known Risks, `ARCHITECTURE.md`'s testing boundaries, and every M1–M13 promised capability) covered v1–v9 migration/backup/restore, large multi-year histories, all major workspace journeys, the 900×600 minimum, English/Chinese bilingual coverage, keyboard-only journeys, focus trap/return, screen-reader semantics, color independence, reduced motion, Timeline/Reminder/Shortcuts, automatic and manual backup/restore, Meditation/Reflection/Review export, On This Day, update-awareness offline behavior, restart/forced-kill persistence, native-adapter failure isolation, the CSP/privacy/network boundary, and installer/upgrade/uninstall expectations.
+- Two confirmed data-integrity release blockers were found and fixed with regression coverage: `deleteTask` left a deleted task's `experienceLogs` and `rewards` rows behind indefinitely (a streak-triggered Reward became permanently, invisibly unlockable-never), and backup restore never filtered `rewards` referencing a task missing from the restored set, letting the same dead-reference state re-enter through import. Neither changes the v9 schema/backup format.
+- The known path-based CI routing gap (`PROJECT_STATUS.md`, "Known Risks") is closed: `.github/scripts/classify.sh` now fails closed for `src/` — only an explicit allowlist of non-visual, pure-logic paths stays core-only, and every other `src/` path (components, navigation, the app shell, i18n, global styles, anything unanticipated) also selects the desktop tier, so a UI-reshaping change can no longer silently skip packaged-app/installer evidence the way M10-A's navigation rewrite once did. The classifier self-test was extended to lock this in.
+- A full accessibility and color-independence sweep (Dialog focus trap/return, reduced-motion honoring, icon-button labeling, and every status/lifecycle/streak/area indicator across Today, Floating, Task Detail, Rewards, Calendar, Review, Areas, Task Picker, and Timeline) found the existing implementation already correct against the frozen spec; no defect required a fix.
+- Large-history performance was measured against a defined synthetic scale (6 years/2,190 days, ~36 tasks, ~11,900 check-ins, 2,190 daily reflections, 400 meditations, ~2,400 experience logs) run directly through the real service functions: Review's full-range model built in ~102 ms (a normal month-sized range in ~2.8 ms), Available Work in ~1.1 ms/day, per-task streak stats in ~92 ms across all fixed habits over the full range, and On This Day in ~1.5 ms — no O(n²) pattern or release-level stall was found; no performance fix was required.
+- Deferred, non-blocking: DST-transition scheduling has no dedicated regression test (inherent to JS local-`Date` semantics, not an app defect); no code signing yet; NSIS uninstall does not offer to delete user data (open product decision, not a defect); only a single Windows runner image and a per-user install are exercised; the recorded large-chunk build advisory is unchanged. None of these block Feature Complete or Feature Freeze.
+- 148/148 automated TypeScript/Vitest tests across 25 suites (up from 146/24 at Milestone 13), including new coverage for the `deleteTask`/restore orphan-cleanup fixes and an extended classifier self-test; 4 Rust unit tests (`src-tauri/src/lib.rs`, unchanged from Milestone 13's namespace-scoping coverage) continue to pass; TypeScript checking and the production build pass, with the existing large-chunk advisory unchanged.
+- No known release blocker remains. The v1.0 Feature Complete Gate is accepted and Feature Freeze is active (see "Feature Complete Gate" and "Feature Freeze Policy" above).
 
 ---
 
