@@ -1,5 +1,21 @@
 # Development log
 
+## Milestone 14: Product Hardening and Full Regression — Completed
+
+### 2026-09-23 — Release-hardening audit, orphan-data fixes, and fail-closed CI routing (PR #10)
+
+No new features; Feature Freeze active throughout. Built a release-hardening evidence matrix from `ROADMAP.md`'s M14 exit criteria, `PROJECT_STATUS.md`'s Known Risks, `ARCHITECTURE.md`'s testing boundaries, and every M1-M13 promised capability, then audited systematically against it.
+
+- **Orphan `experienceLogs`/`rewards` on task delete.** `deleteTask` cleaned up `checkIns`, `taskLifecycles`, `pausePeriods`, `milestoneEvents`, `replanEvents`, `timeBlocks`, and `dailyOrders` references but never touched `db.experienceLogs` or `db.rewards`; both tables now join the same transaction and are deleted by `taskId`. A streak-triggered Reward pointing at a deleted task was previously permanently, invisibly unlockable-never. New regression test in `src/services/taskService.test.ts`.
+- **Orphan `rewards` on backup restore.** `migrateBackup` filtered every other task-referencing collection against the restored task-id set but never `rewards`, so a corrupted or hand-edited backup could reintroduce the same dead-reference state through import. `rewards` with a `taskId` not present in the restored set are now dropped with a warning; date-triggered rewards without a `taskId` are untouched. New test in `src/services/backupService.test.ts`.
+- **Fail-closed CI routing.** `.github/scripts/classify.sh` previously treated any `src/*` change as `core`-only by default, meaning a UI-reshaping change could skip the `desktop` tier entirely (this bit the project once, in M10-A). Inverted the default: only an explicit allowlist of non-visual, pure-logic paths (`src/services/*`, `src/lib/*`, `src/vite-env.d.ts`, plus the existing migration/backup-contract paths) stays core-only; every other `src/` path -- including anything new or unanticipated -- now also selects `desktop`. `classify-selftest.sh` was extended with cases for components, navigation, the app shell, i18n, global styles, `index.html`, and an unknown `src/` path.
+- **Accessibility and color-independence sweep.** Verified `Dialog.tsx`'s focus trap and focus-return, reduced-motion honoring (`document.documentElement` class toggle plus the `.reduce-motion`/`prefers-reduced-motion` CSS), icon-button `aria-label` coverage, and every status/lifecycle/streak/area indicator across Today, Floating, Task Detail, Rewards, Calendar, Review, Areas, Task Picker, and Timeline for color-only signaling. All already correct against the frozen spec; nothing required a fix.
+- **Large-history performance measurement.** Defined a representative synthetic scale (6 years/2,190 days, ~36 tasks, ~11,900 check-ins, 2,190 daily reflections, 400 meditations, ~2,400 experience logs) and timed the real service functions directly against it: Review's full-range model ~102 ms (a normal month range ~2.8 ms), Available Work ~1.1 ms/day, per-task streak stats ~92 ms across all fixed habits, On This Day ~1.5 ms. No O(n²) pattern or release-level stall found; no fix required.
+
+Deferred, non-blocking: DST-transition scheduling has no dedicated regression test (inherent to JS local-`Date` semantics, not an observed defect); no code signing yet; NSIS uninstall doesn't offer to delete user data; only a single Windows runner image and a per-user install mode are exercised; the recorded large-chunk build advisory is unchanged.
+
+Verification: 148/148 automated TypeScript/Vitest tests across 25 suites (up from 146/24 at Milestone 13); TypeScript checking and the production build both pass; 4 Rust unit tests (`src-tauri/src/lib.rs`, unchanged from Milestone 13's namespace-scoping coverage) continue to pass. No smoke-suite coverage changed, so the packaged-app smoke (103/103) and installer/upgrade smoke (17/17) established in Milestone 13 continue to apply. No known release blocker remains; the v1.0 Feature Complete Gate is accepted and Feature Freeze is active.
+
 ## Milestone 13: Reflection, Preservation, and Desktop Utilities — Completed
 
 ### 2026-09-23 — Merge-readiness corrective pass (PR #9)

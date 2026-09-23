@@ -2,13 +2,13 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–13 均已完成，包括 Tauri 2 Windows 桌面基础、冻结的桌面 UI 蓝图、桌面 UI 迁移、首批 v1.0 捕获与任务增强能力、Day/Week Timeline、Time Block 与本地提醒，以及 Reflection Templates、On This Day、本地导出、自动备份与 GitHub Release 更新提示。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。下一步为 Milestone 14（产品加固）。
+当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–14 均已完成，包括 Tauri 2 Windows 桌面基础、冻结的桌面 UI 蓝图、桌面 UI 迁移、首批 v1.0 捕获与任务增强能力、Day/Week Timeline、Time Block 与本地提醒、Reflection Templates、On This Day、本地导出、自动备份与 GitHub Release 更新提示，以及一轮覆盖 migration/backup、可访问性、性能与 CI 验证覆盖率的发布加固。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。v1.0 Feature Complete Gate 已被接受，Feature Freeze 已生效；下一步为 Milestone 15（Release Candidate）。
 
 ## 当前开发状态
 
 此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）现已全部完成；下一个工程目标为 Milestone 14（产品加固与全量回归）。
+已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）已全部完成，**Milestone 14：产品加固与全量回归**在不新增功能的前提下，把整个系统收敛到发布级的正确性、韧性、可访问性、性能与验证证据。当前无已知 release blocker。下一步为 Milestone 15（Release Candidate）。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
