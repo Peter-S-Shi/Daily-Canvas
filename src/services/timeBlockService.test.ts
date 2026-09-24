@@ -102,6 +102,21 @@ describe("timeBlockService", () => {
     expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
   });
 
+  it("allows reminder-only updates on an already-accepted overlapping block without requiring another overlap decision", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const anchor = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const overlapping = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 15, durationMinutes: 30 }, { allowOverlap: true });
+
+    const updated = await updateTimeBlock(overlapping.id, { reminder: "10" });
+
+    expect(updated.reminder).toBe("10");
+    expect(updated.date).toBe(overlapping.date);
+    expect(updated.startMinutes).toBe(overlapping.startMinutes);
+    expect(updated.durationMinutes).toBe(overlapping.durationMinutes);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
+  });
+
   it("allows a task to hold multiple blocks on different times/dates", async () => {
     const task = await saveTask(fixedTask());
     await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 30 });

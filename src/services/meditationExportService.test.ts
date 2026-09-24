@@ -10,9 +10,9 @@ const stamp = "2026-01-01T12:00:00.000Z";
 const entry = (id: string, content: string, sortOrder: number): MeditationEntry => ({ id, content, sortOrder, createdAt: stamp, updatedAt: stamp });
 
 describe("meditationExportService field rename (Issue #23)", () => {
-  it("names the cover fields mainTitle/subtitle, language-agnostically, defaulting subtitle to empty (not a fallback string)", () => {
+  it("names the cover fields mainTitle/subtitle and keeps both language-agnostic when callers omit them", () => {
     const model = buildMeditationExportModel([entry("a", "One", 0)]);
-    expect(model.mainTitle).toBe("我的感悟");
+    expect(model.mainTitle).toBe("");
     expect(model.subtitle).toBe("");
   });
 

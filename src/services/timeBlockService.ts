@@ -72,14 +72,14 @@ export async function updateTimeBlock(id: string, changes: UpdateTimeBlockInput,
   if (!existing) throw new Error("Time Block not found.");
   const next = { date: changes.date ?? existing.date, startMinutes: changes.startMinutes ?? existing.startMinutes, durationMinutes: changes.durationMinutes ?? existing.durationMinutes };
   validateTimeBlockInput(next);
-  if (!options.allowOverlap) {
+  const placementChanged = next.date !== existing.date || next.startMinutes !== existing.startMinutes || next.durationMinutes !== existing.durationMinutes;
+  if (placementChanged && !options.allowOverlap) {
     const overlapping = await findOverlaps(next.date, next, id);
     if (overlapping.length) throw new TimeBlockOverlapError(overlapping);
   }
-  const explicitAdjustment = changes.date !== undefined || changes.startMinutes !== undefined || changes.durationMinutes !== undefined;
   // Date, Start time, and Reminder all change when the next notification should fire; a past firing must never suppress a newly-relevant future one.
   const reminderTimingChanged = changes.date !== undefined || changes.startMinutes !== undefined || changes.reminder !== undefined;
-  const updated: TimeBlock = { ...existing, ...next, reminder: changes.reminder ?? existing.reminder, needsReview: explicitAdjustment ? false : existing.needsReview, reminderFiredAt: reminderTimingChanged ? undefined : existing.reminderFiredAt, updatedAt: now() };
+  const updated: TimeBlock = { ...existing, ...next, reminder: changes.reminder ?? existing.reminder, needsReview: placementChanged ? false : existing.needsReview, reminderFiredAt: reminderTimingChanged ? undefined : existing.reminderFiredAt, updatedAt: now() };
   await db.timeBlocks.put(updated);
   return updated;
 }

@@ -48,8 +48,8 @@ type ExportCompletion = { status: "idle" } | { status: "success"; fileName: stri
 
 function MeditationExportPreview({ entries, selectedIds, onClose }: { entries: MeditationEntry[]; selectedIds?: string[]; onClose: () => void }) {
   const { t, i18n } = useTranslation();
-  const [mainTitle, setMainTitle] = useState("我的感悟");
-  const [subtitle, setSubtitle] = useState("Meditations");
+  const [mainTitle, setMainTitle] = useState(() => t("meditations"));
+  const [subtitle, setSubtitle] = useState("");
   const [showDates, setShowDates] = useState(true);
   const [pageStyle, setPageStyle] = useState<MeditationPageStyle>("ivory");
   const [pageSize, setPageSize] = useState<MeditationPageSize>("a4");

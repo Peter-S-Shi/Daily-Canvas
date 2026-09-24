@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
-import "../i18n";
+import i18n from "../i18n";
 import { MeditationsView } from "./MeditationsView";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -23,7 +23,7 @@ const seed = async (count: number) => {
 describe("Meditations Select All / Clear All (M14-B blocker #12)", () => {
   let root: Root;
   beforeEach(async () => { await db.delete(); await db.open(); await initializeDb(); document.body.innerHTML = '<div id="root"></div>'; root = createRoot(document.getElementById("root")!); });
-  afterEach(async () => { await act(() => root.unmount()); await db.delete(); });
+  afterEach(async () => { await act(() => root.unmount()); await i18n.changeLanguage("en"); await db.delete(); });
 
   const openSelectionMode = async () => { await act(async () => root.render(<MeditationsView />)); await pause(); await click(button("Select")); };
 
@@ -78,5 +78,16 @@ describe("Meditations Select All / Clear All (M14-B blocker #12)", () => {
     expect(selectAll.getAttribute("type")).toBe("button");
     expect(clearAll.tagName).toBe("BUTTON");
     expect(clearAll.getAttribute("type")).toBe("button");
+  });
+
+  it("initializes the export cover from the current UI language with a blank subtitle (Issue #23)", async () => {
+    await seed(1);
+    await i18n.changeLanguage("en");
+    await act(async () => root.render(<MeditationsView />));
+    await pause();
+    await click(button("Export All"));
+    const fields = document.querySelectorAll<HTMLInputElement>(".export-controls .field input");
+    expect(fields[0].value).toBe("Meditations");
+    expect(fields[1].value).toBe("");
   });
 });

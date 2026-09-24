@@ -6,7 +6,7 @@ import { db } from "../../db";
 import { isViewingToday, minutesSinceMidnight, toDateKey, todayKey } from "../../lib/dates";
 import { resolveTaskColor } from "../../services/areaService";
 import { availableWorkOn } from "../../services/availableWorkService";
-import { updateTimeBlock } from "../../services/timeBlockService";
+import { TimeBlockOverlapError, updateTimeBlock } from "../../services/timeBlockService";
 import type { Task, TimeBlock } from "../../types";
 import { HeaderActions } from "../shell/WorkspaceHeader";
 import { TaskPickerDialog } from "./TaskPickerDialog";
@@ -33,6 +33,7 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const [scheduling, setScheduling] = useState<{ task: Task; date: string; startMinutes?: number }>();
   const [pickerDate, setPickerDate] = useState<string>();
   const [dragError, setDragError] = useState("");
+  const [pendingDrag, setPendingDrag] = useState<{ blockId: string; changes: { date?: string; startMinutes?: number } }>();
   // Restrained current-time indicator (Issue #20): only drawn when the viewed date is the real-world
   // current day, re-checked every minute rather than frozen at first render.
   const [nowMinutes, setNowMinutes] = useState(() => minutesSinceMidnight());
@@ -45,7 +46,24 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const availableWork = (date: string) => availableWorkOn(date, data.tasks, data.checkIns, data.lifecycles, data.pauses);
 
   const moveBlock = async (blockId: string, changes: { date?: string; startMinutes?: number }) => {
-    try { setDragError(""); await updateTimeBlock(blockId, changes); } catch (err) { setDragError(err instanceof Error ? err.message : String(err)); }
+    setDragError("");
+    setPendingDrag(undefined);
+    try {
+      await updateTimeBlock(blockId, changes);
+    } catch (err) {
+      if (err instanceof TimeBlockOverlapError) setPendingDrag({ blockId, changes });
+      else setDragError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  const confirmOverlappingDrag = async () => {
+    if (!pendingDrag) return;
+    setDragError("");
+    try {
+      await updateTimeBlock(pendingDrag.blockId, pendingDrag.changes, { allowOverlap: true });
+      setPendingDrag(undefined);
+    } catch (err) {
+      setDragError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const weekStart = startOfWeek(parseISO(selectedDate), { weekStartsOn });
@@ -72,6 +90,11 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
       </HeaderActions>
       <div className="page-intro"><h2 className="page-title">{t("timeline")}</h2><p className="muted">{t("timelineHint")}</p></div>
       {dragError && <p className="error-message" role="alert">{dragError}</p>}
+      {pendingDrag && <div className="inline-actions timeline-overlap-warning" role="alert">
+        <span className="pill pill-warning">{t("timeBlockOverlapWarning")}</span>
+        <button type="button" className="button secondary compact" onClick={() => setPendingDrag(undefined)}>{t("adjustTime")}</button>
+        <button type="button" className="button primary compact" onClick={() => void confirmOverlappingDrag()}>{t("saveAnyway")}</button>
+      </div>}
 
       {mode === "day" && <div className="timeline-day-layout">
         <section className="panel timeline-grid-panel" aria-labelledby="timeline-day-heading">

@@ -51,10 +51,10 @@ export function TimeBlockDialog({ task, block, defaultDate, defaultStartMinutes,
     <Dialog labelledBy="time-block-dialog-title" onClose={onClose} className="time-block-dialog">
       <DialogHeader id="time-block-dialog-title" eyebrow={task.title} title={block ? t("editTimeBlock") : t("scheduleTimeBlock")} onClose={onClose} closeLabel={t("close")} />
       <form className="task-form" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-        <label className="field">{t("date")}<input type="date" value={date} onChange={(event) => adjust(setDate)(event.target.value)} /></label>
-        <label className="field">{t("startTime")}<input type="time" step={MINUTE_STEP * 60} value={toTimeInput(startMinutes)} onChange={(event) => adjust(setStartMinutes)(roundToStep(fromTimeInput(event.target.value)))} /></label>
-        <label className="field">{t("durationMinutesLabel")}<input type="number" min={1} step={1} value={durationMinutes} onChange={(event) => adjust(setDurationMinutes)(Math.max(1, Math.round(Number(event.target.value))))} /></label>
-        <label className="field">{t("reminder")}<select value={reminder} onChange={(event) => setReminder(event.target.value as ReminderOffset)}>{reminderOptions.map((option) => <option key={option} value={option}>{t(`reminder_${option}`)}</option>)}</select></label>
+        <label className="field"><span>{t("date")}</span><input type="date" value={date} onChange={(event) => adjust(setDate)(event.target.value)} /></label>
+        <label className="field"><span>{t("startTime")}</span><input type="time" step={MINUTE_STEP * 60} value={toTimeInput(startMinutes)} onChange={(event) => adjust(setStartMinutes)(roundToStep(fromTimeInput(event.target.value)))} /></label>
+        <label className="field"><span>{t("durationMinutesLabel")}</span><input type="number" min={1} step={1} value={durationMinutes} onChange={(event) => adjust(setDurationMinutes)(Math.max(1, Math.round(Number(event.target.value))))} /></label>
+        <label className="field"><span>{t("reminder")}</span><select value={reminder} onChange={(event) => setReminder(event.target.value as ReminderOffset)}>{reminderOptions.map((option) => <option key={option} value={option}>{t(`reminder_${option}`)}</option>)}</select></label>
         {block?.needsReview && <p className="pill pill-warning field-wide">{t("blockNeedsReview")}</p>}
         {error && <p className="error-message field-wide" role="alert">{error}</p>}
         {overlapWarning && <p className="pill pill-warning field-wide" role="alert">{t("timeBlockOverlapWarning")}</p>}

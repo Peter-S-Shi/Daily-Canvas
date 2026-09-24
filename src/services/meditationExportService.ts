@@ -43,7 +43,7 @@ export function buildMeditationExportModel(entries: MeditationEntry[], options: 
   if (ordered.length === 0) throw new Error("Select at least one Meditation to export.");
   return {
     entries: ordered,
-    mainTitle: options.mainTitle ?? "我的感悟",
+    mainTitle: options.mainTitle ?? "",
     // Subtitle is allowed to be empty/blank -- no fallback to a default string.
     subtitle: options.subtitle ?? "",
     showDates: options.showDates ?? true,

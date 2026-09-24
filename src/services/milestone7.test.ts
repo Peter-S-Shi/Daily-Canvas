@@ -75,7 +75,7 @@ describe("Milestone 7 export, Word, migration, and backup", () => {
   it("builds all and selected models in global order with safe defaults", () => {
     const all = buildMeditationExportModel(entries);
     expect(all.entries.map((entry) => entry.id)).toEqual(["earlier", "later"]);
-    expect(all).toMatchObject({ mainTitle: "我的感悟", subtitle: "", showDates: true, pageStyle: "ivory", pageSize: "a4", locale: "en" });
+    expect(all).toMatchObject({ mainTitle: "", subtitle: "", showDates: true, pageStyle: "ivory", pageSize: "a4", locale: "en" });
     expect(buildMeditationExportModel(entries, { selectedIds: ["later"], showDates: false, mainTitle: "", subtitle: "Private volume", locale: "zh-CN" })).toMatchObject({ entries: [expect.objectContaining({ id: "later" })], showDates: false, mainTitle: "", subtitle: "Private volume", locale: "zh-CN" });
     expect(() => buildMeditationExportModel(entries, { selectedIds: [] })).toThrow(/select at least one/i);
     expect(Object.keys(meditationPageStyles)).toEqual(["parchment", "ivory", "blue-white", "pure-white", "soft-gray"]);

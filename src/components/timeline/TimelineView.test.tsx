@@ -68,3 +68,41 @@ describe("TimelineView Available Work has-a-block indicator (Issue #20)", () => 
     expect(scheduleButtons.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe("TimelineView drag overlap confirmation (Issue #21)", () => {
+  let root: Root;
+  const date = "2026-02-10";
+  beforeEach(async () => { await db.delete(); await db.open(); await initializeDb(); });
+  afterEach(async () => { await act(() => root.unmount()); await db.delete(); });
+
+  it("warns on an overlapping drop and moves only the dragged block after Save anyway", async () => {
+    const anchorTask = await saveTask({ title: "Anchor", kind: "task", starred: false, archived: false, startDate: date, schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
+    const movingTask = await saveTask({ title: "Moving", kind: "task", starred: false, archived: false, startDate: date, schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
+    const anchor = await createTimeBlock({ taskId: anchorTask.id, date, startMinutes: 9 * 60, durationMinutes: 60 });
+    const moving = await createTimeBlock({ taskId: movingTask.id, date, startMinutes: 12 * 60, durationMinutes: 30 });
+    document.body.innerHTML = '<div id="root"></div>';
+    await act(async () => {
+      root = createRoot(document.getElementById("root")!);
+      root.render(<TimelineView weekStartsOn={1} initialDate={date} onOpenTask={() => {}}/>);
+    });
+    await pause(); await pause();
+
+    let draggedId = "";
+    const dataTransfer = { setData: (_type: string, value: string) => { draggedId = value; }, getData: () => draggedId };
+    const movingChip = [...document.querySelectorAll<HTMLButtonElement>(".time-block-chip")].find((item) => item.textContent?.includes("Moving"))!;
+    movingChip.dispatchEvent(Object.assign(new Event("dragstart", { bubbles: true }), { dataTransfer }));
+    const overlappingRow = document.querySelectorAll<HTMLElement>(".timeline-row")[9 * 4 + 1];
+    await act(async () => { overlappingRow.dispatchEvent(Object.assign(new Event("drop", { bubbles: true }), { dataTransfer })); });
+    await pause();
+
+    expect(document.body.textContent).toContain("overlaps one or more existing Time Blocks");
+    const saveAnyway = [...document.querySelectorAll<HTMLButtonElement>("button")].find((item) => item.textContent?.trim() === "Save anyway");
+    expect(saveAnyway).toBeTruthy();
+    expect((await db.timeBlocks.get(moving.id))?.startMinutes).toBe(12 * 60);
+
+    await act(async () => { saveAnyway!.click(); });
+    await pause();
+    expect((await db.timeBlocks.get(moving.id))?.startMinutes).toBe(9 * 60 + 15);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
+  });
+});
