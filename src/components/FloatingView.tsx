@@ -35,6 +35,7 @@ export function FloatingView({ onCreateTask, onOpenTask }: { onCreateTask: () =>
               <span className={`pill ${overdue ? "pill-warning" : completedDate ? "pill-success" : ""}`}>{status}</span>
               {!completedDate && available && <button type="button" className="button secondary compact" onClick={() => setCheckIn(task.id, date, "done")}>{t("completeToday")}</button>}
               {completedDate && <span className="completion-mark" aria-hidden="true">✓</span>}
+              {completedDate && <button type="button" className="button text-button" onClick={() => setCheckIn(task.id, completedDate, undefined)}>{t("undo")}</button>}
             </article>
           );
         })}

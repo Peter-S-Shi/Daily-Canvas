@@ -80,13 +80,13 @@ export default function App() {
   const selectSearchResult = (result: SearchResult) => { setSearching(false); if (result.type === "task") navigation.navigate(taskDetailFor(result.id)); else if (result.type === "reflection") navigation.navigate(reflectionFor(result.id)); else if (result.type === "meditation") navigation.navigate({ section: "meditations", meditationId: result.id }); else navigation.navigate({ section: "allTasks", areaId: result.id }); };
   return <>
     <DesktopShell navigation={navigation} onSearch={() => setSearching(true)} onQuickCapture={() => setQuickCapture(true)} shellStyle={backgroundStyle(appPreference, assets.find((item) => item.id === appPreference?.assetId))} contentStyle={backgroundStyle(sectionPreference, assets.find((item) => item.id === sectionPreference?.assetId))}>
-      {section === "todayExecution" && <TodayView onCreateTask={() => createTask()} onOpenTask={openTask} onOpenTimeline={() => navigation.navigate(timelineFor(todayKey()))}/>}
+      {section === "todayExecution" && <TodayView onCreateTask={() => createTask()} onOpenTask={openTask} onOpenTimeline={() => navigation.navigate(timelineFor(todayKey()))} onOpenFloating={() => navigation.openSection("floating")}/>}
       {section === "inboxCaptures" && <InboxView onFullTask={(capture) => setEditing({ initialTitle: capture.title, captureId: capture.id })}/>}
       {section === "floating" && <FloatingView onCreateTask={() => createTask("floating")} onOpenTask={openTask}/>}
       {section === "calendar" && <CalendarView key={navigation.calendarDate} initialDate={navigation.calendarDate} weekStartsOn={settings.weekStartsOn} onOpenReflection={(date) => navigation.navigate(reflectionFor(date))}/>}
       {section === "timeline" && <TimelineView key={navigation.timelineDate} initialDate={navigation.timelineDate} weekStartsOn={settings.weekStartsOn} onOpenTask={openTask}/>}
       {section === "allTasks" && <TasksView selectedTaskId={navigation.selectedTaskId} selectedAreaId={navigation.selectedAreaId} onSelectTask={navigation.selectTask} onCreateTask={() => createTask()} onEditTask={editTask} onInspectDate={(date) => navigation.navigate(calendarEvidenceFor(date))} onOpenLifecycle={() => navigation.openSection("lifecycle")}/>}
-      {section === "areas" && <AreasManager/>}
+      {section === "areas" && <AreasManager onOpenTask={openTask}/>}
       {section === "lifecycle" && <LifecycleView onEdit={editTask} onOpenTask={openTask}/>}
       {section === "rewards" && <RewardsView/>}
       {section === "dailyReflection" && <ReflectionView key={navigation.reflectionDate} initialDate={navigation.reflectionDate}/>}

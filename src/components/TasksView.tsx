@@ -2,10 +2,16 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
+import { todayKey } from "../lib/dates";
+import { bulkChangeArea } from "../services/taskService";
 import { getQuotaPeriod, getQuotaProgress } from "../services/quotaService";
-import { calculateTaskStats } from "../services/statisticsService";
+import { isFixedOccurrenceOn } from "../services/scheduleService";
 import { TaskDetailPanel } from "./TaskDetailPanel";
-import type { Task } from "../types";
+import type { CheckIn, Task } from "../types";
+
+/** Sentinel for the bulk Change Area "No Area" option (Issue #16 finding): distinct from the disabled
+ * placeholder ("") so the placeholder itself can never be an applicable, real target. */
+const NO_AREA_VALUE = "__no_area__";
 
 interface TasksViewProps {
   selectedTaskId: string;
@@ -23,6 +29,9 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
   const [query, setQuery] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [scheduleFilter, setScheduleFilter] = useState("");
+  const [selecting, setSelecting] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [bulkArea, setBulkArea] = useState("");
   useEffect(() => { if (selectedAreaId) setAreaFilter(selectedAreaId); }, [selectedAreaId]);
   const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []) ?? [];
@@ -33,22 +42,38 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
     .filter((task) => (filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)) && (!areaFilter || task.areaId === areaFilter) && (!scheduleFilter || task.schedule.mode === scheduleFilter) && (!needle || task.title.toLocaleLowerCase().includes(needle)))
     .sort((a, b) => Number(b.starred) - Number(a.starred) || b.updatedAt.localeCompare(a.updatedAt));
   const selected = tasks.find((task) => task.id === selectedTaskId);
+  const visibleIds = new Set(visible.map((task) => task.id));
+  /** Selection state may retain ids for Tasks hidden by a later filter change (Issue #16 finding); the
+   * currently-visible subset is always what Selected count / Select All / Clear All / Apply describe and act on. */
+  const effectiveSelected = [...bulkSelected].filter((id) => visibleIds.has(id));
+  const bulkAreas = areas.filter((area) => !area.archived);
+
+  /** Type-aware state grammar (Issue #17): "completed" is not one universal concept, so each Task kind gets its own compact, single-line state label. */
+  const rowState = (task: Task, records: CheckIn[]): string => {
+    if (task.schedule.mode === "quota") {
+      const progress = getQuotaProgress(task, getQuotaPeriod(task.schedule, new Date(), settings?.weekStartsOn ?? 1), records);
+      return `${progress.count}/${progress.target} ${t(task.schedule.period === "week" ? "thisWeek" : "thisMonth")}`;
+    }
+    if (task.kind !== "task") {
+      if (task.schedule.mode === "fixed" && !isFixedOccurrenceOn(task, new Date())) return t("notScheduledToday");
+      const record = records.find((item) => item.date === todayKey());
+      if (task.kind === "avoidance") return record?.status === "done" ? t("safe") : record?.status === "lapse" ? t("lapse") : record?.status === "skipped" ? t("skipped") : t("unrecorded");
+      return record?.status === "done" ? t("done") : record?.status === "skipped" ? t("skipped") : t("unrecorded");
+    }
+    const completion = [...records].filter((item) => item.status === "done").sort((a, b) => a.date.localeCompare(b.date))[0];
+    const parts = [task.schedule.mode === "floating" ? t("floatingTask") : undefined, completion ? t("completedOn", { date: completion.date }) : t("incomplete")];
+    if ((task.checklist?.length ?? 0) > 0) parts.push(t("stepsProgress", { done: task.checklist!.filter((item) => item.completed).length, total: task.checklist!.length }));
+    return parts.filter(Boolean).join(" · ");
+  };
   const rowSummary = (task: Task) => {
     const area = areas.find((item) => item.id === task.areaId);
     const kind = t(task.kind === "task" ? "regularTask" : task.kind === "habit" ? "goodHabit" : "avoidanceHabit");
     const records = checkIns.filter((item) => item.taskId === task.id);
-    let stat = "";
-    if (task.schedule.mode === "quota") {
-      const progress = getQuotaProgress(task, getQuotaPeriod(task.schedule, new Date(), settings?.weekStartsOn ?? 1), records);
-      stat = `${progress.count}/${progress.target} ${t(task.schedule.period === "week" ? "thisWeek" : "thisMonth")}`;
-    } else if (task.schedule.mode === "floating") {
-      stat = t("floatingTask");
-    } else if (task.kind !== "task") {
-      const streak = calculateTaskStats(task, records).currentStreak;
-      if (streak > 0) stat = t("streakDays", { count: streak });
-    }
-    return [area?.name ?? t("noArea"), kind, stat].filter(Boolean).join(" · ");
+    return [area?.name ?? t("noArea"), kind, rowState(task, records)].filter(Boolean).join(" · ");
   };
+  const toggleBulk = (taskId: string) => setBulkSelected((current) => { const next = new Set(current); if (next.has(taskId)) next.delete(taskId); else next.add(taskId); return next; });
+  const closeSelection = () => { setSelecting(false); setBulkSelected(new Set()); setBulkArea(""); };
+  const applyBulkArea = async () => { await bulkChangeArea(effectiveSelected, bulkArea === NO_AREA_VALUE ? undefined : bulkArea); setBulkSelected(new Set()); setBulkArea(""); };
   const moveFocus = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     const offset = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
     if (!offset) return;
@@ -65,14 +90,39 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
         <div className="mini-tabs">
           {(["all", "starred", "archived"] as const).map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} aria-pressed={filter === item} onClick={() => setFilter(item)}>{t(item === "all" ? "filterAll" : item === "starred" ? "filterStarred" : "archived")}</button>)}
           <button type="button" className="link-button" onClick={onCreateTask}>＋ {t("newTask")}</button>
+          {!selecting && <button type="button" className="link-button" onClick={() => setSelecting(true)}>{t("selectTasks")}</button>}
         </div>
         <div className="list-filters">
           <select aria-label={t("areas")} value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="">{t("allAreas")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select>
           <select aria-label={t("scheduleType")} value={scheduleFilter} onChange={(event) => setScheduleFilter(event.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
         </div>
+        {selecting && <div className="selection-bar bulk-actions bulk-actions-compact" role="region" aria-label={t("selectTasks")}>
+          <div className="bulk-actions-row">
+            <strong>{t("selectedCount", { count: effectiveSelected.length })}</strong>
+            <button type="button" className="icon-button small" title={t("selectAllTasks")} aria-label={t("selectAllTasks")} disabled={effectiveSelected.length === visible.length} onClick={() => setBulkSelected(new Set(visible.map((task) => task.id)))}>☑</button>
+            <button type="button" className="icon-button small" title={t("clearAllTasks")} aria-label={t("clearAllTasks")} disabled={effectiveSelected.length === 0} onClick={() => setBulkSelected(new Set())}>☐</button>
+            <button type="button" className="icon-button small" title={t("cancelSelection")} aria-label={t("cancelSelection")} onClick={closeSelection}>×</button>
+          </div>
+          <div className="bulk-actions-row">
+            <label className="field inline-field bulk-area-field"><span className="sr-only">{t("bulkChangeArea")}</span>
+              <select value={bulkArea} onChange={(event) => setBulkArea(event.target.value)}>
+                <option value="" disabled>{t("chooseAreaPrompt")}</option>
+                <option value={NO_AREA_VALUE}>{t("noArea")}</option>
+                {bulkAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+              </select>
+            </label>
+            <button type="button" className="icon-button small primary" title={t("applyChangeArea")} aria-label={t("applyChangeArea")} disabled={effectiveSelected.length === 0 || bulkArea === ""} onClick={applyBulkArea}>✓</button>
+          </div>
+        </div>}
         {visible.length === 0 ? <p className="list-empty">{t(needle ? "noMatchingTasks" : filter === "archived" ? "emptyArchived" : "emptyTasks")}</p> : (
           <div className="task-rows">
-            {visible.map((task, index) => (
+            {visible.map((task, index) => selecting ? (
+              <div key={task.id} className={bulkSelected.has(task.id) ? "task-row selected" : "task-row"}>
+                <label className="task-select"><input type="checkbox" checked={bulkSelected.has(task.id)} onChange={() => toggleBulk(task.id)} aria-label={t("selectTasks")}/></label>
+                <span className="row-star" aria-hidden="true">{task.starred ? "★" : "☆"}</span>
+                <button type="button" className="task-row-copy" onClick={() => onSelectTask(task.id)}><strong>{task.title}</strong><span className="item-sub">{rowSummary(task)}</span></button>
+              </div>
+            ) : (
               <button type="button" key={task.id} className={task.id === selectedTaskId ? "task-row active" : "task-row"} aria-pressed={task.id === selectedTaskId} onClick={() => onSelectTask(task.id)} onKeyDown={(event) => moveFocus(event, index)}>
                 <span className="row-star" aria-hidden="true">{task.starred ? "★" : "☆"}</span>
                 <span className="task-row-copy"><strong>{task.title}</strong><span className="item-sub">{rowSummary(task)}</span></span>

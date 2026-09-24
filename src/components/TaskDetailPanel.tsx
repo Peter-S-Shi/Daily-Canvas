@@ -6,7 +6,7 @@ import { resolveTaskColor } from "../services/areaService";
 import { supportsLifecycle, targetFor } from "../services/lifecycleService";
 import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
 import { calculateTaskStats } from "../services/statisticsService";
-import { deleteTask, updateTask } from "../services/taskService";
+import { addChecklistItem, deleteTask, removeChecklistItem, renameChecklistItem, updateTask } from "../services/taskService";
 import { canReplanTask, replanTask } from "../services/replanService";
 import { updateTimeBlock } from "../services/timeBlockService";
 import { todayKey } from "../lib/dates";
@@ -36,7 +36,12 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
   const [tab, setTab] = useState<DetailTab>("overview");
   const [error, setError] = useState("");
   const [replanDate, setReplanDate] = useState("");
-  useEffect(() => { setTab("overview"); setError(""); }, [task?.id]);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [newChecklistTitle, setNewChecklistTitle] = useState("");
+  const [renamingItemId, setRenamingItemId] = useState("");
+  const [renameDraft, setRenameDraft] = useState("");
+  useEffect(() => { setTab("overview"); setError(""); setEditingNotes(false); setRenamingItemId(""); }, [task?.id]);
   const data = useLiveQuery(async () => (task ? { checkIns: await db.checkIns.where("taskId").equals(task.id).toArray(), lifecycle: await db.taskLifecycles.get(task.id), pauses: await db.pausePeriods.where("taskId").equals(task.id).toArray(), events: await db.milestoneEvents.where("taskId").equals(task.id).toArray(), areas: await db.areas.toArray(), settings: await db.settings.get("app"), futureBlocks: (await db.timeBlocks.where("taskId").equals(task.id).toArray()).filter((block) => block.date >= todayKey()).sort((a, b) => a.date.localeCompare(b.date) || a.startMinutes - b.startMinutes) } : undefined), [task?.id]);
   if (!task) return <section className="task-detail-pane empty"><p>{t("selectTaskHint")}</p></section>;
   if (!data) return <section className="task-detail-pane" aria-busy="true"/>;
@@ -136,9 +141,47 @@ export function TaskDetailPanel({ task, onEdit, onDeleted, onInspectDate, onOpen
           </ul>
         </div>}
 
-        {tab === "checklist" && ((task.checklist?.length ?? 0) === 0 ? <p className="muted">{t("noChecklistItems")}</p> : <ul className="checklist-list">{task.checklist!.map((item) => <li key={item.id}><label><input type="checkbox" checked={item.completed} onChange={() => updateTask(task.id, { checklist: task.checklist!.map((value) => value.id === item.id ? { ...value, completed: !value.completed, updatedAt: new Date().toISOString() } : value) })}/><span className={item.completed ? "strike" : ""}>{item.title}</span></label></li>)}</ul>)}
+        {tab === "checklist" && <>
+          {(task.checklist?.length ?? 0) === 0 ? <p className="muted">{t("noChecklistItems")}</p> : <ul className="checklist-list">{task.checklist!.map((item) => (
+            <li key={item.id}>
+              {renamingItemId === item.id ? (
+                <form onSubmit={async (event) => { event.preventDefault(); try { await renameChecklistItem(task.id, item.id, renameDraft); setRenamingItemId(""); } catch (reason) { setError(reason instanceof Error ? reason.message : t("saveError")); } }}>
+                  <input type="text" autoFocus value={renameDraft} onChange={(event) => setRenameDraft(event.target.value)} aria-label={t("renameChecklistItemLabel")}/>
+                  <button type="submit" className="quiet-action">{t("save")}</button>
+                  <button type="button" className="quiet-action" onClick={() => setRenamingItemId("")}>{t("cancel")}</button>
+                </form>
+              ) : (
+                <>
+                  <label><input type="checkbox" checked={item.completed} onChange={() => updateTask(task.id, { checklist: task.checklist!.map((value) => value.id === item.id ? { ...value, completed: !value.completed, updatedAt: new Date().toISOString() } : value) })}/><span className={item.completed ? "strike" : ""}>{item.title}</span></label>
+                  <button type="button" className="quiet-action" onClick={() => { setRenamingItemId(item.id); setRenameDraft(item.title); }}>{t("edit")}</button>
+                  <button type="button" className="quiet-action danger-text" onClick={() => removeChecklistItem(task.id, item.id)}>{t("deleteChecklistItem")}</button>
+                </>
+              )}
+            </li>
+          ))}</ul>}
+          <form className="checklist-add" onSubmit={async (event) => { event.preventDefault(); if (!newChecklistTitle.trim()) return; try { await addChecklistItem(task.id, newChecklistTitle); setNewChecklistTitle(""); } catch (reason) { setError(reason instanceof Error ? reason.message : t("saveError")); } }}>
+            <input type="text" value={newChecklistTitle} onChange={(event) => setNewChecklistTitle(event.target.value)} placeholder={t("newChecklistItemPlaceholder")} aria-label={t("addChecklistItem")}/>
+            <button type="submit" className="button secondary compact" disabled={!newChecklistTitle.trim()}>{t("addChecklistItem")}</button>
+          </form>
+        </>}
 
-        {tab === "notes" && <div className="task-notes"><h3>{t("taskNotes")}</h3>{task.notes ? <p>{task.notes}</p> : <p className="muted">{t("noTaskNotes")}</p>}</div>}
+        {tab === "notes" && <div className="task-notes">
+          <h3>{t("taskNotes")}</h3>
+          {editingNotes ? (
+            <>
+              <textarea rows={6} autoFocus value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} placeholder={t("notesPlaceholder")}/>
+              <div className="form-actions">
+                <button type="button" className="button secondary" onClick={() => setEditingNotes(false)}>{t("cancel")}</button>
+                <button type="button" className="button primary" onClick={async () => { try { await updateTask(task.id, { notes: notesDraft.trim() || undefined }); setEditingNotes(false); } catch (reason) { setError(reason instanceof Error ? reason.message : t("saveError")); } }}>{t("saveNotes")}</button>
+              </div>
+            </>
+          ) : (
+            <>
+              {task.notes ? <p>{task.notes}</p> : <p className="muted">{t("noTaskNotes")}</p>}
+              <button type="button" className="button secondary compact notes-edit-toggle" onClick={() => { setNotesDraft(task.notes ?? ""); setEditingNotes(true); }}>{t("editNotes")}</button>
+            </>
+          )}
+        </div>}
 
         {tab === "lifecycle" && (!supportsLifecycle(task) || !data.lifecycle ? <p className="muted">{t("lifecycleNotApplicable")}</p> : <>
           <dl className="fact-list">

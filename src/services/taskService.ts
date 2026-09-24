@@ -31,6 +31,29 @@ export async function saveTask(input: Omit<Task, "id" | "createdAt" | "updatedAt
 }
 export async function createTasksFromTemplates(language: Language, indexes: number[]): Promise<void> { for (const template of taskTemplates(language).filter((_, index) => indexes.includes(index))) await saveTask(template); }
 export async function updateTask(id: string, changes: Partial<Task>): Promise<void> { const current = await db.tasks.get(id); if (!current) throw new Error("Task not found."); validateTask({ ...current, ...changes }); await db.tasks.update(id, { ...changes, updatedAt: new Date().toISOString() }); }
+
+/** Bulk Change Area for a multi-selected set of Tasks (Issue #16). Pass `undefined` to move the whole selection to No Area. */
+export async function bulkChangeArea(taskIds: string[], areaId: string | undefined): Promise<void> {
+  const now = new Date().toISOString();
+  await db.transaction("rw", db.tasks, async () => { for (const id of taskIds) await db.tasks.update(id, { areaId, updatedAt: now }); });
+}
+
+/** Local Checklist structural editing (Issue #18): add/rename/delete one-level named steps, reusing updateTask's validation. */
+export async function addChecklistItem(taskId: string, title: string): Promise<void> {
+  const current = await db.tasks.get(taskId); if (!current) throw new Error("Task not found.");
+  const now = new Date().toISOString();
+  const item = { id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`, title: title.trim(), completed: false, createdAt: now, updatedAt: now };
+  await updateTask(taskId, { checklist: [...(current.checklist ?? []), item] });
+}
+export async function renameChecklistItem(taskId: string, itemId: string, title: string): Promise<void> {
+  const current = await db.tasks.get(taskId); if (!current) throw new Error("Task not found.");
+  const now = new Date().toISOString();
+  await updateTask(taskId, { checklist: (current.checklist ?? []).map((item) => item.id === itemId ? { ...item, title: title.trim(), updatedAt: now } : item) });
+}
+export async function removeChecklistItem(taskId: string, itemId: string): Promise<void> {
+  const current = await db.tasks.get(taskId); if (!current) throw new Error("Task not found.");
+  await updateTask(taskId, { checklist: (current.checklist ?? []).filter((item) => item.id !== itemId) });
+}
 export async function deleteTask(id: string): Promise<void> {
   await db.transaction("rw", [db.tasks, db.checkIns, db.dailyOrders, db.taskLifecycles, db.pausePeriods, db.milestoneEvents, db.replanEvents, db.timeBlocks, db.experienceLogs, db.rewards], async () => {
     await db.tasks.delete(id); await db.checkIns.where("taskId").equals(id).delete();

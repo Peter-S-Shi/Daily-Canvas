@@ -401,6 +401,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .task-row-copy { min-width: 0; display: grid; gap: 2px; }
 .task-row-copy strong { font-weight: 650; overflow-wrap: anywhere; }
 .list-empty { padding: 16px 4px; color: var(--muted); font-size: 13px; }
+.task-select { display: flex; align-items: center; padding-top: 2px; }
+.task-select input { width: 18px; height: 18px; accent-color: var(--accent); }
+.task-row.selected { border-color: var(--selected-line); background: var(--selected); }
+.bulk-actions select { min-height: 32px; padding: 4px 8px; font-size: 12px; }
+.checklist-add { display: flex; gap: 8px; margin-top: 10px; }
+.checklist-add input { flex: 1; }
+.checklist-list li { display: flex; align-items: center; gap: 6px; }
+.checklist-list li form { display: flex; align-items: center; gap: 6px; flex: 1; }
+.checklist-list li form input { flex: 1; }
+.task-notes textarea { width: 100%; min-height: 120px; margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); color: var(--ink); resize: vertical; }
+.area-members { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.today-floating-hint { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; }
 .task-detail-pane { min-width: 0; min-height: 0; overflow: auto; padding: 26px 34px 38px; }
 .task-detail-pane.empty { display: grid; place-items: center; color: var(--muted); }
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
@@ -479,6 +491,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ---------- Meditations ---------- */
 .selection-bar { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); box-shadow: var(--shadow-soft); }
 .selection-bar strong { margin-right: auto; }
+/* Issue #16 narrow-pane fix: the Tasks bulk-action bar (330px pane) can't fit five text buttons plus a
+   select on one row without clipping. Stack into two compact rows of icon-only controls instead. */
+.bulk-actions-compact { flex-direction: column; align-items: stretch; gap: 8px; }
+.bulk-actions-row { display: flex; align-items: center; gap: 6px; }
+.bulk-area-field { flex: 1; min-width: 0; margin: 0; }
+.bulk-area-field select { width: 100%; }
+.icon-button.primary { background: var(--accent-fill); color: #fff; border-color: transparent; }
+.icon-button.primary:hover:not(:disabled) { background: var(--accent-fill-hover); }
 .meditation-list { display: grid; gap: 10px; }
 .meditation-card { display: flex; align-items: flex-start; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .meditation-copy { flex: 1; min-width: 0; }
