@@ -81,6 +81,28 @@ describe("TasksView type-aware state grammar (Issue #17)", () => {
     expect(rowText("Gym")).toContain("/3");
   });
 
+  it("shows a neutral not-scheduled state for a weekly Habit on a non-occurrence day, and real state on its occurrence day", async () => {
+    const today = new Date();
+    const occurrenceWeekday = today.getDay();
+    const nonOccurrenceWeekday = (occurrenceWeekday + 1) % 7;
+    await db.tasks.bulkAdd([
+      { ...baseTask, id: "w1", title: "Weekly review (off day)", kind: "habit", startDate: "2020-01-01", schedule: { mode: "fixed", recurrence: { type: "weekdays", weekdays: [nonOccurrenceWeekday] } }, targetDays: 21 },
+      { ...baseTask, id: "w2", title: "Weekly review (on day)", kind: "habit", startDate: "2020-01-01", schedule: { mode: "fixed", recurrence: { type: "weekdays", weekdays: [occurrenceWeekday] } }, targetDays: 21 },
+    ]);
+    root = await render();
+    expect(rowText("Weekly review (off day)")).toContain("Not scheduled today");
+    expect(rowText("Weekly review (off day)")).not.toContain("Unrecorded");
+    expect(rowText("Weekly review (on day)")).toContain("Unrecorded");
+  });
+
+  it("shows a neutral not-scheduled state for a Habit whose start date is in the future", async () => {
+    const future = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+    const futureKey = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, "0")}-${String(future.getDate()).padStart(2, "0")}`;
+    await db.tasks.add({ ...baseTask, id: "f1", title: "Not yet started", kind: "habit", startDate: futureKey, schedule: { mode: "fixed", recurrence: { type: "daily" } }, targetDays: 21 });
+    root = await render();
+    expect(rowText("Not yet started")).toContain("Not scheduled today");
+  });
+
   it("shows optional step progress for a checklist-heavy one-time Task without auto-completing it", async () => {
     await db.tasks.add({ ...baseTask, id: "c1", title: "Trip prep", kind: "task", startDate: "2026-01-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, checklist: [
       { id: "i1", title: "Pack", completed: true, createdAt: now, updatedAt: now },
@@ -133,5 +155,49 @@ describe("TasksView bulk selection (Issue #16)", () => {
     const moved = tasks.filter((task) => task.areaId === area1);
     expect(moved.map((task) => task.id).sort()).toEqual(["s1", "s2"]);
     expect(tasks.find((task) => task.id === "s3")?.areaId).toBeUndefined();
+  });
+
+  it("Apply stays disabled while only the placeholder is chosen, and never clears Area implicitly", async () => {
+    root = await render();
+    await click(button("Select"));
+    await click(rowCheckboxes()[0]);
+    expect(button("Apply")?.disabled).toBe(true);
+    await click(button("Apply"));
+    expect((await db.tasks.get("s1"))?.areaId).toBeUndefined();
+  });
+
+  it("offers an explicit 'No Area' option distinct from the placeholder, and excludes archived Areas", async () => {
+    await db.areas.add({ id: "area-old", name: "Retired", color: "#111", sortOrder: 1, archived: true, createdAt: now, updatedAt: now } as never);
+    await db.tasks.update("s1", { areaId: area1 });
+    root = await render();
+    await click(button("Select"));
+    const areaSelect = document.querySelector(".bulk-actions select") as HTMLSelectElement;
+    const optionLabels = [...areaSelect.options].map((option) => option.textContent);
+    expect(optionLabels).toContain("No Area");
+    expect(optionLabels).not.toContain("Retired");
+    await click(rowCheckboxes()[0]);
+    const noAreaOption = [...areaSelect.options].find((option) => option.textContent === "No Area")!;
+    await change(areaSelect, noAreaOption.value);
+    expect(button("Apply")?.disabled).toBe(false);
+    await click(button("Apply"));
+    expect((await db.tasks.get("s1"))?.areaId).toBeUndefined();
+  });
+
+  it("drops now-hidden selected Tasks from Apply when the visible scope changes", async () => {
+    root = await render();
+    await click(button("Select"));
+    await click(rowCheckboxes()[0]); // Alpha (s1)
+    await click(rowCheckboxes()[1]); // Beta (s2)
+    const search = document.querySelector('input[type="search"]') as HTMLInputElement;
+    await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(search, "Alpha"); search.dispatchEvent(new Event("input", { bubbles: true })); });
+    await pause();
+    // Only Alpha is visible now; Beta is selected-but-hidden.
+    expect(rowCheckboxes()).toHaveLength(1);
+    const areaSelect = document.querySelector(".bulk-actions select") as HTMLSelectElement;
+    await change(areaSelect, area1);
+    await click(button("Apply"));
+    const tasks = await db.tasks.toArray();
+    expect(tasks.find((task) => task.id === "s1")?.areaId).toBe(area1);
+    expect(tasks.find((task) => task.id === "s2")?.areaId).toBeUndefined();
   });
 });

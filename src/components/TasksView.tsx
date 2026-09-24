@@ -5,8 +5,13 @@ import { db } from "../db";
 import { todayKey } from "../lib/dates";
 import { bulkChangeArea } from "../services/taskService";
 import { getQuotaPeriod, getQuotaProgress } from "../services/quotaService";
+import { isFixedOccurrenceOn } from "../services/scheduleService";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import type { CheckIn, Task } from "../types";
+
+/** Sentinel for the bulk Change Area "No Area" option (Issue #16 finding): distinct from the disabled
+ * placeholder ("") so the placeholder itself can never be an applicable, real target. */
+const NO_AREA_VALUE = "__no_area__";
 
 interface TasksViewProps {
   selectedTaskId: string;
@@ -37,6 +42,11 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
     .filter((task) => (filter === "archived" ? task.archived : !task.archived && (filter !== "starred" || task.starred)) && (!areaFilter || task.areaId === areaFilter) && (!scheduleFilter || task.schedule.mode === scheduleFilter) && (!needle || task.title.toLocaleLowerCase().includes(needle)))
     .sort((a, b) => Number(b.starred) - Number(a.starred) || b.updatedAt.localeCompare(a.updatedAt));
   const selected = tasks.find((task) => task.id === selectedTaskId);
+  const visibleIds = new Set(visible.map((task) => task.id));
+  /** Selection state may retain ids for Tasks hidden by a later filter change (Issue #16 finding); the
+   * currently-visible subset is always what Selected count / Select All / Clear All / Apply describe and act on. */
+  const effectiveSelected = [...bulkSelected].filter((id) => visibleIds.has(id));
+  const bulkAreas = areas.filter((area) => !area.archived);
 
   /** Type-aware state grammar (Issue #17): "completed" is not one universal concept, so each Task kind gets its own compact, single-line state label. */
   const rowState = (task: Task, records: CheckIn[]): string => {
@@ -45,6 +55,7 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
       return `${progress.count}/${progress.target} ${t(task.schedule.period === "week" ? "thisWeek" : "thisMonth")}`;
     }
     if (task.kind !== "task") {
+      if (task.schedule.mode === "fixed" && !isFixedOccurrenceOn(task, new Date())) return t("notScheduledToday");
       const record = records.find((item) => item.date === todayKey());
       if (task.kind === "avoidance") return record?.status === "done" ? t("safe") : record?.status === "lapse" ? t("lapse") : record?.status === "skipped" ? t("skipped") : t("unrecorded");
       return record?.status === "done" ? t("done") : record?.status === "skipped" ? t("skipped") : t("unrecorded");
@@ -62,7 +73,7 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
   };
   const toggleBulk = (taskId: string) => setBulkSelected((current) => { const next = new Set(current); if (next.has(taskId)) next.delete(taskId); else next.add(taskId); return next; });
   const closeSelection = () => { setSelecting(false); setBulkSelected(new Set()); setBulkArea(""); };
-  const applyBulkArea = async () => { await bulkChangeArea([...bulkSelected], bulkArea || undefined); setBulkSelected(new Set()); setBulkArea(""); };
+  const applyBulkArea = async () => { await bulkChangeArea(effectiveSelected, bulkArea === NO_AREA_VALUE ? undefined : bulkArea); setBulkSelected(new Set()); setBulkArea(""); };
   const moveFocus = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     const offset = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
     if (!offset) return;
@@ -86,13 +97,17 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
           <select aria-label={t("scheduleType")} value={scheduleFilter} onChange={(event) => setScheduleFilter(event.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
         </div>
         {selecting && <div className="selection-bar bulk-actions" role="region" aria-label={t("selectTasks")}>
-          <strong>{t("selectedCount", { count: bulkSelected.size })}</strong>
-          <button type="button" className="button secondary" disabled={bulkSelected.size === visible.length} onClick={() => setBulkSelected(new Set(visible.map((task) => task.id)))}>{t("selectAllTasks")}</button>
-          <button type="button" className="button secondary" disabled={bulkSelected.size === 0} onClick={() => setBulkSelected(new Set())}>{t("clearAllTasks")}</button>
+          <strong>{t("selectedCount", { count: effectiveSelected.length })}</strong>
+          <button type="button" className="button secondary" disabled={effectiveSelected.length === visible.length} onClick={() => setBulkSelected(new Set(visible.map((task) => task.id)))}>{t("selectAllTasks")}</button>
+          <button type="button" className="button secondary" disabled={effectiveSelected.length === 0} onClick={() => setBulkSelected(new Set())}>{t("clearAllTasks")}</button>
           <label className="field inline-field"><span className="sr-only">{t("bulkChangeArea")}</span>
-            <select value={bulkArea} onChange={(event) => setBulkArea(event.target.value)}><option value="">{t("chooseAreaPrompt")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select>
+            <select value={bulkArea} onChange={(event) => setBulkArea(event.target.value)}>
+              <option value="" disabled>{t("chooseAreaPrompt")}</option>
+              <option value={NO_AREA_VALUE}>{t("noArea")}</option>
+              {bulkAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+            </select>
           </label>
-          <button type="button" className="button primary" disabled={bulkSelected.size === 0} onClick={applyBulkArea}>{t("applyChangeArea")}</button>
+          <button type="button" className="button primary" disabled={effectiveSelected.length === 0 || bulkArea === ""} onClick={applyBulkArea}>{t("applyChangeArea")}</button>
           <button type="button" className="button secondary" onClick={closeSelection}>{t("cancelSelection")}</button>
         </div>}
         {visible.length === 0 ? <p className="list-empty">{t(needle ? "noMatchingTasks" : filter === "archived" ? "emptyArchived" : "emptyTasks")}</p> : (
