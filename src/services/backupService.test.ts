@@ -80,9 +80,19 @@ describe("backup migration", () => {
     expect(result.warnings.some((warning) => warning.includes("Milestone 13"))).toBe(true);
   });
 
-  it("rejects a v8 backup whose Time Block is off the 15-minute grid, instead of silently importing a domain-invalid placement", () => {
+  it("accepts a v8 backup whose Time Block start is off the 15-minute visual grid, since Start is whole-minute precision with no snapping (M14-B final contract, Issue #20)", () => {
     const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "Task", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", date: "2026-09-01", startMinutes: 541, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
-    expect(() => migrateBackup(v8)).toThrow(/15-minute/);
+    const result = migrateBackup(v8);
+    expect(result.payload.timeBlocks[0].startMinutes).toBe(541);
+  });
+
+  it("rejects a v8 backup whose Time Block start is fractional, negative, or outside the day", () => {
+    const baseBlock = { id: "b1", taskId: "t1", date: "2026-09-01", durationMinutes: 30, reminder: "off" as const, needsReview: false, createdAt: "", updatedAt: "" };
+    const baseTask = { id: "t1", title: "Task", kind: "task" as const, starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed" as const, recurrence: { type: "once" as const } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" };
+    const makeV8 = (startMinutes: number) => ({ format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [baseTask], inboxCaptures: [], replanEvents: [], timeBlocks: [{ ...baseBlock, startMinutes }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] });
+    expect(() => migrateBackup(makeV8(540.5))).toThrow(/whole minute/i);
+    expect(() => migrateBackup(makeV8(-15))).toThrow(/whole minute/i);
+    expect(() => migrateBackup(makeV8(1440))).toThrow(/whole minute/i);
   });
 
   it("accepts a v8 backup whose Time Block duration is not a multiple of 15 minutes, since duration is 1-minute precision (M14-B blocker fix)", () => {
