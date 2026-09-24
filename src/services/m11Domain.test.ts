@@ -1,6 +1,8 @@
 import "fake-indexeddb/auto";
+import { addDays } from "date-fns";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
+import { toDateKey } from "../lib/dates";
 import { createCapture, triageCapture } from "./inboxService";
 import { globalSearch } from "./searchService";
 import { replanTask } from "./replanService";
@@ -32,12 +34,14 @@ describe("Milestone 11 capture, search, and replan", () => {
   });
 
   it("replans forward without modifying earlier check-ins", async () => {
-    await db.tasks.put({ id: "habit", title: "Practice", kind: "habit", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
-    await db.checkIns.put({ id: "habit:2026-09-21", taskId: "habit", date: "2026-09-21", status: "skipped", updatedAt: "" });
-    await replanTask("habit", "2026-09-23", "Move the next plan forward");
-    expect(await db.checkIns.get("habit:2026-09-21")).toMatchObject({ status: "skipped" });
-    expect(await db.tasks.get("habit")).toMatchObject({ startDate: "2026-09-01", replannedStartDate: "2026-09-23" });
-    expect(await db.replanEvents.where("taskId").equals("habit").first()).toMatchObject({ previousStartDate: "2026-09-01", nextStartDate: "2026-09-23" });
+    // Replan targets must be today or later, so this is computed relative to the real clock rather than a fixed literal.
+    const nextStartDate = toDateKey(addDays(new Date(), 1));
+    await db.tasks.put({ id: "habit", title: "Practice", kind: "habit", starred: false, archived: false, startDate: "2026-01-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" });
+    await db.checkIns.put({ id: "habit:2026-01-05", taskId: "habit", date: "2026-01-05", status: "skipped", updatedAt: "" });
+    await replanTask("habit", nextStartDate, "Move the next plan forward");
+    expect(await db.checkIns.get("habit:2026-01-05")).toMatchObject({ status: "skipped" });
+    expect(await db.tasks.get("habit")).toMatchObject({ startDate: "2026-01-01", replannedStartDate: nextStartDate });
+    expect(await db.replanEvents.where("taskId").equals("habit").first()).toMatchObject({ previousStartDate: "2026-01-01", nextStartDate });
   });
 
   it("round-trips every new authoritative M11 field through backup v7", async () => {
