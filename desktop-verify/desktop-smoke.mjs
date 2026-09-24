@@ -232,11 +232,14 @@ console.log("== Meditations export");
 check("open Export All preview", await clickText(app.cdp, "导出全部"));
 await app.cdp.waitFor(`document.querySelector('.meditation-export-modal')`, 10000, "export modal");
 await sleep(500); await shot(app, "06-zh-export-preview");
+// M14-B blocker #13: Export All carries every fixture Meditation (cover + 30 entries), so a correct print
+// pipeline must paginate across many pages, not confine everything to the single-page cover the bug produced.
 for (const size of ["a4", "letter"]) {
   await setSelect(app.cdp, `[...document.querySelectorAll('.export-controls select')].find(s=>[...s.options].some(o=>o.value==='letter'))`, size); await sleep(500);
   const pdf = pdfInfo((await app.cdp.send("Page.printToPDF", { preferCSSPageSize: true, printBackground: true })).data);
   const want = size === "a4" ? [595, 842] : [612, 792];
   check(`print CSS yields ${size.toUpperCase()} page in WebView2`, Math.abs(pdf.width - want[0]) <= 2 && Math.abs(pdf.height - want[1]) <= 2, `${pdf.width}x${pdf.height}pt, ${pdf.pages} page(s)`);
+  check(`printed ${size.toUpperCase()} PDF paginates the cover and all Meditation body pages, not just the cover (M14-B #13)`, pdf.pages >= 3, `${pdf.pages} page(s) for cover + 30 entries`);
 }
 await setSelect(app.cdp, `[...document.querySelectorAll('.export-controls select')].find(s=>[...s.options].some(o=>o.value==='letter'))`, "a4");
 const docxPath = join(outDir, "meditations.docx");
