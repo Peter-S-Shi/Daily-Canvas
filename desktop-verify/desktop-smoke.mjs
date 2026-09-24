@@ -11,6 +11,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { inflateSync } from "node:zlib";
 import { launchApp, closeApp, sleep } from "./cdp.mjs";
 import { identifier as IDENT, dataRoot, sha, idbCounts, nav, clickText, setSelect, ps, saveVia, createReporter, prepareIsolatedWebViewData, containsIndexedDb, wipeAppDataSafely, SHELL } from "./lib.mjs";
 
@@ -21,6 +22,32 @@ wipeAppDataSafely(); // takes safe, disposable ownership of dataRoot (see Milest
 const { results, check } = createReporter(); const t0 = Date.now();
 const shot = async (app, name) => writeFileSync(join(outDir, `${name}.png`), await app.cdp.screenshot());
 const pdfInfo = (b64) => { const raw = Buffer.from(b64, "base64").toString("latin1"); const m = raw.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/); return { width: m && Math.round(Number(m[1])), height: m && Math.round(Number(m[2])), pages: (raw.match(/\/Type\s*\/Page[^s]/g) ?? []).length, bytes: raw.length }; };
+/**
+ * M14-B #13: the earlier fix (releasing `.dialog-backdrop` from `position: fixed`) stopped WebView2 from
+ * dropping every page after the cover, but a second, subtler bug (a `100vh`-based cover height that
+ * resolved against the live browser viewport instead of the true physical page) inserted one blank,
+ * background-filled page between the cover and the real body. `pdf.pages >= 3` alone can't catch that --
+ * it only counts pages, blank or not. This decodes each page's actual content stream (in true page
+ * order, via the PDF's own /Pages /Kids tree) and checks for a real text-show operator (Tj/TJ), which a
+ * page that's just a background fill will never have -- the strongest practical signal available without
+ * a full PDF rendering stack.
+ */
+const pdfPageTextPresence = (b64) => {
+  const raw = Buffer.from(b64, "base64").toString("latin1");
+  const objRe = /(\d+)\s+0\s+obj\s*<<([\s\S]*?)>>\s*(stream\r?\n([\s\S]*?)\r?\nendstream)?\s*endobj/g;
+  const objects = new Map(); let m;
+  while ((m = objRe.exec(raw))) objects.set(Number(m[1]), { dict: m[2], stream: m[4] });
+  const pagesRoot = [...objects.values()].find((o) => /\/Type\s*\/Pages\b/.test(o.dict) && /\/Kids/.test(o.dict));
+  const kidsMatch = pagesRoot?.dict.match(/\/Kids\s*\[([^\]]*)\]/);
+  const orderedIds = kidsMatch ? [...kidsMatch[1].matchAll(/(\d+)\s+0\s+R/g)].map((x) => Number(x[1])) : [...objects.entries()].filter(([, o]) => /\/Type\s*\/Page(?![s])/.test(o.dict)).map(([id]) => id);
+  const decode = (streamRaw) => { if (!streamRaw) return ""; try { return inflateSync(Buffer.from(streamRaw, "latin1")).toString("latin1"); } catch { return ""; } };
+  return orderedIds.map((id) => {
+    const page = objects.get(id);
+    const contentsMatch = page.dict.match(/\/Contents\s+(\d+)\s+0\s+R/) || page.dict.match(/\/Contents\s*\[\s*([\d\s0R]+)\]/);
+    const contentIds = contentsMatch ? (contentsMatch[1] && !contentsMatch[1].includes("R") ? [Number(contentsMatch[1])] : [...contentsMatch[0].matchAll(/(\d+)\s+0\s+R/g)].map((x) => Number(x[1]))) : [];
+    return contentIds.some((cid) => /\bTj\b|\bTJ\b/.test(decode(objects.get(cid)?.stream)));
+  });
+};
 
 if (!existsSync(exe)) throw new Error(`exe not found: ${exe}`);
 const fixturePath = join(fixtureDir, "synthetic-v9-backup.json");
@@ -236,10 +263,14 @@ await sleep(500); await shot(app, "06-zh-export-preview");
 // pipeline must paginate across many pages, not confine everything to the single-page cover the bug produced.
 for (const size of ["a4", "letter"]) {
   await setSelect(app.cdp, `[...document.querySelectorAll('.export-controls select')].find(s=>[...s.options].some(o=>o.value==='letter'))`, size); await sleep(500);
-  const pdf = pdfInfo((await app.cdp.send("Page.printToPDF", { preferCSSPageSize: true, printBackground: true })).data);
+  const pdfData = (await app.cdp.send("Page.printToPDF", { preferCSSPageSize: true, printBackground: true })).data;
+  const pdf = pdfInfo(pdfData);
   const want = size === "a4" ? [595, 842] : [612, 792];
   check(`print CSS yields ${size.toUpperCase()} page in WebView2`, Math.abs(pdf.width - want[0]) <= 2 && Math.abs(pdf.height - want[1]) <= 2, `${pdf.width}x${pdf.height}pt, ${pdf.pages} page(s)`);
   check(`printed ${size.toUpperCase()} PDF paginates the cover and all Meditation body pages, not just the cover (M14-B #13)`, pdf.pages >= 3, `${pdf.pages} page(s) for cover + 30 entries`);
+  const textPresence = pdfPageTextPresence(pdfData);
+  const firstBlankIndex = textPresence.slice(0, -1).findIndex((hasText) => !hasText);
+  check(`printed ${size.toUpperCase()} PDF has no blank page between the cover and the Meditation body (M14-B #13)`, firstBlankIndex === -1, firstBlankIndex === -1 ? `all ${textPresence.length} pages before the last carry real text` : `page ${firstBlankIndex + 1} of ${textPresence.length} has no text-show operator`);
 }
 await setSelect(app.cdp, `[...document.querySelectorAll('.export-controls select')].find(s=>[...s.options].some(o=>o.value==='letter'))`, "a4");
 const docxPath = join(outDir, "meditations.docx");
