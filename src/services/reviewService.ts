@@ -94,7 +94,8 @@ export function buildReviewModel(sources: ReviewSources, range: DateRange, filte
   }
   const areaCounts = new Map<string, { areaId?: string; name: string; count: number }>();
   for (const item of completedItems) { const id = item.areaId ?? "none"; const row = areaCounts.get(id) ?? { areaId: item.areaId, name: item.areaName ?? "No Area", count: 0 }; row.count += 1; areaCounts.set(id, row); }
-  const quotaFacts = tasks.filter((task) => task.schedule.mode === "quota").flatMap((task) => quotaPeriods(task, range, weekStartsOn).map((period): QuotaFact => {
+  const todayKey = key(today);
+  const quotaFacts = tasks.filter((task) => task.schedule.mode === "quota").flatMap((task) => quotaPeriods(task, range, weekStartsOn).filter((period) => todayKey >= period.start).map((period): QuotaFact => {
     const bounded: QuotaPeriod = { ...period, start: key(max([parseISO(period.start), parseISO(task.schedule.mode === "quota" ? task.schedule.availableFrom : period.start)])), end: key(min([parseISO(period.end), parseISO(task.schedule.mode === "quota" && task.schedule.optionalEndDate ? task.schedule.optionalEndDate : period.end)])) };
     const progress = getQuotaProgress(task, period, sources.checkIns, today);
     const sourceDates = sources.checkIns.filter((item) => item.taskId === task.id && item.status === "done" && item.date >= bounded.start && item.date <= bounded.end && inRange(item.date)).map((item) => item.date);

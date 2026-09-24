@@ -28,22 +28,36 @@ function overlaps(a: TimeBlockInput, b: TimeBlockInput): boolean {
   return a.startMinutes < b.startMinutes + b.durationMinutes && b.startMinutes < a.startMinutes + a.durationMinutes;
 }
 
-async function assertNoOverlap(date: string, candidate: TimeBlockInput, excludeId?: string): Promise<void> {
-  const sameDay = await db.timeBlocks.where("date").equals(date).toArray();
-  if (sameDay.some((block) => block.id !== excludeId && overlaps(block, candidate))) {
-    throw new Error("This time overlaps an existing Time Block. Adjust one of them explicitly.");
+/**
+ * An overlap is a warned choice, not a hard block (Issue #21): the caller is given the
+ * conflicting blocks so the UI can offer "Adjust time" or "Save anyway" rather than a bare
+ * thrown validation error.
+ */
+export class TimeBlockOverlapError extends Error {
+  constructor(public readonly overlapping: TimeBlock[]) {
+    super("This time overlaps an existing Time Block.");
+    this.name = "TimeBlockOverlapError";
   }
 }
 
+async function findOverlaps(date: string, candidate: TimeBlockInput, excludeId?: string): Promise<TimeBlock[]> {
+  const sameDay = await db.timeBlocks.where("date").equals(date).toArray();
+  return sameDay.filter((block) => block.id !== excludeId && overlaps(block, candidate));
+}
+
+export interface SaveTimeBlockOptions { allowOverlap?: boolean }
 export interface CreateTimeBlockInput { taskId: string; date: string; startMinutes: number; durationMinutes?: number; reminder?: ReminderOffset }
 
-export async function createTimeBlock(input: CreateTimeBlockInput): Promise<TimeBlock> {
+export async function createTimeBlock(input: CreateTimeBlockInput, options: SaveTimeBlockOptions = {}): Promise<TimeBlock> {
   const task = await db.tasks.get(input.taskId);
   if (!task) throw new Error("Task not found.");
   if (!isEligibleForTimeBlock(task)) throw new Error("Avoidance habits are not offered as ordinary Time Block work.");
   const durationMinutes = input.durationMinutes ?? defaultDurationFor(task);
   validateTimeBlockInput({ startMinutes: input.startMinutes, durationMinutes });
-  await assertNoOverlap(input.date, { startMinutes: input.startMinutes, durationMinutes });
+  if (!options.allowOverlap) {
+    const overlapping = await findOverlaps(input.date, { startMinutes: input.startMinutes, durationMinutes });
+    if (overlapping.length) throw new TimeBlockOverlapError(overlapping);
+  }
   const at = now();
   const block: TimeBlock = { id: makeId(), taskId: input.taskId, date: input.date, startMinutes: input.startMinutes, durationMinutes, reminder: input.reminder ?? "off", needsReview: false, createdAt: at, updatedAt: at };
   await db.timeBlocks.add(block);
@@ -53,12 +67,15 @@ export async function createTimeBlock(input: CreateTimeBlockInput): Promise<Time
 export interface UpdateTimeBlockInput { date?: string; startMinutes?: number; durationMinutes?: number; reminder?: ReminderOffset }
 
 /** Moving/resizing/re-reminding a block never changes the linked Task's recurrence, quota, or schedule. */
-export async function updateTimeBlock(id: string, changes: UpdateTimeBlockInput): Promise<TimeBlock> {
+export async function updateTimeBlock(id: string, changes: UpdateTimeBlockInput, options: SaveTimeBlockOptions = {}): Promise<TimeBlock> {
   const existing = await db.timeBlocks.get(id);
   if (!existing) throw new Error("Time Block not found.");
   const next = { date: changes.date ?? existing.date, startMinutes: changes.startMinutes ?? existing.startMinutes, durationMinutes: changes.durationMinutes ?? existing.durationMinutes };
   validateTimeBlockInput(next);
-  await assertNoOverlap(next.date, next, id);
+  if (!options.allowOverlap) {
+    const overlapping = await findOverlaps(next.date, next, id);
+    if (overlapping.length) throw new TimeBlockOverlapError(overlapping);
+  }
   const explicitAdjustment = changes.date !== undefined || changes.startMinutes !== undefined || changes.durationMinutes !== undefined;
   // Date, Start time, and Reminder all change when the next notification should fire; a past firing must never suppress a newly-relevant future one.
   const reminderTimingChanged = changes.date !== undefined || changes.startMinutes !== undefined || changes.reminder !== undefined;

@@ -96,10 +96,11 @@ describe("backup migration", () => {
     expect(() => migrateBackup(v8)).toThrow(/end of/i);
   });
 
-  it("rejects a v8 backup with two overlapping Time Blocks on the same date", () => {
+  it("accepts a v8 backup with two overlapping Time Blocks on the same date -- overlap is a warned choice at save time, not corrupt data (Issue #21)", () => {
     const base = { date: "2026-09-01", durationMinutes: 60, reminder: "off" as const, needsReview: false, createdAt: "", updatedAt: "" };
     const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "One", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }, { id: "t2", title: "Two", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", startMinutes: 540, ...base }, { id: "b2", taskId: "t2", startMinutes: 570, ...base }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
-    expect(() => migrateBackup(v8)).toThrow(/overlap/i);
+    const result = migrateBackup(v8);
+    expect(result.payload.timeBlocks.map((block) => block.id).sort()).toEqual(["b1", "b2"]);
   });
 
   it("drops orphan Time Blocks that reference a missing task and reports a warning", () => {

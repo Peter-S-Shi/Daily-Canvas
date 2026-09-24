@@ -124,9 +124,11 @@ export function SettingsView({ settings, section, nav }: { settings: AppSettings
             <div><dt>{t("installedVersion")}</dt><dd>{appVersion}</dd></div>
           </dl>
           <SettingRow title={t("checkForUpdates")} hint={t("checkForUpdatesHint")} control={<button type="button" className="button secondary" disabled={checkingUpdate} onClick={() => runUpdateCheck(appVersion)}>{checkingUpdate ? t("checkingForUpdates") : t("checkForUpdates")}</button>}/>
-          {updateResult && <p role="status" className={updateResult.state === "unable-to-check" ? "error-message" : "status-message"}>
+          {updateResult && <p role="status" className={updateResult.state === "network-failure" || updateResult.state === "check-failed" ? "error-message" : "status-message"}>
             {updateResult.state === "up-to-date" && t("upToDate")}
-            {updateResult.state === "unable-to-check" && t("unableToCheck")}
+            {updateResult.state === "no-release" && t("noReleaseAvailable")}
+            {updateResult.state === "network-failure" && t("networkFailure")}
+            {updateResult.state === "check-failed" && t("checkFailed")}
             {updateResult.state === "update-available" && <>{t("updateAvailable", { version: updateResult.latestVersion })} <button type="button" className="link-button" onClick={() => openExternal(updateResult.releaseUrl)}>{t("viewRelease")}</button></>}
           </p>}
         </>}

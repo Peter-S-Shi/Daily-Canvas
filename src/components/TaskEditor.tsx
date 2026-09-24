@@ -7,11 +7,17 @@ import { saveTask } from "../services/taskService";
 import type { RecurrenceType, Task, TaskKind } from "../types";
 import { Dialog, DialogHeader } from "./Dialog";
 
-interface TaskEditorProps { task?: Task; initialMode?: Task["schedule"]["mode"]; initialTitle?: string; onSaved?: (task: Task) => Promise<void> | void; onClose: () => void }
+interface TaskEditorProps {
+  task?: Task; initialMode?: Task["schedule"]["mode"]; initialTitle?: string;
+  onSaved?: (task: Task) => Promise<void> | void;
+  /** Save & Schedule (Issue #20): saves the Task, then hands the saved Task back so the caller can open the existing Time Block scheduling entry point -- this never touches the Task's own Schedule (recurrence/fixed-date config), only offers to place a calendar Time Block for it. */
+  onSaveAndSchedule?: (task: Task) => void;
+  onClose: () => void;
+}
 const colors = ["#f4a261", "#e76f51", "#2a9d8f", "#457b9d", "#8d6cab", "#e9c46a"];
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
-export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }: TaskEditorProps) {
+export function TaskEditor({ task, initialMode, initialTitle, onSaved, onSaveAndSchedule, onClose }: TaskEditorProps) {
   const { t } = useTranslation();
   const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? [];
   const [step, setStep] = useState<1 | 2>(1);
@@ -36,8 +42,8 @@ export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }
   const toggleWeekday = (day: number) => setForm((current) => ({ ...current, weekdays: current.weekdays.includes(day) ? current.weekdays.filter((item: number) => item !== day) : [...current.weekdays, day].sort() }));
   const setMode = (mode: Task["schedule"]["mode"]) => setForm((current) => ({ ...current, scheduleMode: mode, kind: mode === "floating" ? "task" : mode === "quota" && current.kind === "task" ? "habit" : current.kind }));
 
-  const save = async (event: React.FormEvent) => {
-    event.preventDefault(); if (step === 1) return setStep(2); setState("saving");
+  const performSave = async (andSchedule: boolean) => {
+    setState("saving");
     try {
       const schedule: Task["schedule"] = form.scheduleMode === "floating"
         ? { mode: "floating", availableFrom: form.startDate, optionalDeadline: form.deadline || undefined }
@@ -49,8 +55,12 @@ export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }
       const saved = await saveTask({ title: form.title.trim(), kind: form.kind, areaId: form.areaId || undefined, colorOverride: form.colorOverride || undefined, starred: form.starred, archived: task?.archived ?? false, startDate: taskStartDate, replannedStartDate: task?.replannedStartDate, replanHistory: task?.replanHistory, endDate: form.scheduleMode === "fixed" && form.endDate ? form.endDate : undefined, schedule, targetDays: form.scheduleMode === "fixed" && form.kind !== "task" ? Math.max(1, form.targetDays) : undefined, targetPeriods: form.scheduleMode === "quota" ? Math.max(1, form.targetPeriods) : undefined, stopReminderAtTarget: false, notes: form.notes.trim() || undefined, estimatedMinutes: form.estimatedMinutes > 0 ? Math.round(form.estimatedMinutes) : undefined, checklist }, task);
       await onSaved?.(saved);
       onClose();
+      if (andSchedule) onSaveAndSchedule?.(saved);
     } catch { setState("error"); }
   };
+  const save = (event: React.FormEvent) => { event.preventDefault(); if (step === 1) return setStep(2); void performSave(false); };
+  // Only offered for a brand-new Task (per Issue #20 scope) whose kind can actually hold a Time Block.
+  const canSaveAndSchedule = !task && form.kind !== "avoidance" && Boolean(onSaveAndSchedule);
 
   return <Dialog labelledBy="task-editor-title" onClose={onClose}>
     <div className="dialog-body">
@@ -80,7 +90,7 @@ export function TaskEditor({ task, initialMode, initialTitle, onSaved, onClose }
           <label className="field field-wide"><span>{t("checklistLines")}</span><textarea rows={4} value={form.checklistText} onChange={(event) => setForm({ ...form, checklistText: event.target.value })} placeholder={t("checklistLinesHint")}/></label>
           {state === "error" && <p className="error-message field-wide" role="alert">{t("saveError")}</p>}
         </>}
-        <div className="form-actions field-wide"><button type="button" className="button secondary" onClick={step === 2 ? () => setStep(1) : onClose}>{step === 2 ? t("back") : t("cancel")}</button><button disabled={state === "saving"} type="submit" className="button primary">{step === 1 ? t("continue") : state === "saving" ? t("saving") : t("save")}</button></div>
+        <div className="form-actions field-wide"><button type="button" className="button secondary" onClick={step === 2 ? () => setStep(1) : onClose}>{step === 2 ? t("back") : t("cancel")}</button>{step === 2 && canSaveAndSchedule && <button type="button" className="button secondary" disabled={state === "saving"} onClick={() => void performSave(true)}>{t("saveAndSchedule")}</button>}<button disabled={state === "saving"} type="submit" className="button primary">{step === 1 ? t("continue") : state === "saving" ? t("saving") : t("save")}</button></div>
       </form>
     </div>
   </Dialog>;

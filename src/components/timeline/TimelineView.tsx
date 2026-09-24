@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../db";
-import { toDateKey, todayKey } from "../../lib/dates";
+import { isViewingToday, minutesSinceMidnight, toDateKey, todayKey } from "../../lib/dates";
 import { resolveTaskColor } from "../../services/areaService";
 import { availableWorkOn } from "../../services/availableWorkService";
 import { updateTimeBlock } from "../../services/timeBlockService";
@@ -33,6 +33,11 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const [scheduling, setScheduling] = useState<{ task: Task; date: string; startMinutes?: number }>();
   const [pickerDate, setPickerDate] = useState<string>();
   const [dragError, setDragError] = useState("");
+  // Restrained current-time indicator (Issue #20): only drawn when the viewed date is the real-world
+  // current day, re-checked every minute rather than frozen at first render.
+  const [nowMinutes, setNowMinutes] = useState(() => minutesSinceMidnight());
+  useEffect(() => { const id = setInterval(() => setNowMinutes(minutesSinceMidnight()), 60_000); return () => clearInterval(id); }, []);
+  const showCurrentTimeLine = isViewingToday(selectedDate);
 
   const data = useLiveQuery(async () => ({ tasks: await db.tasks.toArray(), areas: await db.areas.toArray(), checkIns: await db.checkIns.toArray(), lifecycles: await db.taskLifecycles.toArray(), pauses: await db.pausePeriods.toArray(), timeBlocks: await db.timeBlocks.toArray() }), []) ?? { tasks: [], areas: [], checkIns: [], lifecycles: [], pauses: [], timeBlocks: [] };
   const taskById = new Map(data.tasks.map((task) => [task.id, task]));
@@ -86,6 +91,7 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
                 {minutes % 60 === 0 && <span className="timeline-hour-label">{timeLabel(minutes)}</span>}
               </div>)}
               {blocksOn(selectedDate).map((block) => <div key={block.id} className="timeline-block-position" style={{ top: (block.startMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX, height: block.durationMinutes / ROW_MINUTES * ROW_HEIGHT_PX }}><BlockChip block={block} /></div>)}
+              {showCurrentTimeLine && <div className="timeline-now-line" data-testid="timeline-now-line" style={{ top: (nowMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX }} aria-hidden="true" />}
             </div>
           </div>
         </section>
@@ -95,6 +101,8 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
           {availableWork(selectedDate).length === 0 ? <div className="empty-state"><p>{t("noAvailableWork")}</p></div> : <div className="item-list">
             {availableWork(selectedDate).map((task) => <article key={task.id} className="item-copy" style={{ "--task-color": resolveTaskColor(task, data.areas) } as React.CSSProperties}>
               <button type="button" className="task-link" onClick={() => onOpenTask(task.id)}><span className="item-title"><i className="area-dot" aria-hidden="true" />{task.title}</span></button>
+              {/* Indicator only -- reuses the same blocksOn() query as the grid, never restricts adding more blocks (Issue #20). */}
+              {blocksOn(selectedDate).some((block) => block.taskId === task.id) && <span className="pill compact" data-testid={`has-block-${task.id}`}>{t("alreadyScheduled")}</span>}
               <button type="button" className="button secondary compact" onClick={() => setScheduling({ task, date: selectedDate })}>{t("scheduleAction")}</button>
             </article>)}
           </div>}

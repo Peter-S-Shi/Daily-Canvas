@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
 import { saveTask } from "./taskService";
-import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, MINUTE_STEP, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
+import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, MINUTE_STEP, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
 import type { Task } from "../types";
 
 const fixedTask = (overrides: Partial<Task> = {}): Omit<Task, "id" | "createdAt" | "updatedAt"> => ({
@@ -64,14 +64,42 @@ describe("timeBlockService", () => {
     await expect(createTimeBlock({ taskId: avoidance.id, date: "2026-01-05", startMinutes: 9 * 60 })).rejects.toThrow(/Avoidance/);
   });
 
-  it("rejects overlapping blocks on the same date instead of auto-moving either one", async () => {
+  it("warns (does not hard-reject) an overlapping block by default, via a typed TimeBlockOverlapError carrying the conflicting blocks (Issue #21)", async () => {
     const task = await saveTask(fixedTask());
     const other = await saveTask(fixedTask({ title: "Other" }));
-    await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
-    await expect(createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 })).rejects.toThrow(/overlap/i);
+    const first = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    let caught: unknown;
+    try { await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 }); } catch (error) { caught = error; }
+    expect(caught).toBeInstanceOf(TimeBlockOverlapError);
+    expect((caught as InstanceType<typeof TimeBlockOverlapError>).overlapping.map((b) => b.id)).toEqual([first.id]);
+    // The rejected save must not have written anything, nor touched the existing block.
+    expect((await db.timeBlocks.where("taskId").equals(other.id).toArray())).toHaveLength(0);
+    expect(await db.timeBlocks.get(first.id)).toEqual(first);
     // Touching but not overlapping (ends exactly when the next starts) is allowed.
     const adjacent = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 10 * 60, durationMinutes: 30 });
     expect(adjacent.startMinutes).toBe(600);
+  });
+
+  it("saves an overlapping block when the caller explicitly opts in (allowOverlap), without mutating the other block (Issue #21)", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const first = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const second = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 }, { allowOverlap: true });
+    expect(second.startMinutes).toBe(9 * 60 + 30);
+    const reloadedFirst = await db.timeBlocks.get(first.id);
+    expect(reloadedFirst).toEqual(first);
+  });
+
+  it("warns on overlap when moving a block too (update path), and allows Save-anyway via allowOverlap without touching the other block", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const anchor = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const movable = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 12 * 60, durationMinutes: 30 });
+    await expect(updateTimeBlock(movable.id, { startMinutes: 9 * 60 + 15 })).rejects.toBeInstanceOf(TimeBlockOverlapError);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
+    const saved = await updateTimeBlock(movable.id, { startMinutes: 9 * 60 + 15 }, { allowOverlap: true });
+    expect(saved.startMinutes).toBe(9 * 60 + 15);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
   });
 
   it("allows a task to hold multiple blocks on different times/dates", async () => {

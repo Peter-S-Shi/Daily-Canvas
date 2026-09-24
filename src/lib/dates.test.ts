@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { CheckIn, Task } from "../types";
-import { calculateTaskStats, isTaskScheduledOn } from "./dates";
+import { calculateTaskStats, isTaskScheduledOn, isViewingToday, minutesSinceMidnight } from "./dates";
+
+describe("isViewingToday / minutesSinceMidnight (Issue #20 current-time-line gating)", () => {
+  it("is true only for the actual real-world current day, not a stale or arbitrary date", () => {
+    const now = new Date("2026-03-15T09:30:00");
+    expect(isViewingToday("2026-03-15", now)).toBe(true);
+    expect(isViewingToday("2026-03-14", now)).toBe(false);
+    expect(isViewingToday("2026-03-16", now)).toBe(false);
+  });
+
+  it("computes minutes elapsed since local midnight", () => {
+    expect(minutesSinceMidnight(new Date("2026-03-15T00:00:00"))).toBe(0);
+    expect(minutesSinceMidnight(new Date("2026-03-15T09:30:00"))).toBe(570);
+    expect(minutesSinceMidnight(new Date("2026-03-15T23:59:00"))).toBe(1439);
+  });
+});
 
 const baseTask: Task = {
   id: "task-1",
