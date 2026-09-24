@@ -401,6 +401,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .task-row-copy { min-width: 0; display: grid; gap: 2px; }
 .task-row-copy strong { font-weight: 650; overflow-wrap: anywhere; }
 .list-empty { padding: 16px 4px; color: var(--muted); font-size: 13px; }
+.task-select { display: flex; align-items: center; padding-top: 2px; }
+.task-select input { width: 18px; height: 18px; accent-color: var(--accent); }
+.task-row.selected { border-color: var(--selected-line); background: var(--selected); }
+.bulk-actions select { min-height: 32px; padding: 4px 8px; font-size: 12px; }
+.checklist-add { display: flex; gap: 8px; margin-top: 10px; }
+.checklist-add input { flex: 1; }
+.checklist-list li { display: flex; align-items: center; gap: 6px; }
+.checklist-list li form { display: flex; align-items: center; gap: 6px; flex: 1; }
+.checklist-list li form input { flex: 1; }
+.task-notes textarea { width: 100%; min-height: 120px; margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); color: var(--ink); resize: vertical; }
+.area-members { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.today-floating-hint { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; }
 .task-detail-pane { min-width: 0; min-height: 0; overflow: auto; padding: 26px 34px 38px; }
 .task-detail-pane.empty { display: grid; place-items: center; color: var(--muted); }
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableWorkOn } from "./availableWorkService";
+import { availableFloatingWorkOn, availableWorkOn } from "./availableWorkService";
 import type { CheckIn, PausePeriod, Task, TaskLifecycle } from "../types";
 
 const base: Omit<Task, "id" | "createdAt" | "updatedAt"> = { title: "", kind: "task", starred: false, archived: false, startDate: "2026-01-01", schedule: { mode: "fixed", recurrence: { type: "daily" } }, stopReminderAtTarget: false };
@@ -29,5 +29,22 @@ describe("availableWorkOn", () => {
     const floating = task("floating", { schedule: { mode: "floating", availableFrom: "2026-01-01" } });
     const checkIns: CheckIn[] = [{ id: "c1", taskId: "floating", date: "2026-01-05", status: "done", updatedAt: "2026-01-05T00:00:00.000Z" }];
     expect(availableWorkOn("2026-01-10", [floating], checkIns, [], [])).toHaveLength(0);
+  });
+});
+
+describe("availableFloatingWorkOn (Issue #19 Today discoverability)", () => {
+  it("narrows availableWorkOn's result to Floating Tasks only, without recomputing eligibility rules", () => {
+    const fixed = task("fixed", { schedule: { mode: "fixed", recurrence: { type: "daily" } } });
+    const floatingA = task("floatingA", { schedule: { mode: "floating", availableFrom: "2026-01-01" } });
+    const floatingB = task("floatingB", { schedule: { mode: "floating", availableFrom: "2026-01-01" } });
+    const quota = task("quota", { kind: "habit", schedule: { mode: "quota", period: "week", targetCount: 3, availableFrom: "2026-01-01" } });
+    const result = availableFloatingWorkOn("2026-01-10", [fixed, floatingA, floatingB, quota], [], [], []);
+    expect(result.map((item) => item.id).sort()).toEqual(["floatingA", "floatingB"]);
+  });
+
+  it("excludes a Floating task already completed, consistent with availableWorkOn", () => {
+    const floating = task("floating", { schedule: { mode: "floating", availableFrom: "2026-01-01" } });
+    const checkIns: CheckIn[] = [{ id: "c1", taskId: "floating", date: "2026-01-05", status: "done", updatedAt: "2026-01-05T00:00:00.000Z" }];
+    expect(availableFloatingWorkOn("2026-01-10", [floating], checkIns, [], [])).toHaveLength(0);
   });
 });

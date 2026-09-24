@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { db } from "../db";
 import { todayKey } from "../lib/dates";
 import { resolveTaskColor } from "../services/areaService";
+import { availableFloatingWorkOn } from "../services/availableWorkService";
 import { setCheckIn } from "../services/checkInService";
 import { saveDailyOrder } from "../services/dailyService";
 import { getQuotaPeriod, getQuotaProgress, getQuotaStreak } from "../services/quotaService";
@@ -39,12 +40,12 @@ function TodayItem({ task, record, checkIns, pauses, lifecycle, areas, onOpen, o
         <button type="button" className={record?.status === "done" ? "status-button success active" : "status-button success"} aria-pressed={record?.status === "done"} onClick={() => check(record?.status === "done" ? undefined : "done")}>{t("safeToday")}</button>
         <button type="button" className={record?.status === "lapse" ? "status-button danger active" : "status-button danger"} aria-pressed={record?.status === "lapse"} onClick={() => check(record?.status === "lapse" ? undefined : "lapse")}>{t("lapse")}</button>
       </div>}
-      <button type="button" className={record?.status === "skipped" ? "skip-button active" : "skip-button"} aria-label={t("skip")} aria-pressed={record?.status === "skipped"} title={t("skip")} onClick={() => check(record?.status === "skipped" ? undefined : "skipped")}>—</button>
+      <button type="button" className={record?.status === "skipped" ? "skip-button active" : "skip-button"} aria-pressed={record?.status === "skipped"} onClick={() => check(record?.status === "skipped" ? undefined : "skipped")}>{record?.status === "skipped" ? t("skipped") : t("skip")}</button>
     </article>
   );
 }
 
-export function TodayView({ onCreateTask, onOpenTask, onOpenTimeline }: { onCreateTask: () => void; onOpenTask: (taskId: string) => void; onOpenTimeline: () => void }) {
+export function TodayView({ onCreateTask, onOpenTask, onOpenTimeline, onOpenFloating }: { onCreateTask: () => void; onOpenTask: (taskId: string) => void; onOpenTimeline: () => void; onOpenFloating: () => void }) {
   const { t, i18n } = useTranslation();
   const [experienceTask, setExperienceTask] = useState<Task>();
   const date = todayKey();
@@ -59,6 +60,7 @@ export function TodayView({ onCreateTask, onOpenTask, onOpenTimeline }: { onCrea
   const order = useLiveQuery(() => db.dailyOrders.get(date), [date]);
   const settings = useLiveQuery(() => db.settings.get("app"), []);
   const fixedTasks = useMemo(() => { const due = scheduledTasks(tasks, new Date()); const index = new Map((order?.taskIds ?? []).map((id, position) => [id, position])); return due.sort((a, b) => (index.get(a.id) ?? 9999) - (index.get(b.id) ?? 9999) || Number(b.starred) - Number(a.starred)); }, [tasks, order]);
+  const availableFloating = useMemo(() => availableFloatingWorkOn(date, rawTasks, checkIns, lifecycles, pauses), [date, rawTasks, checkIns, lifecycles, pauses]);
   const quotas = tasks.filter((task) => task.schedule.mode === "quota" && isQuotaAvailableOn(task, new Date()));
   const todayRecords = new Map(checkIns.filter((item) => item.date === date).map((item) => [item.taskId, item]));
   const done = fixedTasks.filter((task) => todayRecords.get(task.id)?.status === "done").length;
@@ -71,6 +73,7 @@ export function TodayView({ onCreateTask, onOpenTask, onOpenTimeline }: { onCrea
       <p className="today-date">{new Intl.DateTimeFormat(i18n.language, { weekday: "long", month: "long", day: "numeric" }).format(new Date())}</p>
       <div className="today-heading"><h2 className="page-title">{t("today")}</h2><span className="muted">{t("completedCount", { done, total: fixedTasks.length })}</span></div>
       <div className="progress today-progress" role="progressbar" aria-label={t("todayProgress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><i style={{ width: `${progress}%` }}/></div>
+      {availableFloating.length > 0 && <p className="today-floating-hint muted">{t("floatingAvailableCount", { count: availableFloating.length })} · <button type="button" className="link-button" onClick={onOpenFloating}>{t("chooseFromFloating")}</button></p>}
       <section aria-labelledby="fixed-today-heading">
         <div className="section-head"><h3 id="fixed-today-heading">{t("fixedToday")}</h3>{fixedTasks.length > 1 && <span className="section-hint">{t("dragHint")}</span>}</div>
         {fixedTasks.length === 0 ? <div className="empty-state"><p>{t("emptyToday")}</p></div> : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={fixedTasks.map((task) => task.id)} strategy={verticalListSortingStrategy}><div className="item-list">{fixedTasks.map((task) => <TodayItem key={task.id} task={task} record={todayRecords.get(task.id)} checkIns={checkIns.filter((item) => item.taskId === task.id)} pauses={pauses.filter((item) => item.taskId === task.id)} lifecycle={lifecycles.find((item) => item.taskId === task.id)} areas={areas} onOpen={() => onOpenTask(task.id)} onReflect={setExperienceTask}/>)}</div></SortableContext></DndContext>}

@@ -8,12 +8,14 @@ import { HeaderActions } from "./shell/WorkspaceHeader";
 
 const colors = ["#f4a261", "#e76f51", "#2a9d8f", "#457b9d", "#8d6cab", "#e9c46a"];
 
-export function AreasManager() {
+export function AreasManager({ onOpenTask }: { onOpenTask: (taskId: string) => void }) {
   const { t } = useTranslation();
   const areas = useLiveQuery(() => db.areas.orderBy("sortOrder").toArray(), []) ?? [];
   const tasks = useLiveQuery(() => db.tasks.toArray(), []) ?? [];
   const [editing, setEditing] = useState<Area | null>(null);
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (areaId: string) => setExpanded((current) => { const next = new Set(current); if (next.has(areaId)) next.delete(areaId); else next.add(areaId); return next; });
   const [name, setName] = useState(""); const [icon, setIcon] = useState(""); const [color, setColor] = useState(colors[0]); const [error, setError] = useState("");
   const begin = (area?: Area) => { setEditing(area ?? null); setName(area?.name ?? ""); setIcon(area?.icon ?? ""); setColor(area?.color ?? colors[0]); setError(""); setOpen(true); };
   const submit = async (event: React.FormEvent) => { event.preventDefault(); try { await saveArea({ name, icon, color }, editing ?? undefined); setOpen(false); } catch (reason) { setError(reason instanceof Error ? reason.message : t("saveError")); } };
@@ -29,19 +31,27 @@ export function AreasManager() {
         {error && <p className="error-message" role="alert">{error}</p>}
       </form>}
       {areas.length === 0 && !open ? <div className="empty-state"><p>{t("noAreasYet")}</p></div> : <div className="item-list">
-        {areas.map((area, index) => (
+        {areas.map((area, index) => {
+          const members = tasks.filter((task) => task.areaId === area.id);
+          const isExpanded = expanded.has(area.id);
+          return (
           <article key={area.id} className={`area-row ${area.archived ? "archived" : ""}`}>
             <span className="area-swatch" style={{ background: area.color }} aria-hidden="true"/>
-            <div className="item-copy"><span className="item-title">{area.icon ? `${area.icon} ` : ""}{area.name}</span><span className="item-sub">{t("areaTaskCount", { count: tasks.filter((task) => task.areaId === area.id).length })}{area.archived ? ` · ${t("archived")}` : ""}</span></div>
+            <div className="item-copy"><span className="item-title">{area.icon ? `${area.icon} ` : ""}{area.name}</span><span className="item-sub">{t("areaTaskCount", { count: members.length })}{area.archived ? ` · ${t("archived")}` : ""}</span></div>
             <div className="row-actions">
               <button type="button" className="icon-button small" disabled={area.archived || index === 0} onClick={() => moveArea(area.id, -1)} aria-label={t("moveUp")}>↑</button>
               <button type="button" className="icon-button small" disabled={area.archived || index === areas.length - 1} onClick={() => moveArea(area.id, 1)} aria-label={t("moveDown")}>↓</button>
+              <button type="button" className="button text-button" aria-expanded={isExpanded} onClick={() => toggleExpanded(area.id)}>{t(isExpanded ? "collapseArea" : "expandArea")}</button>
               <button type="button" className="button text-button" onClick={() => begin(area)}>{t("edit")}</button>
               <button type="button" className="button text-button" onClick={() => archiveArea(area.id, !area.archived)}>{t(area.archived ? "restore" : "archive")}</button>
               <button type="button" className="button text-button danger-text" onClick={() => globalThis.confirm(t("areaDeleteConfirm")) && deleteArea(area.id)}>{t("delete")}</button>
             </div>
+            {isExpanded && <ul className="area-members" aria-label={t("areaMembers")}>
+              {members.length === 0 ? <li className="muted">{t("noAreaMembers")}</li> : members.map((task) => <li key={task.id}><button type="button" className="quiet-action" onClick={() => onOpenTask(task.id)}>{task.title}</button></li>)}
+            </ul>}
           </article>
-        ))}
+          );
+        })}
       </div>}
     </div>
   );

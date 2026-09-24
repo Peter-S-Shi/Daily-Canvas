@@ -22,3 +22,12 @@ export function availableWorkOn(dateKey: string, tasks: Task[], checkIns: CheckI
     return isQuotaAvailableOn(task, date);
   });
 }
+
+/**
+ * Floating slice of availableWorkOn, for Today's discoverability affordance (Issue #19 / behavior
+ * spec §7.5): "Available ≠ committed today" -- this only counts/links to what is already
+ * derivable, it never inserts Floating work into Today's own list.
+ */
+export function availableFloatingWorkOn(dateKey: string, tasks: Task[], checkIns: CheckIn[], lifecycles: TaskLifecycle[], pauses: PausePeriod[]): Task[] {
+  return availableWorkOn(dateKey, tasks, checkIns, lifecycles, pauses).filter((task) => task.schedule.mode === "floating");
+}
