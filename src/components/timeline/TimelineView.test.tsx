@@ -100,6 +100,13 @@ describe("TimelineView drag overlap confirmation (Issue #21)", () => {
     expect(saveAnyway).toBeTruthy();
     expect((await db.timeBlocks.get(moving.id))?.startMinutes).toBe(12 * 60);
 
+    // Drag/drop conflict detail must match the Dialog's (Issue #21 follow-up): the conflicting
+    // Task's title, its time range, and the actual intersection interval, not just a bare pill.
+    expect(document.querySelectorAll("[data-testid='overlap-conflict']")).toHaveLength(1);
+    expect(document.body.textContent).toContain("Anchor");
+    expect(document.body.textContent).toContain("09:00");
+    expect(document.body.textContent).toContain("10:00");
+
     await act(async () => { saveAnyway!.click(); });
     await pause();
     expect((await db.timeBlocks.get(moving.id))?.startMinutes).toBe(9 * 60 + 15);

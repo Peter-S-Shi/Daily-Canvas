@@ -6,7 +6,7 @@ import { db } from "../../db";
 import { isViewingToday, minutesSinceMidnight, toDateKey, todayKey } from "../../lib/dates";
 import { resolveTaskColor } from "../../services/areaService";
 import { availableWorkOn } from "../../services/availableWorkService";
-import { TimeBlockOverlapError, updateTimeBlock } from "../../services/timeBlockService";
+import { formatMinutesAsTime, intersectionOf, TimeBlockOverlapError, updateTimeBlock } from "../../services/timeBlockService";
 import type { Task, TimeBlock } from "../../types";
 import { HeaderActions } from "../shell/WorkspaceHeader";
 import { TaskPickerDialog } from "./TaskPickerDialog";
@@ -20,7 +20,8 @@ const DAY_END_HOUR = 24;
 const DEFAULT_SCROLL_HOUR = 6;
 const ROW_MINUTES = 15;
 const ROW_HEIGHT_PX = 16;
-const timeLabel = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+// Shared with the overlap-conflict detail UI and the service layer (Issue #21 follow-up): one time formatter, reused everywhere.
+const timeLabel = formatMinutesAsTime;
 
 export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTask }: { weekStartsOn: 0 | 1; initialDate?: string; onOpenTask: (taskId: string) => void }) {
   const { t, i18n } = useTranslation();
@@ -33,7 +34,9 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const [scheduling, setScheduling] = useState<{ task: Task; date: string; startMinutes?: number }>();
   const [pickerDate, setPickerDate] = useState<string>();
   const [dragError, setDragError] = useState("");
-  const [pendingDrag, setPendingDrag] = useState<{ blockId: string; changes: { date?: string; startMinutes?: number } }>();
+  // Conflict detail carried alongside the pending drag (Issue #21 follow-up): the conflicting
+  // blocks are kept, not discarded, so the drag/drop warning can show the same detail as the Dialog.
+  const [pendingDrag, setPendingDrag] = useState<{ blockId: string; changes: { date?: string; startMinutes?: number }; conflicts: TimeBlock[] }>();
   // Restrained current-time indicator (Issue #20): only drawn when the viewed date is the real-world
   // current day, re-checked every minute rather than frozen at first render.
   const [nowMinutes, setNowMinutes] = useState(() => minutesSinceMidnight());
@@ -51,7 +54,7 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
     try {
       await updateTimeBlock(blockId, changes);
     } catch (err) {
-      if (err instanceof TimeBlockOverlapError) setPendingDrag({ blockId, changes });
+      if (err instanceof TimeBlockOverlapError) setPendingDrag({ blockId, changes, conflicts: err.overlapping });
       else setDragError(err instanceof Error ? err.message : String(err));
     }
   };
@@ -90,11 +93,33 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
       </HeaderActions>
       <div className="page-intro"><h2 className="page-title">{t("timeline")}</h2><p className="muted">{t("timelineHint")}</p></div>
       {dragError && <p className="error-message" role="alert">{dragError}</p>}
-      {pendingDrag && <div className="inline-actions timeline-overlap-warning" role="alert">
-        <span className="pill pill-warning">{t("timeBlockOverlapWarning")}</span>
-        <button type="button" className="button secondary compact" onClick={() => setPendingDrag(undefined)}>{t("adjustTime")}</button>
-        <button type="button" className="button primary compact" onClick={() => void confirmOverlappingDrag()}>{t("saveAnyway")}</button>
-      </div>}
+      {pendingDrag && (() => {
+        const draggedBlock = data.timeBlocks.find((block) => block.id === pendingDrag.blockId);
+        const proposed = { startMinutes: pendingDrag.changes.startMinutes ?? draggedBlock?.startMinutes ?? 0, durationMinutes: draggedBlock?.durationMinutes ?? 0 };
+        return <div className="overlap-conflict-detail timeline-overlap-warning" role="alert">
+          <div className="inline-actions">
+            <span className="pill pill-warning">{t("timeBlockOverlapWarning")}</span>
+            <button type="button" className="button secondary compact" onClick={() => setPendingDrag(undefined)}>{t("adjustTime")}</button>
+            <button type="button" className="button primary compact" onClick={() => void confirmOverlappingDrag()}>{t("saveAnyway")}</button>
+          </div>
+          <p className="muted small">{t("timeBlockOverlapProposedTime", { start: timeLabel(proposed.startMinutes), end: timeLabel(proposed.startMinutes + proposed.durationMinutes) })}</p>
+          <ul>
+            {pendingDrag.conflicts.map((conflictBlock) => {
+              const overlap = intersectionOf(proposed, conflictBlock);
+              const conflictTitle = taskById.get(conflictBlock.taskId)?.title ?? t("timeBlockOverlapUnknownTask");
+              return <li key={conflictBlock.id} data-testid="overlap-conflict">
+                {t("timeBlockOverlapConflictLine", {
+                  title: conflictTitle,
+                  start: timeLabel(conflictBlock.startMinutes),
+                  end: timeLabel(conflictBlock.startMinutes + conflictBlock.durationMinutes),
+                  overlapStart: timeLabel(overlap.startMinutes),
+                  overlapEnd: timeLabel(overlap.endMinutes),
+                })}
+              </li>;
+            })}
+          </ul>
+        </div>;
+      })()}
 
       {mode === "day" && <div className="timeline-day-layout">
         <section className="panel timeline-grid-panel" aria-labelledby="timeline-day-heading">

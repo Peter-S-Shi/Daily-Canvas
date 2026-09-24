@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
 import { saveTask } from "./taskService";
-import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, MINUTE_STEP, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
+import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, formatMinutesAsTime, intersectionOf, MINUTE_STEP, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
 import type { Task } from "../types";
 
 const fixedTask = (overrides: Partial<Task> = {}): Omit<Task, "id" | "createdAt" | "updatedAt"> => ({
@@ -161,6 +161,27 @@ describe("timeBlockService", () => {
     expect(MINUTE_STEP).toBe(15);
     expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).toThrow(/15-minute/);
     expect(() => validateTimeBlockInput({ startMinutes: 0, durationMinutes: 20 })).not.toThrow();
+  });
+
+  it("intersectionOf computes the actual overlapping interval between a proposed and an existing block (Issue #21 detail)", () => {
+    // Worked example from the follow-up spec: proposed 10:45-11:10 against an existing 10:45-12:15
+    // block must report the intersection as 10:45-11:10, not either input range verbatim.
+    const proposed = { startMinutes: 10 * 60 + 45, durationMinutes: 25 }; // 10:45-11:10
+    const existing = { startMinutes: 10 * 60 + 45, durationMinutes: 90 }; // 10:45-12:15
+    expect(intersectionOf(proposed, existing)).toEqual({ startMinutes: 10 * 60 + 45, endMinutes: 11 * 60 + 10 });
+
+    // A partial, offset overlap: proposed 9:00-10:00 vs existing 9:30-10:30 intersects at 9:30-10:00.
+    const partialA = { startMinutes: 9 * 60, durationMinutes: 60 };
+    const partialB = { startMinutes: 9 * 60 + 30, durationMinutes: 60 };
+    expect(intersectionOf(partialA, partialB)).toEqual({ startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 });
+    // Symmetric regardless of argument order.
+    expect(intersectionOf(partialB, partialA)).toEqual({ startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 });
+  });
+
+  it("formatMinutesAsTime renders zero-padded HH:MM", () => {
+    expect(formatMinutesAsTime(9 * 60)).toBe("09:00");
+    expect(formatMinutesAsTime(10 * 60 + 45)).toBe("10:45");
+    expect(formatMinutesAsTime(0)).toBe("00:00");
   });
 
   it("marks a future block needsReview when Replan makes it no longer plausible, without moving or deleting it", async () => {

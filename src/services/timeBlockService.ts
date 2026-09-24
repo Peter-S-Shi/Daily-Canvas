@@ -28,6 +28,18 @@ function overlaps(a: TimeBlockInput, b: TimeBlockInput): boolean {
   return a.startMinutes < b.startMinutes + b.durationMinutes && b.startMinutes < a.startMinutes + a.durationMinutes;
 }
 
+/** Zero-padded HH:MM rendering shared by the Timeline grid and overlap-conflict detail UI (Issue #21 follow-up), so there is one time formatter, not several. */
+export const formatMinutesAsTime = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+/**
+ * The actual overlapping interval between two placements (Issue #21 follow-up): e.g. a proposed
+ * 10:45-11:10 block against an existing 10:45-12:15 block intersects at 10:45-11:10, not either
+ * range verbatim. Order-independent; only meaningful when the two ranges actually overlap.
+ */
+export function intersectionOf(a: TimeBlockInput, b: TimeBlockInput): { startMinutes: number; endMinutes: number } {
+  return { startMinutes: Math.max(a.startMinutes, b.startMinutes), endMinutes: Math.min(a.startMinutes + a.durationMinutes, b.startMinutes + b.durationMinutes) };
+}
+
 /**
  * An overlap is a warned choice, not a hard block (Issue #21): the caller is given the
  * conflicting blocks so the UI can offer "Adjust time" or "Save anyway" rather than a bare

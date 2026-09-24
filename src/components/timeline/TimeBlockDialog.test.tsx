@@ -96,4 +96,58 @@ describe("TimeBlockDialog overlap warning flow (Issue #21)", () => {
     expect(button("Save anyway")).toBeFalsy();
     expect(button("Save")).toBeTruthy();
   });
+
+  it("shows the conflicting Task's title, its time range, the proposed time, and the exact intersection interval", async () => {
+    await render();
+    await click(button("Save"));
+    const text = document.body.textContent ?? "";
+    // Existing conflicting block: task "Write report", 09:00-10:00.
+    expect(text).toContain("Write report");
+    expect(text).toContain("09:00");
+    expect(text).toContain("10:00");
+    // Proposed block (from defaultStartMinutes 9:30, default 30-minute duration): 09:30-10:00.
+    expect(text).toContain("09:30");
+    // Intersection of 09:00-10:00 and 09:30-10:00 is 09:30-10:00.
+    expect(document.querySelectorAll("[data-testid='overlap-conflict']")).toHaveLength(1);
+  });
+});
+
+describe("TimeBlockDialog overlap warning flow with multiple simultaneous conflicts (Issue #21)", () => {
+  let root: Root;
+  let task: Task;
+  let other: Task;
+  let third: Task;
+
+  beforeEach(async () => {
+    await db.delete(); await db.open(); await initializeDb();
+    task = await saveTask(fixedTask());
+    other = await saveTask(fixedTask({ title: "Other" }));
+    third = await saveTask(fixedTask({ title: "Third" }));
+    // Two existing blocks that will both conflict with the proposed 09:30-10:30 placement.
+    await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    await createTimeBlock({ taskId: third.id, date: "2026-01-05", startMinutes: 10 * 60, durationMinutes: 45 }, { allowOverlap: true });
+  });
+  afterEach(async () => { await act(() => root.unmount()); await db.delete(); });
+
+  it("renders one conflict-detail line per simultaneous overlapping block", async () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    await act(async () => {
+      root = createRoot(document.getElementById("root")!);
+      root.render(<TimeBlockDialog task={other} defaultDate="2026-01-05" defaultStartMinutes={9 * 60 + 30} onClose={() => {}} onSaved={() => {}}/>);
+    });
+    await pause();
+    // Widen the default 30-minute duration so the proposed block spans both existing blocks (09:30-10:30).
+    const durationInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(durationInput, "60");
+      durationInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await pause();
+    await click(button("Save"));
+    const conflictLines = document.querySelectorAll("[data-testid='overlap-conflict']");
+    expect(conflictLines).toHaveLength(2);
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Write report");
+    expect(text).toContain("Third");
+  });
 });
