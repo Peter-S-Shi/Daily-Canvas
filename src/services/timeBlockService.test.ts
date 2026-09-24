@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
 import { saveTask } from "./taskService";
-import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, MINUTE_STEP, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
+import { computeDaySegments, createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, formatMinutesAsTime, intersectionOf, MINUTES_PER_DAY, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
 import type { Task } from "../types";
 
 const fixedTask = (overrides: Partial<Task> = {}): Omit<Task, "id" | "createdAt" | "updatedAt"> => ({
@@ -35,11 +35,20 @@ describe("timeBlockService", () => {
     expect(c.durationMinutes).toBe(41);
   });
 
-  it("rejects placement off the 15-minute grid, while allowing an on-grid start with a non-15-multiple duration", async () => {
+  it("accepts a start time on any whole minute, not just the 15-minute grid (corrective pass: start-time free-minute fidelity)", async () => {
     const task = await saveTask(fixedTask());
-    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 })).rejects.toThrow(/15-minute/);
-    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 20 });
-    expect(block.durationMinutes).toBe(20);
+    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 });
+    expect(block.startMinutes).toBe(9 * 60 + 7);
+    const onGrid = await saveTask(fixedTask({ title: "OnGrid" }));
+    const gridBlock = await createTimeBlock({ taskId: onGrid.id, date: "2026-01-05", startMinutes: 11 * 60, durationMinutes: 20 });
+    expect(gridBlock.durationMinutes).toBe(20);
+  });
+
+  it("rejects a non-integer or out-of-range start time", async () => {
+    const task = await saveTask(fixedTask());
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 0.5, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: -1, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: MINUTES_PER_DAY, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
   });
 
   it("accepts any positive whole-minute duration, including 1 minute, and rejects zero/negative/fractional durations", async () => {
@@ -64,14 +73,57 @@ describe("timeBlockService", () => {
     await expect(createTimeBlock({ taskId: avoidance.id, date: "2026-01-05", startMinutes: 9 * 60 })).rejects.toThrow(/Avoidance/);
   });
 
-  it("rejects overlapping blocks on the same date instead of auto-moving either one", async () => {
+  it("warns (does not hard-reject) an overlapping block by default, via a typed TimeBlockOverlapError carrying the conflicting blocks (Issue #21)", async () => {
     const task = await saveTask(fixedTask());
     const other = await saveTask(fixedTask({ title: "Other" }));
-    await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
-    await expect(createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 })).rejects.toThrow(/overlap/i);
+    const first = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    let caught: unknown;
+    try { await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 }); } catch (error) { caught = error; }
+    expect(caught).toBeInstanceOf(TimeBlockOverlapError);
+    expect((caught as InstanceType<typeof TimeBlockOverlapError>).overlapping.map((b) => b.id)).toEqual([first.id]);
+    // The rejected save must not have written anything, nor touched the existing block.
+    expect((await db.timeBlocks.where("taskId").equals(other.id).toArray())).toHaveLength(0);
+    expect(await db.timeBlocks.get(first.id)).toEqual(first);
     // Touching but not overlapping (ends exactly when the next starts) is allowed.
     const adjacent = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 10 * 60, durationMinutes: 30 });
     expect(adjacent.startMinutes).toBe(600);
+  });
+
+  it("saves an overlapping block when the caller explicitly opts in (allowOverlap), without mutating the other block (Issue #21)", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const first = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const second = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 30, durationMinutes: 30 }, { allowOverlap: true });
+    expect(second.startMinutes).toBe(9 * 60 + 30);
+    const reloadedFirst = await db.timeBlocks.get(first.id);
+    expect(reloadedFirst).toEqual(first);
+  });
+
+  it("warns on overlap when moving a block too (update path), and allows Save-anyway via allowOverlap without touching the other block", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const anchor = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const movable = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 12 * 60, durationMinutes: 30 });
+    await expect(updateTimeBlock(movable.id, { startMinutes: 9 * 60 + 15 })).rejects.toBeInstanceOf(TimeBlockOverlapError);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
+    const saved = await updateTimeBlock(movable.id, { startMinutes: 9 * 60 + 15 }, { allowOverlap: true });
+    expect(saved.startMinutes).toBe(9 * 60 + 15);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
+  });
+
+  it("allows reminder-only updates on an already-accepted overlapping block without requiring another overlap decision", async () => {
+    const task = await saveTask(fixedTask());
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    const anchor = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 60 });
+    const overlapping = await createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 9 * 60 + 15, durationMinutes: 30 }, { allowOverlap: true });
+
+    const updated = await updateTimeBlock(overlapping.id, { reminder: "10" });
+
+    expect(updated.reminder).toBe("10");
+    expect(updated.date).toBe(overlapping.date);
+    expect(updated.startMinutes).toBe(overlapping.startMinutes);
+    expect(updated.durationMinutes).toBe(overlapping.durationMinutes);
+    expect(await db.timeBlocks.get(anchor.id)).toEqual(anchor);
   });
 
   it("allows a task to hold multiple blocks on different times/dates", async () => {
@@ -114,10 +166,90 @@ describe("timeBlockService", () => {
     expect(await db.tasks.get(task.id)).toBeDefined();
   });
 
-  it("MINUTE_STEP is 15 and validateTimeBlockInput surfaces the same start-grid rule used by createTimeBlock, independent of duration", () => {
-    expect(MINUTE_STEP).toBe(15);
-    expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).toThrow(/15-minute/);
+  it("validateTimeBlockInput accepts any non-15-multiple whole-minute start time (corrective pass), e.g. 10:07 (607)", () => {
+    expect(() => validateTimeBlockInput({ startMinutes: 607, durationMinutes: 30 })).not.toThrow();
+    expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).not.toThrow();
     expect(() => validateTimeBlockInput({ startMinutes: 0, durationMinutes: 20 })).not.toThrow();
+    expect(() => validateTimeBlockInput({ startMinutes: 9.5, durationMinutes: 30 })).toThrow(/whole minute/);
+    expect(() => validateTimeBlockInput({ startMinutes: -1, durationMinutes: 30 })).toThrow(/whole minute/);
+    expect(() => validateTimeBlockInput({ startMinutes: MINUTES_PER_DAY, durationMinutes: 30 })).toThrow(/whole minute/);
+  });
+
+  describe("computeDaySegments (Issue #20/#21 follow-up: Day view overlap display)", () => {
+    it("two fully disjoint blocks produce two solo segments", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "b", startMinutes: 11 * 60, durationMinutes: 30 },
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a"] },
+        { startMinutes: 11 * 60, endMinutes: 11 * 60 + 30, blockIds: ["b"] },
+      ]);
+    });
+
+    it("two partially overlapping blocks produce a solo/group/solo pattern", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 60 }, // 9:00-10:00
+        { id: "b", startMinutes: 9 * 60 + 30, durationMinutes: 60 }, // 9:30-10:30
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a"] },
+        { startMinutes: 9 * 60 + 30, endMinutes: 10 * 60, blockIds: ["a", "b"] },
+        { startMinutes: 10 * 60, endMinutes: 10 * 60 + 30, blockIds: ["b"] },
+      ]);
+    });
+
+    it("a block fully contained inside another never gets its own solo segment", () => {
+      const blocks = [
+        { id: "outer", startMinutes: 9 * 60, durationMinutes: 120 }, // 9:00-11:00
+        { id: "inner", startMinutes: 9 * 60 + 30, durationMinutes: 30 }, // 9:30-10:00, fully inside outer
+      ];
+      const segments = computeDaySegments(blocks);
+      expect(segments).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["outer"] },
+        { startMinutes: 9 * 60 + 30, endMinutes: 10 * 60, blockIds: ["outer", "inner"] },
+        { startMinutes: 10 * 60, endMinutes: 11 * 60, blockIds: ["outer"] },
+      ]);
+      // "inner" only ever appears alongside "outer" -- never alone.
+      expect(segments.filter((segment) => segment.blockIds.includes("inner"))).toHaveLength(1);
+      expect(segments.every((segment) => !segment.blockIds.includes("inner") || segment.blockIds.length > 1)).toBe(true);
+    });
+
+    it("three or more simultaneous blocks produce one group segment listing all of them", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "b", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "c", startMinutes: 9 * 60, durationMinutes: 30 },
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a", "b", "c"] },
+      ]);
+    });
+
+    it("returns no segments for an empty day", () => {
+      expect(computeDaySegments([])).toEqual([]);
+    });
+  });
+
+  it("intersectionOf computes the actual overlapping interval between a proposed and an existing block (Issue #21 detail)", () => {
+    // Worked example from the follow-up spec: proposed 10:45-11:10 against an existing 10:45-12:15
+    // block must report the intersection as 10:45-11:10, not either input range verbatim.
+    const proposed = { startMinutes: 10 * 60 + 45, durationMinutes: 25 }; // 10:45-11:10
+    const existing = { startMinutes: 10 * 60 + 45, durationMinutes: 90 }; // 10:45-12:15
+    expect(intersectionOf(proposed, existing)).toEqual({ startMinutes: 10 * 60 + 45, endMinutes: 11 * 60 + 10 });
+
+    // A partial, offset overlap: proposed 9:00-10:00 vs existing 9:30-10:30 intersects at 9:30-10:00.
+    const partialA = { startMinutes: 9 * 60, durationMinutes: 60 };
+    const partialB = { startMinutes: 9 * 60 + 30, durationMinutes: 60 };
+    expect(intersectionOf(partialA, partialB)).toEqual({ startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 });
+    // Symmetric regardless of argument order.
+    expect(intersectionOf(partialB, partialA)).toEqual({ startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 });
+  });
+
+  it("formatMinutesAsTime renders zero-padded HH:MM", () => {
+    expect(formatMinutesAsTime(9 * 60)).toBe("09:00");
+    expect(formatMinutesAsTime(10 * 60 + 45)).toBe("10:45");
+    expect(formatMinutesAsTime(0)).toBe("00:00");
   });
 
   it("marks a future block needsReview when Replan makes it no longer plausible, without moving or deleting it", async () => {

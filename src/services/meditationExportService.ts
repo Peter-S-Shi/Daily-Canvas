@@ -1,4 +1,4 @@
-import { saveBlob } from "../desktop/desktopAdapter";
+import { saveBlobWithPath, type SaveResult } from "../desktop/desktopAdapter";
 import type { MeditationEntry } from "../types";
 
 export type MeditationPageSize = "a4" | "letter";
@@ -15,8 +15,10 @@ export const meditationPageStyles: Record<MeditationPageStyle, { background: str
 
 export interface MeditationExportOptions {
   selectedIds?: string[];
-  chineseTitle?: string;
-  englishTitle?: string;
+  /** Language-agnostic cover heading -- may be any Unicode script (Issue #23). */
+  mainTitle?: string;
+  /** Optional secondary cover line -- may be blank, and may be any Unicode script. */
+  subtitle?: string;
   showDates?: boolean;
   pageStyle?: MeditationPageStyle;
   pageSize?: MeditationPageSize;
@@ -26,8 +28,8 @@ export interface MeditationExportOptions {
 
 export interface MeditationExportModel {
   entries: MeditationEntry[];
-  chineseTitle: string;
-  englishTitle: string;
+  mainTitle: string;
+  subtitle: string;
   showDates: boolean;
   pageStyle: MeditationPageStyle;
   pageSize: MeditationPageSize;
@@ -41,8 +43,9 @@ export function buildMeditationExportModel(entries: MeditationEntry[], options: 
   if (ordered.length === 0) throw new Error("Select at least one Meditation to export.");
   return {
     entries: ordered,
-    chineseTitle: options.chineseTitle ?? "我的感悟",
-    englishTitle: options.englishTitle ?? "Meditations",
+    mainTitle: options.mainTitle ?? "",
+    // Subtitle is allowed to be empty/blank -- no fallback to a default string.
+    subtitle: options.subtitle ?? "",
     showDates: options.showDates ?? true,
     pageStyle: options.pageStyle ?? "ivory",
     pageSize: options.pageSize ?? "a4",
@@ -62,8 +65,8 @@ export async function createMeditationDocx(model: MeditationExportModel): Promis
   const style = meditationPageStyles[model.pageStyle];
   const shade = { type: ShadingType.CLEAR, fill: style.background.slice(1), color: "auto" };
   const cover: InstanceType<typeof Paragraph>[] = [];
-  if (model.chineseTitle) cover.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 3000, after: 260 }, shading: shade, children: [new TextRun({ text: model.chineseTitle, bold: true, size: 48, color: style.ink.slice(1) })] }));
-  if (model.englishTitle) cover.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 400 }, shading: shade, children: [new TextRun({ text: model.englishTitle, italics: true, size: 28, color: style.ink.slice(1) })] }));
+  if (model.mainTitle) cover.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 3000, after: 260 }, shading: shade, children: [new TextRun({ text: model.mainTitle, bold: true, size: 48, color: style.ink.slice(1) })] }));
+  if (model.subtitle) cover.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 400 }, shading: shade, children: [new TextRun({ text: model.subtitle, italics: true, size: 28, color: style.ink.slice(1) })] }));
   cover.push(new Paragraph({ shading: shade, children: [new PageBreak()] }));
 
   const body = model.entries.flatMap((entry, index): InstanceType<typeof Paragraph>[] => {
@@ -87,6 +90,9 @@ export async function createMeditationDocx(model: MeditationExportModel): Promis
   return Packer.toBlob(doc);
 }
 
-export async function downloadMeditationDocx(model: MeditationExportModel): Promise<boolean> {
-  return saveBlob(await createMeditationDocx(model), `daily-canvas-meditations-${new Date().toISOString().slice(0, 10)}.docx`);
+/** Saves the generated Word export and reports where (Issue #23's export-completion closure). */
+export async function downloadMeditationDocx(model: MeditationExportModel): Promise<SaveResult & { fileName: string }> {
+  const fileName = `daily-canvas-meditations-${new Date().toISOString().slice(0, 10)}.docx`;
+  const result = await saveBlobWithPath(await createMeditationDocx(model), fileName);
+  return { ...result, fileName };
 }

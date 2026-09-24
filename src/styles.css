@@ -40,12 +40,15 @@
   --info-ink: #3f6178;
   --info-soft: #e6eef2;
   --topbar: rgba(255, 253, 250, 0.82);
-  --sidebar: #1e1d1a;
-  --sidebar-hover: #2a2925;
-  --sidebar-active: #4b332a;
-  --sidebar-text: #e8e1d7;
-  --sidebar-muted: #a39d93;
-  --sidebar-line: #34322d;
+  /* Light Theme sidebar (Issue #22): warm paper tones consistent with --page/--surface-soft, not a naive inversion of the dark values below. */
+  --sidebar: #efe7d7;
+  --sidebar-hover: #e5dac2;
+  --sidebar-active: #ead8cc;
+  --sidebar-active-text: #6b3f27;
+  --sidebar-text: #3a352c;
+  --sidebar-muted: #756e60;
+  --sidebar-line: #ddd0b4;
+  --sidebar-border: #ddd0b4;
   --shadow: 0 18px 50px rgba(65, 48, 35, 0.16);
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08);
   --radius: 14px;
@@ -84,6 +87,15 @@
   --info-ink: #9dbdd2;
   --info-soft: #22303a;
   --topbar: rgba(30, 29, 26, 0.86);
+  /* Dark Theme keeps the original sidebar values (Issue #22 only adds Light Theme tokens above). */
+  --sidebar: #1e1d1a;
+  --sidebar-hover: #2a2925;
+  --sidebar-active: #4b332a;
+  --sidebar-active-text: #fff;
+  --sidebar-text: #e8e1d7;
+  --sidebar-muted: #a39d93;
+  --sidebar-line: #34322d;
+  --sidebar-border: #171613;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
@@ -117,6 +129,15 @@
     --info-ink: #9dbdd2;
     --info-soft: #22303a;
     --topbar: rgba(30, 29, 26, 0.86);
+    /* Resolved system-dark keeps the same sidebar values as the explicit Dark Theme (Issue #22). */
+    --sidebar: #1e1d1a;
+    --sidebar-hover: #2a2925;
+    --sidebar-active: #4b332a;
+    --sidebar-active-text: #fff;
+    --sidebar-text: #e8e1d7;
+    --sidebar-muted: #a39d93;
+    --sidebar-line: #34322d;
+    --sidebar-border: #171613;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
     --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.35);
   }
@@ -149,7 +170,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* ---------- Desktop shell (spec §2) ---------- */
 .desktop-shell { height: 100vh; min-height: 600px; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); background-color: var(--page); background-size: cover; background-position: center; }
-.shell-sidebar { height: 100vh; min-height: 0; overflow-y: auto; padding: 22px 16px 16px; display: flex; flex-direction: column; gap: 18px; background: var(--sidebar); color: var(--sidebar-text); border-right: 1px solid #171613; }
+.shell-sidebar { height: 100vh; min-height: 0; overflow-y: auto; padding: 22px 16px 16px; display: flex; flex-direction: column; gap: 18px; background: var(--sidebar); color: var(--sidebar-text); border-right: 1px solid var(--sidebar-border); }
 .brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 10px; border: 0; background: none; color: inherit; text-align: left; }
 .brand strong { font: 700 19px/1.1 var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .logo-mark { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .06em; }
@@ -158,7 +179,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .nav-button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav-button:hover { background: var(--sidebar-hover); }
 /* Selection is carried by fill, an inset bar, weight, and aria-current — never color alone (spec §2.2). */
-.nav-button.active { background: var(--sidebar-active); color: #fff; font-weight: 750; box-shadow: inset 3px 0 0 var(--accent); }
+.nav-button.active { background: var(--sidebar-active); color: var(--sidebar-active-text); font-weight: 750; box-shadow: inset 3px 0 0 var(--accent); }
 .workspace-icon { flex: none; opacity: .9; }
 .shell-sidebar-bottom { margin-top: auto; display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--sidebar-line); }
 .privacy-note { padding: 6px 12px 0; color: var(--sidebar-muted); font-size: 12px; letter-spacing: .02em; }
@@ -626,23 +647,44 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
 /* ---------- Timeline (M12) ---------- */
 .timeline-day-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
 /* Bounded viewport so the 900x600 minimum stays usable; the full 00:00-24:00 domain scrolls inside it rather than being clipped or narrowed. */
-.timeline-day-grid { position: relative; max-height: min(60vh, 620px); overflow-y: auto; overflow-x: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+/* Extra outer-surface padding (#20 follow-up) gives Time Block chips breathing room from the grid/panel edge; block-position math below is relative to the inner (padded-out) box, so it stays correct. */
+.timeline-day-grid { position: relative; max-height: min(60vh, 620px); overflow-y: auto; overflow-x: hidden; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .timeline-day-grid-inner { position: relative; }
 .timeline-row { position: relative; border-bottom: 1px solid var(--line); }
 .timeline-row.hour-row { border-bottom-color: var(--line-strong); }
 .timeline-hour-label { position: absolute; top: -7px; left: 8px; padding: 0 4px; background: var(--surface); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.timeline-block-position { position: absolute; left: 76px; right: 8px; }
-.time-block-chip { display: grid; gap: 2px; width: 100%; height: 100%; padding: 4px 8px; border: 0; border-left: 3px solid var(--task-color, var(--accent)); border-radius: 6px; background: var(--selected); text-align: left; overflow: hidden; cursor: pointer; }
+.timeline-block-position { position: absolute; left: 80px; right: 12px; }
+/* Horizontal inset only (#20 follow-up): widened via padding, not font-size/line-height, so very short blocks keep their vertical content density. */
+.time-block-chip { display: grid; gap: 2px; width: 100%; height: 100%; padding: 4px 12px; border: 0; border-left: 3px solid var(--task-color, var(--accent)); border-radius: 6px; background: var(--selected); text-align: left; overflow: hidden; cursor: pointer; }
 .time-block-chip strong { font-size: 12px; line-height: 1.2; }
 .time-block-chip span { color: var(--muted); font-size: 11px; }
 .time-block-chip.needs-review { outline: 2px solid var(--warning-line); }
+/* Overlap-group chip (Timeline occlusion fix): two or more saved Time Blocks are simultaneously
+   active during this segment, so they render as one distinctly-styled group instead of stacking
+   on top of each other. A hatched stripe, not a new color, keeps it visually part of the same system. */
+.time-block-chip.overlap-group { border-left-color: var(--warning-line); background: repeating-linear-gradient(135deg, var(--selected), var(--selected) 6px, var(--warning-soft) 6px, var(--warning-soft) 12px); }
+.time-block-chip.overlap-group strong { color: var(--warning-ink); }
+.overlap-group-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.overlap-group-list li { border: 1px solid var(--line); border-radius: 8px; }
+.overlap-group-list .task-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; }
+.overlap-group-list .task-link span { color: var(--muted); font-size: 12px; }
 .available-work-panel .item-copy { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; border-left: 3px solid var(--task-color, var(--line)); background: var(--surface); }
 .timeline-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
-.timeline-week-day { min-height: 160px; }
-.week-block-list { display: grid; gap: 6px; }
-.week-block-list .time-block-chip { height: auto; }
+.timeline-week-day { min-height: 160px; min-width: 0; }
+.week-block-list { display: grid; gap: 8px; min-width: 0; }
+/* Narrow week columns (Issue #20): chip content wraps and grows instead of being clipped unreadably. */
+.week-block-list .time-block-chip { height: auto; overflow: visible; white-space: normal; }
+.week-block-list .time-block-chip strong { white-space: normal; overflow-wrap: break-word; }
+.week-block-list .time-block-chip .pill-warning.compact { white-space: normal; overflow-wrap: break-word; line-height: 1.2; }
 .todays-plan .plan-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-align: left; }
 .pill-warning.compact { padding: 1px 6px; font-size: 10px; }
+.pill.compact { min-height: auto; padding: 1px 8px; font-size: 10px; }
+/* Restrained current-time indicator (Issue #20): a thin accent line, never a loud new color. */
+.timeline-now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); pointer-events: none; z-index: 1; }
+/* Overlap conflict detail (Issue #21 follow-up): shared by the Dialog and drag/drop warning so both list every conflicting Task, its time range, and the intersection interval consistently. */
+.overlap-conflict-detail { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--warning-line); border-radius: var(--radius); background: var(--warning-soft); }
+.overlap-conflict-detail ul { display: grid; gap: 4px; margin: 0; padding-left: 18px; }
+.overlap-conflict-detail li { font-size: 13px; color: var(--warning-ink); }
 .inline-field { display: inline-flex; align-items: center; }
 .upcoming-blocks { margin-top: 14px; }
 .shortcuts-list kbd { padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-soft); font: 700 12px/1.4 var(--font-mono, monospace); }

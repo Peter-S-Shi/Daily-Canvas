@@ -3,11 +3,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../db";
-import { toDateKey, todayKey } from "../../lib/dates";
+import { isViewingToday, minutesSinceMidnight, toDateKey, todayKey } from "../../lib/dates";
 import { resolveTaskColor } from "../../services/areaService";
 import { availableWorkOn } from "../../services/availableWorkService";
-import { updateTimeBlock } from "../../services/timeBlockService";
+import { computeDaySegments, formatMinutesAsTime, intersectionOf, TimeBlockOverlapError, updateTimeBlock, type DaySegment } from "../../services/timeBlockService";
 import type { Task, TimeBlock } from "../../types";
+import { Dialog, DialogHeader } from "../Dialog";
 import { HeaderActions } from "../shell/WorkspaceHeader";
 import { TaskPickerDialog } from "./TaskPickerDialog";
 import { TimeBlockDialog } from "./TimeBlockDialog";
@@ -20,7 +21,8 @@ const DAY_END_HOUR = 24;
 const DEFAULT_SCROLL_HOUR = 6;
 const ROW_MINUTES = 15;
 const ROW_HEIGHT_PX = 16;
-const timeLabel = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+// Shared with the overlap-conflict detail UI and the service layer (Issue #21 follow-up): one time formatter, reused everywhere.
+const timeLabel = formatMinutesAsTime;
 
 export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTask }: { weekStartsOn: 0 | 1; initialDate?: string; onOpenTask: (taskId: string) => void }) {
   const { t, i18n } = useTranslation();
@@ -32,7 +34,18 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const [editingBlock, setEditingBlock] = useState<TimeBlock>();
   const [scheduling, setScheduling] = useState<{ task: Task; date: string; startMinutes?: number }>();
   const [pickerDate, setPickerDate] = useState<string>();
+  // Day view overlap-group detail (Timeline occlusion fix): which computed segment's "N tasks
+  // overlapping" chip was clicked, so its own popup can list every Task active during it.
+  const [overlapSegment, setOverlapSegment] = useState<DaySegment>();
   const [dragError, setDragError] = useState("");
+  // Conflict detail carried alongside the pending drag (Issue #21 follow-up): the conflicting
+  // blocks are kept, not discarded, so the drag/drop warning can show the same detail as the Dialog.
+  const [pendingDrag, setPendingDrag] = useState<{ blockId: string; changes: { date?: string; startMinutes?: number }; conflicts: TimeBlock[] }>();
+  // Restrained current-time indicator (Issue #20): only drawn when the viewed date is the real-world
+  // current day, re-checked every minute rather than frozen at first render.
+  const [nowMinutes, setNowMinutes] = useState(() => minutesSinceMidnight());
+  useEffect(() => { const id = setInterval(() => setNowMinutes(minutesSinceMidnight()), 60_000); return () => clearInterval(id); }, []);
+  const showCurrentTimeLine = isViewingToday(selectedDate);
 
   const data = useLiveQuery(async () => ({ tasks: await db.tasks.toArray(), areas: await db.areas.toArray(), checkIns: await db.checkIns.toArray(), lifecycles: await db.taskLifecycles.toArray(), pauses: await db.pausePeriods.toArray(), timeBlocks: await db.timeBlocks.toArray() }), []) ?? { tasks: [], areas: [], checkIns: [], lifecycles: [], pauses: [], timeBlocks: [] };
   const taskById = new Map(data.tasks.map((task) => [task.id, task]));
@@ -40,7 +53,24 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
   const availableWork = (date: string) => availableWorkOn(date, data.tasks, data.checkIns, data.lifecycles, data.pauses);
 
   const moveBlock = async (blockId: string, changes: { date?: string; startMinutes?: number }) => {
-    try { setDragError(""); await updateTimeBlock(blockId, changes); } catch (err) { setDragError(err instanceof Error ? err.message : String(err)); }
+    setDragError("");
+    setPendingDrag(undefined);
+    try {
+      await updateTimeBlock(blockId, changes);
+    } catch (err) {
+      if (err instanceof TimeBlockOverlapError) setPendingDrag({ blockId, changes, conflicts: err.overlapping });
+      else setDragError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  const confirmOverlappingDrag = async () => {
+    if (!pendingDrag) return;
+    setDragError("");
+    try {
+      await updateTimeBlock(pendingDrag.blockId, pendingDrag.changes, { allowOverlap: true });
+      setPendingDrag(undefined);
+    } catch (err) {
+      setDragError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const weekStart = startOfWeek(parseISO(selectedDate), { weekStartsOn });
@@ -67,6 +97,33 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
       </HeaderActions>
       <div className="page-intro"><h2 className="page-title">{t("timeline")}</h2><p className="muted">{t("timelineHint")}</p></div>
       {dragError && <p className="error-message" role="alert">{dragError}</p>}
+      {pendingDrag && (() => {
+        const draggedBlock = data.timeBlocks.find((block) => block.id === pendingDrag.blockId);
+        const proposed = { startMinutes: pendingDrag.changes.startMinutes ?? draggedBlock?.startMinutes ?? 0, durationMinutes: draggedBlock?.durationMinutes ?? 0 };
+        return <div className="overlap-conflict-detail timeline-overlap-warning" role="alert">
+          <div className="inline-actions">
+            <span className="pill pill-warning">{t("timeBlockOverlapWarning")}</span>
+            <button type="button" className="button secondary compact" onClick={() => setPendingDrag(undefined)}>{t("adjustTime")}</button>
+            <button type="button" className="button primary compact" onClick={() => void confirmOverlappingDrag()}>{t("saveAnyway")}</button>
+          </div>
+          <p className="muted small">{t("timeBlockOverlapProposedTime", { start: timeLabel(proposed.startMinutes), end: timeLabel(proposed.startMinutes + proposed.durationMinutes) })}</p>
+          <ul>
+            {pendingDrag.conflicts.map((conflictBlock) => {
+              const overlap = intersectionOf(proposed, conflictBlock);
+              const conflictTitle = taskById.get(conflictBlock.taskId)?.title ?? t("timeBlockOverlapUnknownTask");
+              return <li key={conflictBlock.id} data-testid="overlap-conflict">
+                {t("timeBlockOverlapConflictLine", {
+                  title: conflictTitle,
+                  start: timeLabel(conflictBlock.startMinutes),
+                  end: timeLabel(conflictBlock.startMinutes + conflictBlock.durationMinutes),
+                  overlapStart: timeLabel(overlap.startMinutes),
+                  overlapEnd: timeLabel(overlap.endMinutes),
+                })}
+              </li>;
+            })}
+          </ul>
+        </div>;
+      })()}
 
       {mode === "day" && <div className="timeline-day-layout">
         <section className="panel timeline-grid-panel" aria-labelledby="timeline-day-heading">
@@ -85,7 +142,24 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
                 onDrop={(event) => { const id = event.dataTransfer.getData("text/time-block-id"); if (id) void moveBlock(id, { date: selectedDate, startMinutes: minutes }); }}>
                 {minutes % 60 === 0 && <span className="timeline-hour-label">{timeLabel(minutes)}</span>}
               </div>)}
-              {blocksOn(selectedDate).map((block) => <div key={block.id} className="timeline-block-position" style={{ top: (block.startMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX, height: block.durationMinutes / ROW_MINUTES * ROW_HEIGHT_PX }}><BlockChip block={block} /></div>)}
+              {computeDaySegments(blocksOn(selectedDate)).map((segment) => {
+                const top = (segment.startMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX;
+                const height = (segment.endMinutes - segment.startMinutes) / ROW_MINUTES * ROW_HEIGHT_PX;
+                if (segment.blockIds.length === 1) {
+                  const soloBlock = data.timeBlocks.find((block) => block.id === segment.blockIds[0]);
+                  if (!soloBlock) return null;
+                  return <div key={`${soloBlock.id}-${segment.startMinutes}`} className="timeline-block-position" style={{ top, height }}><BlockChip block={soloBlock} /></div>;
+                }
+                // Two or more Time Blocks are simultaneously active: rendering them individually would
+                // occlude each other, so this segment gets one distinct "overlap group" chip instead.
+                return <div key={`overlap-${segment.startMinutes}-${segment.endMinutes}`} className="timeline-block-position" style={{ top, height }}>
+                  <button type="button" className="time-block-chip overlap-group" onClick={() => setOverlapSegment(segment)}>
+                    <strong>{t("timeBlockOverlapGroupLabel", { count: segment.blockIds.length })}</strong>
+                    <span>{timeLabel(segment.startMinutes)}–{timeLabel(segment.endMinutes)}</span>
+                  </button>
+                </div>;
+              })}
+              {showCurrentTimeLine && <div className="timeline-now-line" data-testid="timeline-now-line" style={{ top: (nowMinutes - DAY_START_HOUR * 60) / ROW_MINUTES * ROW_HEIGHT_PX }} aria-hidden="true" />}
             </div>
           </div>
         </section>
@@ -95,6 +169,8 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
           {availableWork(selectedDate).length === 0 ? <div className="empty-state"><p>{t("noAvailableWork")}</p></div> : <div className="item-list">
             {availableWork(selectedDate).map((task) => <article key={task.id} className="item-copy" style={{ "--task-color": resolveTaskColor(task, data.areas) } as React.CSSProperties}>
               <button type="button" className="task-link" onClick={() => onOpenTask(task.id)}><span className="item-title"><i className="area-dot" aria-hidden="true" />{task.title}</span></button>
+              {/* Indicator only -- reuses the same blocksOn() query as the grid, never restricts adding more blocks (Issue #20). */}
+              {blocksOn(selectedDate).some((block) => block.taskId === task.id) && <span className="pill compact" data-testid={`has-block-${task.id}`}>{t("alreadyScheduled")}</span>}
               <button type="button" className="button secondary compact" onClick={() => setScheduling({ task, date: selectedDate })}>{t("scheduleAction")}</button>
             </article>)}
           </div>}
@@ -113,6 +189,38 @@ export function TimelineView({ weekStartsOn, initialDate = todayKey(), onOpenTas
       {editingBlock && taskById.get(editingBlock.taskId) && <TimeBlockDialog task={taskById.get(editingBlock.taskId)!} block={editingBlock} defaultDate={editingBlock.date} onClose={() => setEditingBlock(undefined)} onSaved={() => setEditingBlock(undefined)} />}
       {scheduling && <TimeBlockDialog task={scheduling.task} defaultDate={scheduling.date} defaultStartMinutes={scheduling.startMinutes} onClose={() => setScheduling(undefined)} onSaved={() => setScheduling(undefined)} />}
       {pickerDate && <TaskPickerDialog date={pickerDate} tasks={availableWork(pickerDate)} areas={data.areas} onClose={() => setPickerDate(undefined)} onPick={(task) => { setScheduling({ task, date: pickerDate }); setPickerDate(undefined); }} />}
+      {overlapSegment && <OverlapGroupDialog segment={overlapSegment} blocks={data.timeBlocks} taskById={taskById} onOpenTask={onOpenTask} onClose={() => setOverlapSegment(undefined)} />}
     </div>
+  );
+}
+
+/**
+ * Detail popup for a Day view "overlap group" chip (Timeline occlusion fix): lists every Task
+ * active during that specific overlap segment, each with its own full start-end range (not just
+ * the segment's clipped range), and lets the user jump straight to editing that Task.
+ */
+function OverlapGroupDialog({ segment, blocks, taskById, onOpenTask, onClose }: { segment: DaySegment; blocks: TimeBlock[]; taskById: Map<string, Task>; onOpenTask: (taskId: string) => void; onClose: () => void }) {
+  const { t } = useTranslation();
+  const segmentBlocks = segment.blockIds.map((id) => blocks.find((block) => block.id === id)).filter((block): block is TimeBlock => !!block);
+  return (
+    <Dialog labelledBy="overlap-group-dialog-title" onClose={onClose}>
+      <div className="dialog-body">
+        <DialogHeader id="overlap-group-dialog-title" title={t("timeBlockOverlapGroupTitle")}
+          hint={t("timeBlockOverlapProposedTime", { start: formatMinutesAsTime(segment.startMinutes), end: formatMinutesAsTime(segment.endMinutes) })}
+          onClose={onClose} closeLabel={t("close")} />
+        <ul className="overlap-group-list">
+          {segmentBlocks.map((block) => {
+            const task = taskById.get(block.taskId);
+            if (!task) return null;
+            return <li key={block.id}>
+              <button type="button" className="task-link" data-testid="overlap-group-task" onClick={() => { onOpenTask(task.id); onClose(); }}>
+                <strong>{task.title}</strong>
+                <span>{formatMinutesAsTime(block.startMinutes)}–{formatMinutesAsTime(block.startMinutes + block.durationMinutes)}</span>
+              </button>
+            </li>;
+          })}
+        </ul>
+      </div>
+    </Dialog>
   );
 }

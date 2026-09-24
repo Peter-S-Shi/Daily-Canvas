@@ -37,15 +37,8 @@ function validateCore(record: UnknownRecord): void {
     // Restore must never let an imported backup bypass the same 15-minute grid / day-boundary invariant createTimeBlock enforces.
     validateTimeBlockInput({ startMinutes: block.startMinutes, durationMinutes: block.durationMinutes });
   });
-  const timeBlocksByDate = new Map<string, UnknownRecord[]>();
-  for (const item of timeBlocks) { const block = item as UnknownRecord; const date = String(block.date); timeBlocksByDate.set(date, [...(timeBlocksByDate.get(date) ?? []), block]); }
-  for (const [date, blocksOnDate] of timeBlocksByDate) {
-    for (let i = 0; i < blocksOnDate.length; i++) for (let j = i + 1; j < blocksOnDate.length; j++) {
-      const a = blocksOnDate[i], b = blocksOnDate[j];
-      const aStart = a.startMinutes as number, aEnd = aStart + (a.durationMinutes as number), bStart = b.startMinutes as number, bEnd = bStart + (b.durationMinutes as number);
-      if (aStart < bEnd && bStart < aEnd) throw new Error(`Time Blocks overlap on ${date}.`);
-    }
-  }
+  // Overlapping Time Blocks are intentionally accepted as valid data on restore (Issue #21):
+  // overlap is a warned choice the user can make at save time, not a corruption signal.
   meditations.forEach((item, index) => {
     const meditation = item as UnknownRecord;
     if (typeof meditation.sortOrder !== "number" || !Number.isFinite(meditation.sortOrder) || !Number.isInteger(meditation.sortOrder) || meditation.sortOrder < 0) throw new Error(`Meditation entry ${index + 1} has an invalid sort order.`);

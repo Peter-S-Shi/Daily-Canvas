@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../db";
-import { printPage } from "../desktop/desktopAdapter";
+import { printPage, revealInFolder } from "../desktop/desktopAdapter";
 import { buildMeditationExportModel, downloadMeditationDocx, meditationPageStyles, type MeditationExportModel, type MeditationPageSize, type MeditationPageStyle, type MeditationTextSize } from "../services/meditationExportService";
 import { countMeditationUnits, createMeditation, deleteMeditation, reorderMeditations, updateMeditation, validateMeditationContent } from "../services/meditationService";
 import type { MeditationEntry } from "../types";
@@ -40,25 +40,36 @@ function SortableMeditationCard({ entry, selected, highlighted, selecting, onSel
 
 export function MeditationPrintDocument({ model }: { model: MeditationExportModel }) {
   const printPageSize = model.pageSize === "a4" ? "A4" : "Letter";
-  return <><style data-meditation-page-size={model.pageSize}>{`@page { size: ${printPageSize}; margin: 0; }`}</style><div className={`meditation-print-document size-${model.pageSize} text-${model.textSize}`} style={{ "--paper": meditationPageStyles[model.pageStyle].background, "--paper-ink": meditationPageStyles[model.pageStyle].ink } as React.CSSProperties}><section className="meditation-cover"><h1>{model.chineseTitle}</h1>{model.englishTitle && <p>{model.englishTitle}</p>}</section><section className="meditation-pages">{model.entries.map((entry) => <article key={entry.id}><div>{entry.content}</div>{model.showDates && <time>{new Intl.DateTimeFormat(model.locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(entry.createdAt))}</time>}</article>)}</section></div></>;
+  return <><style data-meditation-page-size={model.pageSize}>{`@page { size: ${printPageSize}; margin: 0; }`}</style><div className={`meditation-print-document size-${model.pageSize} text-${model.textSize}`} style={{ "--paper": meditationPageStyles[model.pageStyle].background, "--paper-ink": meditationPageStyles[model.pageStyle].ink } as React.CSSProperties}><section className="meditation-cover"><h1>{model.mainTitle}</h1>{model.subtitle && <p>{model.subtitle}</p>}</section><section className="meditation-pages">{model.entries.map((entry) => <article key={entry.id}><div>{entry.content}</div>{model.showDates && <time>{new Intl.DateTimeFormat(model.locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(entry.createdAt))}</time>}</article>)}</section></div></>;
 }
+
+/** Word/Markdown exports are app-controlled (the app writes the file itself), so completion is a fact we can report; the OS Print dialog below is not -- it never claims to know a saved path. */
+type ExportCompletion = { status: "idle" } | { status: "success"; fileName: string; path?: string } | { status: "cancelled" };
 
 function MeditationExportPreview({ entries, selectedIds, onClose }: { entries: MeditationEntry[]; selectedIds?: string[]; onClose: () => void }) {
   const { t, i18n } = useTranslation();
-  const [chineseTitle, setChineseTitle] = useState("我的感悟");
-  const [englishTitle, setEnglishTitle] = useState("Meditations");
+  const [mainTitle, setMainTitle] = useState(() => t("meditations"));
+  const [subtitle, setSubtitle] = useState("");
   const [showDates, setShowDates] = useState(true);
   const [pageStyle, setPageStyle] = useState<MeditationPageStyle>("ivory");
   const [pageSize, setPageSize] = useState<MeditationPageSize>("a4");
   const [textSize, setTextSize] = useState<MeditationTextSize>("standard");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
-  const model = buildMeditationExportModel(entries, { selectedIds, chineseTitle, englishTitle, showDates, pageStyle, pageSize, textSize, locale: i18n.language });
+  const [completion, setCompletion] = useState<ExportCompletion>({ status: "idle" });
+  const model = buildMeditationExportModel(entries, { selectedIds, mainTitle, subtitle, showDates, pageStyle, pageSize, textSize, locale: i18n.language });
   const downloadWord = async () => {
-    setGenerating(true); setError("");
-    try { await downloadMeditationDocx(model); } catch (reason) { setError(reason instanceof Error ? reason.message : t("wordExportError")); } finally { setGenerating(false); }
+    setGenerating(true); setError(""); setCompletion({ status: "idle" });
+    try {
+      const result = await downloadMeditationDocx(model);
+      setCompletion(result.saved ? { status: "success", fileName: result.fileName, path: result.path } : { status: "cancelled" });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("wordExportError"));
+    } finally {
+      setGenerating(false);
+    }
   };
-  return <Dialog labelledBy="meditation-export-title" onClose={onClose} className="dialog-wide meditation-export-modal"><div className="dialog-body"><div className="no-print"><DialogHeader id="meditation-export-title" eyebrow={t("exportPreview")} title={t(selectedIds ? "exportSelected" : "exportAll")} hint={t("exportCount", { count: model.entries.length })} onClose={onClose} closeLabel={t("close")}/></div><div className="meditation-export-layout"><aside className="export-controls no-print"><label className="field"><span>{t("chineseCoverTitle")}</span><input value={chineseTitle} onChange={(event) => setChineseTitle(event.target.value)}/></label><label className="field"><span>{t("englishCoverTitle")}</span><input value={englishTitle} onChange={(event) => setEnglishTitle(event.target.value)}/></label><label className="toggle-row"><input type="checkbox" checked={showDates} onChange={(event) => setShowDates(event.target.checked)}/>{t("showDates")}</label><label className="field"><span>{t("pageSize")}</span><select value={pageSize} onChange={(event) => setPageSize(event.target.value as MeditationPageSize)}><option value="a4">A4</option><option value="letter">Letter</option></select></label><label className="field"><span>{t("textSize")}</span><select value={textSize} onChange={(event) => setTextSize(event.target.value as MeditationTextSize)}><option value="compact">{t("compact")}</option><option value="standard">{t("standard")}</option><option value="large">{t("large")}</option></select></label><fieldset className="export-styles"><legend>{t("backgroundPreset")}</legend>{(Object.keys(meditationPageStyles) as MeditationPageStyle[]).map((style) => <label key={style} className={pageStyle === style ? "active" : ""} style={{ background: meditationPageStyles[style].background }}><input type="radio" name="page-style" value={style} checked={pageStyle === style} onChange={() => setPageStyle(style)}/><span>{t(`pageStyle_${style}`)}</span></label>)}</fieldset><div className="export-actions"><button type="button" className="button primary" onClick={() => { void printPage(); }}>{t("printPdf")}</button><button type="button" className="button secondary" disabled={generating} onClick={downloadWord}>{generating ? t("generatingWord") : t("downloadWord")}</button></div>{error && <p className="error-message" role="alert">{error}</p>}</aside><MeditationPrintDocument model={model}/></div></div></Dialog>;
+  return <Dialog labelledBy="meditation-export-title" onClose={onClose} className="dialog-wide meditation-export-modal"><div className="dialog-body"><div className="no-print"><DialogHeader id="meditation-export-title" eyebrow={t("exportPreview")} title={t(selectedIds ? "exportSelected" : "exportAll")} hint={t("exportCount", { count: model.entries.length })} onClose={onClose} closeLabel={t("close")}/></div><div className="meditation-export-layout"><aside className="export-controls no-print"><label className="field"><span>{t("mainTitleLabel")}</span><input value={mainTitle} onChange={(event) => setMainTitle(event.target.value)}/></label><label className="field"><span>{t("subtitleLabel")}</span><input value={subtitle} onChange={(event) => setSubtitle(event.target.value)}/></label><label className="toggle-row"><input type="checkbox" checked={showDates} onChange={(event) => setShowDates(event.target.checked)}/>{t("showDates")}</label><label className="field"><span>{t("pageSize")}</span><select value={pageSize} onChange={(event) => setPageSize(event.target.value as MeditationPageSize)}><option value="a4">A4</option><option value="letter">Letter</option></select></label><label className="field"><span>{t("textSize")}</span><select value={textSize} onChange={(event) => setTextSize(event.target.value as MeditationTextSize)}><option value="compact">{t("compact")}</option><option value="standard">{t("standard")}</option><option value="large">{t("large")}</option></select></label><fieldset className="export-styles"><legend>{t("backgroundPreset")}</legend>{(Object.keys(meditationPageStyles) as MeditationPageStyle[]).map((style) => <label key={style} className={pageStyle === style ? "active" : ""} style={{ background: meditationPageStyles[style].background }}><input type="radio" name="page-style" value={style} checked={pageStyle === style} onChange={() => setPageStyle(style)}/><span>{t(`pageStyle_${style}`)}</span></label>)}</fieldset><div className="export-actions"><button type="button" className="button primary" onClick={() => { setCompletion({ status: "idle" }); void printPage(); }}>{t("printPdf")}</button><button type="button" className="button secondary" disabled={generating} onClick={downloadWord}>{generating ? t("generatingWord") : t("downloadWord")}</button></div>{error && <p className="error-message" role="alert">{error}</p>}{completion.status === "success" && <p className="status-message" role="status">{t("exportComplete")} — {t("exportSavedAs", { fileName: completion.fileName })}{completion.path && <button type="button" className="link-button" onClick={() => void revealInFolder(completion.path!)}>{t("showInFolder")}</button>}</p>}{completion.status === "cancelled" && <p className="muted" role="status">{t("exportCancelled")}</p>}</aside><MeditationPrintDocument model={model}/></div></div></Dialog>;
 }
 
 export function MeditationsView({ selectedId = "" }: { selectedId?: string }) {

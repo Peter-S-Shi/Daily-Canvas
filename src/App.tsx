@@ -20,6 +20,7 @@ import { TodayView } from "./components/TodayView";
 import { InboxView } from "./components/InboxView";
 import { QuickCaptureDialog } from "./components/QuickCaptureDialog";
 import { SearchDialog } from "./components/SearchDialog";
+import { TimeBlockDialog } from "./components/timeline/TimeBlockDialog";
 import { TimelineView } from "./components/timeline/TimelineView";
 import { db, initializeDb, resetDatabase } from "./db";
 import { calendarEvidenceFor, reflectionFor, taskDetailFor, timelineFor, useWorkspaceNavigation } from "./navigation/useWorkspaceNavigation";
@@ -40,6 +41,7 @@ export default function App() {
   const { t, i18n } = useTranslation();
   const navigation = useWorkspaceNavigation();
   const [editing, setEditing] = useState<Editing>();
+  const [schedulingTask, setSchedulingTask] = useState<Task>();
   const [quickCapture, setQuickCapture] = useState(false);
   const [searching, setSearching] = useState(false);
   const [startup, setStartup] = useState<"loading" | "ready" | "error">("loading");
@@ -95,7 +97,9 @@ export default function App() {
       {section === "periodReview" && <ReviewView weekStartsOn={settings.weekStartsOn} onInspectDate={(date) => navigation.navigate(calendarEvidenceFor(date))}/>}
       {navigation.workspace.id === "settings" && <SettingsView settings={settings} section={section} nav={<SectionNav navigation={navigation} variant="list"/>}/>}
     </DesktopShell>
-    {editing && <TaskEditor task={editing.task} initialMode={editing.mode} initialTitle={editing.initialTitle} onSaved={async () => { if (editing.captureId) await deleteCapture(editing.captureId); }} onClose={() => setEditing(undefined)}/>}
+    {editing && <TaskEditor task={editing.task} initialMode={editing.mode} initialTitle={editing.initialTitle} onSaved={async () => { if (editing.captureId) await deleteCapture(editing.captureId); }} onSaveAndSchedule={(task) => setSchedulingTask(task)} onClose={() => setEditing(undefined)}/>}
+    {/* Save & Schedule (Issue #20): reuses the existing Time Block dialog entry point instead of a new modal, and never conflates the Task's own Schedule with a calendar Time Block placement. */}
+    {schedulingTask && <TimeBlockDialog task={schedulingTask} defaultDate={todayKey()} onClose={() => setSchedulingTask(undefined)} onSaved={() => setSchedulingTask(undefined)}/>}
     {quickCapture && <QuickCaptureDialog onClose={() => setQuickCapture(false)} onFullTask={(title) => { setQuickCapture(false); setEditing({ initialTitle: title }); }}/>}
     {searching && <SearchDialog onClose={() => setSearching(false)} onSelect={selectSearchResult}/>}
     {pendingLifecycle && pendingTask && <MilestoneCelebration task={pendingTask} lifecycle={pendingLifecycle}/>}
