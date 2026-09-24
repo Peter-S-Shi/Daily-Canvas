@@ -2,13 +2,13 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–14 均已完成，包括 Tauri 2 Windows 桌面基础、冻结的桌面 UI 蓝图、桌面 UI 迁移、首批 v1.0 捕获与任务增强能力、Day/Week Timeline、Time Block 与本地提醒、Reflection Templates、On This Day、本地导出、自动备份与 GitHub Release 更新提示，以及一轮覆盖 migration/backup、可访问性、性能与 CI 验证覆盖率的发布加固。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。v1.0 Feature Complete Gate 已被接受，Feature Freeze 已生效；下一步为 Milestone 15（Release Candidate）。
+当前代码版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–14 均已完成，包括 Tauri 2 Windows 桌面基础、冻结的桌面 UI 蓝图、桌面 UI 迁移、首批 v1.0 捕获与任务增强能力、Day/Week Timeline、Time Block 与本地提醒、Reflection Templates、On This Day、本地导出、自动备份与 GitHub Release 更新提示、一轮覆盖 migration/backup、可访问性、性能与 CI 验证覆盖率的发布加固（Milestone 14-A），以及一次 Human Using Experience Review 驱动的问题修复与加固收尾（Milestone 14-B：Time Block 精度修复、感悟功能问题修复、Daily Work 体验加固与最终 v1 加固）。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。v1.0 Feature Complete Gate 已被接受，Feature Freeze 已生效；下一步为 Milestone 15（Release Candidate）。
 
 ## 当前开发状态
 
 此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）已全部完成，**Milestone 14：产品加固与全量回归**在不新增功能的前提下，把整个系统收敛到发布级的正确性、韧性、可访问性、性能与验证证据。当前无已知 release blocker。下一步为 Milestone 15（Release Candidate）。
+已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）已全部完成，**Milestone 14：产品加固与全量回归**在不新增功能的前提下，把整个系统收敛到发布级的正确性、韧性、可访问性、性能与验证证据（PR #10）。随后的 **Human Using Experience Review** 以真实用户视角实际使用了打包后的应用，并驱动了一轮合并进 `main` 的收尾工作：PR #11 修复了 Time Block 时长精度的阻塞问题，PR #26 修复了感悟的全选/清除全部与打印分页阻塞问题，PR #27（"H1"）加固了 Daily Work 体验（Tasks 批量整理、Areas 下钻、按类型区分的状态措辞、本地 Notes/Checklist 编辑、Today↔Floating 可发现性），PR #28（"H2"）完成了最终 v1 加固（Quota Review 回溯正确性、GitHub Release 404 与网络故障的区分、包含整分钟 Start 精度与 Day 视图重叠分组的 Timeline 体验、把重叠从拒绝改为警告、浅色主题侧边栏，以及语言无关的感悟导出）。当前无已知 release blocker。下一步为 Milestone 15（Release Candidate）。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -30,9 +30,10 @@ Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、
 
 ### Timeline 与执行
 
-- 把真实任务放进可选的 Day 或 Week Timeline，粒度为 15 分钟，并配有强制的键盘可达 日期/开始时间/时长/提醒 编辑入口（拖放只是可选的高效方式，不是唯一入口）。
+- 把真实任务放进可选的 Day 或 Week Timeline，可视规划网格粒度为 15 分钟，并配有强制的键盘可达 日期/开始时间/时长/提醒 编辑入口，其中开始时间与时长均以整分钟精度存储、不做网格吸附（拖放只是可选的高效方式，不是唯一入口）。
 - 查看某一天的 Available Work，全部来自现有的固定、浮动与配额任务，不会建立第二份任务数据库。
 - Time Block 与计划/循环/配额语义保持分离：删除 Time Block 不会删除任务，Time Block 结束也不会自动完成任务。
+- 保存与已有 Time Block 冲突的时间是一次明确的知情选择：详细警告会列出冲突任务的标题、它自身的时间范围、提议的时间，以及精确计算出的重叠区间（支持同时列出多个冲突），并提供“调整时间” / “仍然保存”两个选项——“仍然保存”绝不会修改另一个 Time Block。Day 视图会把真正重叠的已保存 Time Block 分组为可点击的“N 个任务重叠”提示，而不是层叠遮挡显示。
 - 当某一天存在 Time Block 时，Today 会出现轻量、可选的“今日计划”摘要。
 - 获得本地、应用内的提醒（关闭、开始时、提前 5/10/15/30/60 分钟），并在应用关闭期间错过提醒时，重新打开后做克制的补充提示。
 - 使用固定的桌面快捷键集合（搜索、快速记录、今天、关闭）以及设置中只读的快捷键说明。
@@ -68,7 +69,7 @@ Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、
 ### 桌面可靠性与更新提示
 
 - 自动轮换本地备份，默认开启：每个自然日最多一次，保留最近 7 份，在设置中显示位置与历史，可通过与手动导入相同的流程恢复。
-- 在设置 → 关于与更新中按需检查已安装版本与最新 GitHub Release 的对比状态，并提供手动“查看发布页面”跳转——绝不静默下载或自动安装。
+- 在设置 → 关于与更新中按需检查已安装版本与最新 GitHub Release 的对比状态，并提供手动“查看发布页面”跳转——绝不静默下载或自动安装。检查会区分“已是最新”“有新版本”“尚无已发布的 Release”（“No published release is available yet”）、真正的网络/超时/DNS 故障，以及其他检查失败，因此尚未发布 Release 的仓库不会被误判为网络问题。
 
 ### 数据所有权与个性化
 
@@ -178,6 +179,6 @@ pnpm desktop:bundle    # 按用户安装的 NSIS 安装包（测试版本号由 
 
 核心个人数据必须继续保存在本地，并且产品在没有账号、没有云服务时仍可完整使用。
 
-计划中的版本更新识别可以向 GitHub Releases 发起非常窄的非个人数据请求，仅用于比较版本号。它不得上传任务、习惯、反思、感悟、使用行为统计或其它私人内容。
+版本更新识别功能会向 GitHub Releases 发起非常窄的非个人数据请求，仅用于比较版本号，且仅在按需时触发（打开页面或点击“检查更新”，绝不定时或在启动时触发）。它只读取标签名与发布页面地址，绝不上传任务、习惯、反思、感悟、使用行为统计或其它私人内容，也绝不静默下载或安装任何内容。
 
 未来任何远程、同步或 AI 能力都必须单独立项，并且不能悄悄取消 local-only 使用方式。

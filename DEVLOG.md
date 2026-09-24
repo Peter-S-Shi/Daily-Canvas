@@ -2,6 +2,17 @@
 
 ## Milestone 14: Product Hardening and Full Regression — Completed
 
+### 2026-09-24 — Milestone 14-B: Human Using Experience Review closeout (PRs #11, #26, #27, #28)
+
+A Human Using Experience Review exercised the packaged desktop application the way a real user would, in addition to the code-driven M14-A audit below, and surfaced blockers and hardening gaps merged into `main` through four PRs; no product scope was reopened without a recorded decision.
+
+- **PR #11 — Time Block duration minute-precision blocker.** Duration was being forced onto the 15-minute grid, so an intended 1-minute-precision duration could not be saved; fixed so duration is whole-minute precision with no snapping.
+- **PR #26 — Meditations blocker repair.** Select All/Clear All did not behave correctly and print pagination was broken; both fixed.
+- **PR #27 — "H1" Daily Work UX hardening.** Tasks bulk organization, Areas drill-down, type-aware state grammar, local Notes/Checklist editing, and Today↔Floating discoverability.
+- **PR #28 — "H2" final v1 hardening.** Quota Review retrospective correctness (Issue #14); GitHub Release 404-vs-network-failure state distinction (Issue #15); Timeline UX hardening including Time Block **Start** becoming whole-minute precision with no snapping -- matching PR #11's duration fix -- plus Day-view overlap grouping into an "N tasks overlapping" chip (Issue #20); Time Block overlap changed from a hard rejection to an explicit `Adjust time` / `Save anyway` warned choice that never mutates the other block (Issue #21); Light Theme sidebar (Issue #22); language-agnostic Meditation export (Issue #23).
+- Final human acceptance was given after PR #28 merged. The authoritative Time Block contract as of this closeout: Start and Duration both whole-minute precision with no 15-minute snapping (the Timeline view's `ROW_MINUTES = 15` remains a purely visual/layout grid); overlap is a warned choice, never a silent rejection.
+- **Post-merge CI diagnostic.** A manual `workflow_dispatch` run on `main` at `f8bf7e48e39bd9184c98395aa8927d8c3f7bd8ce` (run `36072432474`) failed Core/PR Gate. Diagnosis confirmed the sole cause was one stale test in `src/services/backupService.test.ts` still asserting the superseded 15-minute-grid Start-rejection rule against the now-final whole-minute contract -- not a production defect; `migrateBackup`'s validation (`validateTimeBlockInput` in `timeBlockService.ts`) already implemented the correct whole-minute contract, delivered by PR #28. This closeout (`milestone/14b-closeout-docs-and-ci-fix`) replaces that one obsolete test assertion and synchronizes README.md, README.zh-CN.md, ROADMAP.md, PROJECT_STATUS.md, ARCHITECTURE.md, and this file to the state described above.
+
 ### 2026-09-23 — Release-hardening audit, orphan-data fixes, and fail-closed CI routing (PR #10)
 
 No new features; Feature Freeze active throughout. Built a release-hardening evidence matrix from `ROADMAP.md`'s M14 exit criteria, `PROJECT_STATUS.md`'s Known Risks, `ARCHITECTURE.md`'s testing boundaries, and every M1-M13 promised capability, then audited systematically against it.
@@ -64,6 +75,8 @@ Five seams confirmed independently before merge, all fixed with regression tests
 - Packaged-app smoke now actually switches Timeline to Week mode and verifies the seven-day grid, alongside the existing Day/shortcut/notification/v8-round-trip evidence.
 
 Verification: 114/114 automated tests across 19 suites, TypeScript checking, production build; `cargo check` and a release Windows/MSVC Tauri build pass locally with the notification plugin and capability; manually verified in a live browser preview (a 23:30-24:00 block created, visible, and correct in Week mode) with zero console errors. The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop (Windows/MSVC -- 70/70 packaged-app smoke checks, 17/17 installer/upgrade smoke checks), and PR Gate. Milestone 13 is next and has not started.
+
+> **Note added 2026-09-24 (Milestone 14-B).** The Time Block Start-grid and overlap-rejection rules described in the Milestone 12 entries below were the actual, correct contract at Milestone 12's completion. They were later superseded during the Milestone 14-B closeout above: Start is now whole-minute precision with no snapping (matching duration, fixed by PR #11), and overlap is a warned `Adjust time` / `Save anyway` choice rather than a rejection, with the Day view grouping overlapping blocks into an "N tasks overlapping" chip. The original Milestone 12 entries are left unedited below as historical record.
 
 ## Milestone 11: Capture and Task Enrichment — Completed
 

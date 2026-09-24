@@ -4,7 +4,7 @@
 
 Daily Canvas is a free, account-free, local-first, single-user personal planning, habit, reflection, review, and personal-preservation application.
 
-The current implementation is v0.7.0 plus the completed Milestone 11–13 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. Milestone 13 completed the approved v1.0 reflection/preservation and desktop-native capability set on top of this accepted foundation.
+The current implementation is v0.7.0 plus the completed Milestone 11–14 capability set: the same React/Vite application and Dexie/IndexedDB domain model, packaged as a Tauri 2 Windows desktop application. Milestone 13 completed the approved v1.0 reflection/preservation and desktop-native capability set on top of this accepted foundation, and Milestone 14 (including the Milestone 14-B Human Using Experience Review closeout: PRs #11, #26, #27, #28) converged the system on release-level correctness without reopening product scope.
 
 The architecture supports five connected layers:
 
@@ -39,7 +39,7 @@ These layers share domain entities and services rather than becoming isolated fe
 
 ### 2.2 Narrow Network Exception for Update Awareness
 
-v1.0 may make a narrow outbound request to GitHub Releases for stable-version metadata.
+v1.0 makes a narrow outbound request to GitHub Releases for stable-version metadata (Settings -> About & Updates, on demand only; see §16).
 
 That request must:
 
@@ -217,7 +217,7 @@ A Task may belong to one optional Area.
 
 Current Task semantics remain authoritative: task kind, Area ownership, color, schedule, lifecycle, check-ins, rewards, and history belong to the Task layer.
 
-v1.0 may extend Task detail with fields such as notes and estimated duration, but those additions must preserve existing identity and history.
+v1.0 extends Task detail with fields such as notes and estimated duration (Milestone 11), and those additions preserve existing identity and history.
 
 ### 5.3 One-Level Checklist
 
@@ -276,7 +276,7 @@ type Schedule = FixedSchedule | FloatingSchedule | QuotaSchedule;
 
 Current v0.7 recurrence supports once, daily, selected weekdays, and every-N-days interval rules.
 
-v1.0 will add richer recurrence while preserving the rule that recurrence describes when a Task is scheduled or available; it does not materialize unlimited future rows.
+v1.0 adds richer recurrence (Milestone 11: every-N-weeks with selected weekdays, and monthly day-of-month with short-month final-day fallback) while preserving the rule that recurrence describes when a Task is scheduled or available; it does not materialize unlimited future rows.
 
 ### Floating
 
@@ -316,6 +316,19 @@ The exact implementation may evolve, but these rules are stable:
 - completing a Task remains a domain action, not an automatic consequence of a block ending;
 - Timeline use is optional;
 - task duration estimates may assist placement but are not proof of actual time spent.
+
+**Visual grid vs. stored precision (final contract, Milestone 14-B).** These are two genuinely different concerns and must not be conflated:
+
+- The Timeline view (`TimelineView.tsx`, `ROW_MINUTES = 15`) renders a 15-minute row height / grid-line granularity. This is purely a rendering/layout detail.
+- The explicit Date/Start/Duration editor (`TimeBlockDialog.tsx`) stores both Start and Duration at whole-minute precision with no snapping onto that grid -- an off-grid start such as `09:01` is a valid, preserved value, exactly like duration already was since the Milestone 14-B minute-precision fix (PR #11) extended to Start (PR #28, Issue #20).
+
+**Overlap is a warned choice, not a rejection (final contract, Milestone 14-B, Issue #21).** Saving a Time Block that overlaps another on the same date no longer throws a hard rejection. Instead:
+
+- a detailed warning names each conflicting Task, that block's own time range, the proposed time, and the exact computed intersection interval, supporting multiple simultaneous conflicts;
+- the user is offered an explicit `Adjust time` (return to editing without saving) or `Save anyway` choice;
+- `Save anyway` commits only the block being saved and never mutates any other block;
+- intentional, saved overlap is therefore valid persisted and backup data (`backupService.ts` accepts it, per `validateTimeBlockInput` in `timeBlockService.ts`), not corrupt state to reject on restore.
+- The Day view additionally groups genuinely-overlapping saved blocks into a distinct, clickable "N tasks overlapping" chip rather than rendering them stacked and occluding each other; the chip opens a popup listing each conflicting Task's real time range with a jump-to-edit link.
 
 External calendar-provider synchronization is outside v1.0.
 
@@ -365,9 +378,9 @@ On This Day (`src/services/onThisDayService.ts`) is a derived resurfacing featur
 
 ## 11. Search Architecture
 
-Global Search should operate locally.
+Global Search operates locally (Milestone 11).
 
-Search may cover approved sources such as Task titles/notes, Area names, Reflection text, Meditations, and other explicitly supported local records.
+Search covers approved sources: Task titles/notes, Area names, Daily Reflection text, and Meditations; unresolved Inbox captures are explicitly excluded.
 
 Rules:
 
@@ -427,7 +440,7 @@ Current v0.7 rules remain authoritative:
 - print/PDF and editable Word generation remain local;
 - export output is derived and does not mutate source entries.
 
-Global Search and On This Day may surface Meditations only if the approved product design explicitly includes them; they must never rewrite or duplicate the source collection.
+Global Search and On This Day both surface Meditations (approved and delivered, Milestones 11 and 13 respectively); neither ever rewrites or duplicates the source collection.
 
 ---
 
@@ -486,7 +499,7 @@ Reminder scheduling logic should remain separate from UI components and shell AP
 
 ### Keyboard shortcuts
 
-v1.0 should prioritize a small set of high-value shortcuts such as Quick Capture, Global Search, Today navigation, New Task, and closing transient surfaces.
+v1.0 ships a small, frozen set of high-value shortcuts (Milestone 12): Global Search (`Ctrl/Cmd+K`), Quick Capture (`Ctrl/Cmd+Shift+K`), Today navigation (`Ctrl/Cmd+1`), and `Escape` to close the active dialog. All are guarded against firing while an editable element is focused. Settings -> Shortcuts is a read-only reference; no shortcut customization was added.
 
 Do not create a large shortcut-customization subsystem unless later evidence justifies it.
 
@@ -503,12 +516,22 @@ query stable GitHub Release metadata (GET /repos/Peter-S-Shi/Daily-Canvas/releas
       ↓
 compare semantic versions (compareVersions)
       ↓
-Up to date / Update available / Unable to check
+Up to date / Update available / No published Release / Network failure / Check failed
       ↓
 View Release (opens the release URL via the scoped tauri-plugin-opener)
 ```
 
-The check runs only when Settings -> About & Updates is opened or "Check for updates" is clicked -- never on a timer, never at startup, matching frozen Decision D4's staging discipline (the page was only added once genuinely functional). It reads only the tag name and release URL -- no other repository or personal metadata. Boundaries, all enforced:
+The check runs only when Settings -> About & Updates is opened or "Check for updates" is clicked -- never on a timer, never at startup, matching frozen Decision D4's staging discipline (the page was only added once genuinely functional). It reads only the tag name and release URL -- no other repository or personal metadata.
+
+**State machine (final contract, Milestone 14-B, Issue #15).** `checkForUpdate` (`updateCheckService.ts`) distinguishes five outcomes, not three:
+
+- **Up to date** -- the installed version compares greater than or equal to the latest stable Release;
+- **Update available** -- a newer stable Release exists; offers "View Release";
+- **No published Release** -- the Releases API responded 404 (`ReleaseNotFoundError`), meaning this repository has not yet published a stable Release. This is a distinct, neutral state ("No published release is available yet"), never described as a network problem;
+- **Network failure** -- a genuine network/timeout/DNS failure (the request itself never got a response);
+- **Check failed** -- any other unexpected failure (HTTP 5xx, malformed JSON, etc.), reported generically rather than falsely as a network issue.
+
+Collapsing "no published Release" into the same state as a genuine network failure (the pre-Milestone-14-B behavior) was a confirmed defect; the states are now classified independently so each is accurate. Boundaries, all enforced:
 
 - no silent auto-download;
 - no silent application replacement;
@@ -529,7 +552,7 @@ AppSettings should continue to hold small global preferences, not large binary-l
 
 User-authored content must never be auto-translated merely because interface language changes.
 
-The desktop redesign may reorganize settings presentation, but should not silently change stored semantics.
+The desktop redesign reorganized settings presentation into an in-page category list (General, Appearance, Data & Backup, Shortcuts, About & Updates; Milestones 10 and 13) without silently changing stored semantics; any further reorganization must preserve that rule.
 
 ---
 

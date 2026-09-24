@@ -373,6 +373,8 @@ All exit criteria above are met.
 - The corrective implementation commit `9389c0b` passed GitHub Actions run `35820653400` with all tiers green: Classify, Core, Desktop Windows/MSVC (70/70 packaged-app smoke checks -- including the v8 backup restore/export round-trip, the Plan/Timeline Day and Week modes, the Settings/Shortcuts screen, shortcut behavior, and the notification boundary -- and 17/17 installer/upgrade/data-retention smoke checks), and PR Gate.
 - Feature Complete is not reached and Feature Freeze remains inactive; Milestone 13 plus the explicit Feature Complete Gate are still required.
 
+> **Superseded by Milestone 14-B (PR #11, PR #28/Issue #20).** The 15-minute-grid Start rule and hard overlap rejection described above were the actual, correct contract **at Milestone 12's completion**. They were later superseded during the Milestone 14-B closeout: Time Block Start is now whole-minute precision with no snapping (matching duration, itself fixed to whole-minute precision by PR #11), and an overlap is a warned `Adjust time` / `Save anyway` choice rather than a rejection, with the Day view grouping genuinely-overlapping saved blocks into an "N tasks overlapping" chip. The 15-minute grid survives only as the Timeline's visual row/layout granularity, not as a storage constraint. This note is historical annotation; it does not rewrite what Milestone 12 actually shipped at the time.
+
 ---
 
 ## Milestone 13: Reflection, Preservation, and Desktop Utilities — Completed
@@ -412,6 +414,8 @@ All exit criteria above are met.
 - A post-merge-readiness corrective pass fixed three confirmed seams: On This Day derived a Meditation's calendar day from a UTC ISO-string slice instead of the app's local-calendar-day convention (misfiling evening entries into the next local day); the native `list_auto_backups` command returned every `.json` file in the backup directory rather than only ones this app wrote (so retention pruning could delete unrelated files); and Reflection/Review Markdown export wrote an internal i18n key (e.g. `template_dailyCheckin`) or a raw internal id (`areaId`/`taskId`) into user-facing exported files instead of a resolved, human-readable name, now omitting the line entirely when a name cannot be resolved.
 
 All exit criteria above are met.
+
+> **Superseded by Milestone 14-B (PR #28, Issue #15).** The update-check states described above (Up to date / Update available / Unable to check, with a 404-no-Release response collapsed into the same "Unable to check" state as a real network failure) were the actual contract **at Milestone 13's completion**. This was later superseded: the check now distinguishes a 404/no-published-Release state ("No published release is available yet") from a genuine network/timeout/DNS failure and from any other check failure, so a repository with no published Release is never described as a network problem. This note is historical annotation; it does not rewrite what Milestone 13 actually shipped at the time.
 
 ---
 
@@ -483,6 +487,17 @@ During freeze:
 - Deferred, non-blocking: DST-transition scheduling has no dedicated regression test (inherent to JS local-`Date` semantics, not an app defect); no code signing yet; NSIS uninstall does not offer to delete user data (open product decision, not a defect); only a single Windows runner image and a per-user install are exercised; the recorded large-chunk build advisory is unchanged. None of these block Feature Complete or Feature Freeze.
 - 148/148 automated TypeScript/Vitest tests across 25 suites (up from 146/24 at Milestone 13), including new coverage for the `deleteTask`/restore orphan-cleanup fixes and an extended classifier self-test; 4 Rust unit tests (`src-tauri/src/lib.rs`, unchanged from Milestone 13's namespace-scoping coverage) continue to pass; TypeScript checking and the production build pass, with the existing large-chunk advisory unchanged.
 - No known release blocker remains. The v1.0 Feature Complete Gate is accepted and Feature Freeze is active (see "Feature Complete Gate" and "Feature Freeze Policy" above).
+
+### Milestone 14-B: Human Using Experience Review and blocker/hardening closeout — Completed
+
+A Human Using Experience Review exercised the packaged desktop application as a real user would, in addition to the code-driven M14-A audit above, and surfaced further blockers and hardening gaps merged into `main` through four PRs:
+
+- **PR #11** fixed a Time Block blocker: duration was forced onto the 15-minute grid, so an intended 1-minute-precision duration could not be saved. Duration is now whole-minute precision with no snapping.
+- **PR #26** repaired a Meditations blocker: Select All/Clear All did not behave correctly and print pagination was broken.
+- **PR #27 ("H1: Daily Work UX hardening")** added Tasks bulk organization, Areas drill-down, type-aware state grammar, local Notes/Checklist editing, and Today↔Floating discoverability.
+- **PR #28 ("H2: final v1 hardening")** corrected Quota Review retrospective correctness (Issue #14), distinguished a GitHub Release 404 (no published Release) from a genuine network failure (Issue #15), hardened Timeline UX (Issue #20: Time Block Start became whole-minute precision with no snapping, matching PR #11's duration fix, plus Day-view overlap grouping), changed Time Block overlap from a hard rejection to an explicit warned choice (Issue #21), added the Light Theme sidebar (Issue #22), and made Meditation export language-agnostic (Issue #23).
+- Final human acceptance was given after PR #28 merged. The authoritative Time Block contract is now: Start and Duration are both whole-minute precision, stored with no 15-minute snapping (the Timeline view keeps a 15-minute grid purely as a visual/layout detail, `TimelineView.tsx`'s `ROW_MINUTES`); an overlapping save is a warned, explicit `Adjust time` / `Save anyway` choice, never a silent rejection, and `Save anyway` never mutates the other block; the Day view groups genuinely-overlapping saved blocks into a clickable "N tasks overlapping" chip instead of rendering them stacked and occluding each other.
+- **Diagnostic fact:** a manual `workflow_dispatch` CI run on `main` at `f8bf7e48e39bd9184c98395aa8927d8c3f7bd8ce` (run `36072432474`) failed Core/PR Gate. The sole cause was one stale test in `src/services/backupService.test.ts` still asserting the superseded 15-minute-grid Start rejection rule against the now-final whole-minute contract -- not a production defect; `migrateBackup`'s validation already implemented the correct whole-minute contract via `validateTimeBlockInput`. The `milestone/14b-closeout-docs-and-ci-fix` closeout PR fixes that one test and synchronizes this document and the other macro docs to the state described above.
 
 ---
 
