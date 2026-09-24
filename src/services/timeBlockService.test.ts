@@ -22,23 +22,41 @@ describe("timeBlockService", () => {
     expect(b.durationMinutes).toBe(30);
   });
 
-  it("rounds a non-15-minute Task duration estimate onto the grid instead of producing an unsavable default (regression)", async () => {
-    // Task.estimatedMinutes accepts any positive integer, but a Time Block must land on the 15-minute grid.
+  it("takes a Task duration estimate at exact 1-minute precision instead of rounding it onto the 15-minute grid (M14-B blocker fix)", async () => {
+    // Duration is any positive whole number of minutes; only the start-time grid is 15-minute.
     const twenty = await saveTask(fixedTask({ title: "Twenty", estimatedMinutes: 20 }));
     const seven = await saveTask(fixedTask({ title: "Seven", estimatedMinutes: 7 }));
     const fortyOne = await saveTask(fixedTask({ title: "FortyOne", estimatedMinutes: 41 }));
     const a = await createTimeBlock({ taskId: twenty.id, date: "2026-01-05", startMinutes: 9 * 60 });
     const b = await createTimeBlock({ taskId: seven.id, date: "2026-01-05", startMinutes: 11 * 60 });
     const c = await createTimeBlock({ taskId: fortyOne.id, date: "2026-01-05", startMinutes: 13 * 60 });
-    expect(a.durationMinutes).toBe(15); // nearest 15-multiple to 20
-    expect(b.durationMinutes).toBe(15); // clamped to the minimum, never 0
-    expect(c.durationMinutes).toBe(45); // nearest 15-multiple to 41
+    expect(a.durationMinutes).toBe(20);
+    expect(b.durationMinutes).toBe(7);
+    expect(c.durationMinutes).toBe(41);
   });
 
-  it("rejects placement off the 15-minute grid", async () => {
+  it("rejects placement off the 15-minute grid, while allowing an on-grid start with a non-15-multiple duration", async () => {
     const task = await saveTask(fixedTask());
     await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 })).rejects.toThrow(/15-minute/);
-    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 20 })).rejects.toThrow(/15-minute/);
+    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 20 });
+    expect(block.durationMinutes).toBe(20);
+  });
+
+  it("accepts any positive whole-minute duration, including 1 minute, and rejects zero/negative/fractional durations", async () => {
+    const task = await saveTask(fixedTask());
+    const oneMinute = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 1 });
+    expect(oneMinute.durationMinutes).toBe(1);
+    const other = await saveTask(fixedTask({ title: "Other" }));
+    await expect(createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 11 * 60, durationMinutes: 0 })).rejects.toThrow(/positive whole number/i);
+    await expect(createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 11 * 60, durationMinutes: -5 })).rejects.toThrow(/positive whole number/i);
+    await expect(createTimeBlock({ taskId: other.id, date: "2026-01-05", startMinutes: 11 * 60, durationMinutes: 12.5 })).rejects.toThrow(/positive whole number/i);
+  });
+
+  it("still rejects a duration that would extend a block past the end of its day, even at 1-minute precision", async () => {
+    const task = await saveTask(fixedTask());
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 23 * 60 + 45, durationMinutes: 16 })).rejects.toThrow(/end of/i);
+    const fits = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 23 * 60 + 45, durationMinutes: 15 });
+    expect(fits.durationMinutes).toBe(15);
   });
 
   it("rejects Avoidance habits as Time Block work (frozen Decision D2)", async () => {
@@ -96,9 +114,10 @@ describe("timeBlockService", () => {
     expect(await db.tasks.get(task.id)).toBeDefined();
   });
 
-  it("MINUTE_STEP is 15 and validateTimeBlockInput surfaces the same grid rule used by createTimeBlock", () => {
+  it("MINUTE_STEP is 15 and validateTimeBlockInput surfaces the same start-grid rule used by createTimeBlock, independent of duration", () => {
     expect(MINUTE_STEP).toBe(15);
     expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).toThrow(/15-minute/);
+    expect(() => validateTimeBlockInput({ startMinutes: 0, durationMinutes: 20 })).not.toThrow();
   });
 
   it("marks a future block needsReview when Replan makes it no longer plausible, without moving or deleting it", async () => {

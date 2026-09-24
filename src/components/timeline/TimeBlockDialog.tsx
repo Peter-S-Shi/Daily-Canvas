@@ -48,7 +48,7 @@ export function TimeBlockDialog({ task, block, defaultDate, defaultStartMinutes,
       <form className="task-form" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <label className="field">{t("date")}<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
         <label className="field">{t("startTime")}<input type="time" step={MINUTE_STEP * 60} value={toTimeInput(startMinutes)} onChange={(event) => setStartMinutes(roundToStep(fromTimeInput(event.target.value)))} /></label>
-        <label className="field">{t("durationMinutesLabel")}<input type="number" min={MINUTE_STEP} step={MINUTE_STEP} value={durationMinutes} onChange={(event) => setDurationMinutes(roundToStep(Number(event.target.value)))} /></label>
+        <label className="field">{t("durationMinutesLabel")}<input type="number" min={1} step={1} value={durationMinutes} onChange={(event) => setDurationMinutes(Math.max(1, Math.round(Number(event.target.value))))} /></label>
         <label className="field">{t("reminder")}<select value={reminder} onChange={(event) => setReminder(event.target.value as ReminderOffset)}>{reminderOptions.map((option) => <option key={option} value={option}>{t(`reminder_${option}`)}</option>)}</select></label>
         {block?.needsReview && <p className="pill pill-warning field-wide">{t("blockNeedsReview")}</p>}
         {error && <p className="error-message field-wide" role="alert">{error}</p>}

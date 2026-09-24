@@ -85,6 +85,12 @@ describe("backup migration", () => {
     expect(() => migrateBackup(v8)).toThrow(/15-minute/);
   });
 
+  it("accepts a v8 backup whose Time Block duration is not a multiple of 15 minutes, since duration is 1-minute precision (M14-B blocker fix)", () => {
+    const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "Task", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", date: "2026-09-01", startMinutes: 540, durationMinutes: 20, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
+    const result = migrateBackup(v8);
+    expect(result.payload.timeBlocks[0].durationMinutes).toBe(20);
+  });
+
   it("rejects a v8 backup whose Time Block extends past the end of its day", () => {
     const v8 = { format: "daily-canvas-backup", version: 8, exportedAt: "2026-09-01T00:00:00.000Z", areas: [], tasks: [{ id: "t1", title: "Task", kind: "task", starred: false, archived: false, startDate: "2026-09-01", schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false, createdAt: "", updatedAt: "" }], inboxCaptures: [], replanEvents: [], timeBlocks: [{ id: "b1", taskId: "t1", date: "2026-09-01", startMinutes: 1425, durationMinutes: 30, reminder: "off", needsReview: false, createdAt: "", updatedAt: "" }], checkIns: [], experienceLogs: [], taskLifecycles: [], pausePeriods: [], milestoneEvents: [], dailyOrders: [], dailyReflections: [], meditationEntries: [], emotionDefinitions: [], rewards: [], appearanceAssets: [], settings: [] };
     expect(() => migrateBackup(v8)).toThrow(/end of/i);
