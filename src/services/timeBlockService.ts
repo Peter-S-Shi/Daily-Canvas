@@ -11,19 +11,16 @@ export const DEFAULT_DURATION_MINUTES = 30;
 export const MINUTES_PER_DAY = 24 * 60;
 
 export const isEligibleForTimeBlock = (task: Task) => task.kind !== "avoidance";
-/** Task.estimatedMinutes accepts any positive integer; a Time Block must land on the 15-minute grid, so the estimate is rounded onto it (never left to fail validation on first Save). */
-export const defaultDurationFor = (task: Task) => {
-  if (!task.estimatedMinutes) return DEFAULT_DURATION_MINUTES;
-  return Math.max(MINUTE_STEP, Math.round(task.estimatedMinutes / MINUTE_STEP) * MINUTE_STEP);
-};
+/** Duration takes the Task's estimate verbatim (any positive whole minute), preserving estimate intent exactly; only start placement is grid-snapped. */
+export const defaultDurationFor = (task: Task) => task.estimatedMinutes || DEFAULT_DURATION_MINUTES;
 const onGrid = (value: number) => Number.isInteger(value) && value % MINUTE_STEP === 0;
 
 export interface TimeBlockInput { startMinutes: number; durationMinutes: number }
 
-/** Grid-alignment rule shared by create and move: every placement/edit snaps to 15-minute granularity. */
+/** Start placement snaps to the 15-minute grid; duration is any positive whole number of minutes (M14-B blocker fix). */
 export function validateTimeBlockInput({ startMinutes, durationMinutes }: TimeBlockInput): void {
   if (!onGrid(startMinutes) || startMinutes < 0 || startMinutes >= MINUTES_PER_DAY) throw new Error("Time Blocks must start on a 15-minute grid line.");
-  if (!onGrid(durationMinutes) || durationMinutes < MINUTE_STEP) throw new Error("Time Block duration must be a positive multiple of 15-minute units.");
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 1) throw new Error("Time Block duration must be a positive whole number of minutes.");
   if (startMinutes + durationMinutes > MINUTES_PER_DAY) throw new Error("A Time Block cannot extend past the end of its day.");
 }
 
