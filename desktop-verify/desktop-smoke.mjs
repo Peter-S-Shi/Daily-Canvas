@@ -231,7 +231,10 @@ check("Check for updates is clickable", await clickText(app.cdp, "Check for upda
 await app.cdp.waitFor(`document.querySelector('[role=status]')`, 20000, "update-check result");
 await sleep(500); await shot(app, "10-en-about-updates");
 const updateStatusText = await app.cdp.evaluate(`document.querySelector('[role=status]')?.textContent`);
-check("update check settles into one of the three defined states without blocking the app", /Up to date|Unable to check|Update available/.test(updateStatusText ?? ""), updateStatusText);
+// Issue #15: a published Release (Up to date / Update available), a genuine network failure (Unable to check),
+// no Release published yet (No published release), and any other check failure (Update check failed) are each
+// distinct, non-blocking states -- this repo's live GitHub Releases page is not guaranteed to have a Release.
+check("update check settles into one of the four defined states without blocking the app", /Up to date|Unable to check|Update available|No published release|Update check failed/.test(updateStatusText ?? ""), updateStatusText);
 
 // ---------- Appearance image import through file input ----------
 console.log("== Appearance import (4 MB PNG)");
