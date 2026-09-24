@@ -96,19 +96,23 @@ export function TasksView({ selectedTaskId, selectedAreaId, onSelectTask, onCrea
           <select aria-label={t("areas")} value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="">{t("allAreas")}</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select>
           <select aria-label={t("scheduleType")} value={scheduleFilter} onChange={(event) => setScheduleFilter(event.target.value)}><option value="">{t("allSchedules")}</option><option value="fixed">{t("fixedSchedule")}</option><option value="floating">{t("floatingTask")}</option><option value="quota">{t("quotaGoal")}</option></select>
         </div>
-        {selecting && <div className="selection-bar bulk-actions" role="region" aria-label={t("selectTasks")}>
-          <strong>{t("selectedCount", { count: effectiveSelected.length })}</strong>
-          <button type="button" className="button secondary" disabled={effectiveSelected.length === visible.length} onClick={() => setBulkSelected(new Set(visible.map((task) => task.id)))}>{t("selectAllTasks")}</button>
-          <button type="button" className="button secondary" disabled={effectiveSelected.length === 0} onClick={() => setBulkSelected(new Set())}>{t("clearAllTasks")}</button>
-          <label className="field inline-field"><span className="sr-only">{t("bulkChangeArea")}</span>
-            <select value={bulkArea} onChange={(event) => setBulkArea(event.target.value)}>
-              <option value="" disabled>{t("chooseAreaPrompt")}</option>
-              <option value={NO_AREA_VALUE}>{t("noArea")}</option>
-              {bulkAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
-            </select>
-          </label>
-          <button type="button" className="button primary" disabled={effectiveSelected.length === 0 || bulkArea === ""} onClick={applyBulkArea}>{t("applyChangeArea")}</button>
-          <button type="button" className="button secondary" onClick={closeSelection}>{t("cancelSelection")}</button>
+        {selecting && <div className="selection-bar bulk-actions bulk-actions-compact" role="region" aria-label={t("selectTasks")}>
+          <div className="bulk-actions-row">
+            <strong>{t("selectedCount", { count: effectiveSelected.length })}</strong>
+            <button type="button" className="icon-button small" title={t("selectAllTasks")} aria-label={t("selectAllTasks")} disabled={effectiveSelected.length === visible.length} onClick={() => setBulkSelected(new Set(visible.map((task) => task.id)))}>☑</button>
+            <button type="button" className="icon-button small" title={t("clearAllTasks")} aria-label={t("clearAllTasks")} disabled={effectiveSelected.length === 0} onClick={() => setBulkSelected(new Set())}>☐</button>
+            <button type="button" className="icon-button small" title={t("cancelSelection")} aria-label={t("cancelSelection")} onClick={closeSelection}>×</button>
+          </div>
+          <div className="bulk-actions-row">
+            <label className="field inline-field bulk-area-field"><span className="sr-only">{t("bulkChangeArea")}</span>
+              <select value={bulkArea} onChange={(event) => setBulkArea(event.target.value)}>
+                <option value="" disabled>{t("chooseAreaPrompt")}</option>
+                <option value={NO_AREA_VALUE}>{t("noArea")}</option>
+                {bulkAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+              </select>
+            </label>
+            <button type="button" className="icon-button small primary" title={t("applyChangeArea")} aria-label={t("applyChangeArea")} disabled={effectiveSelected.length === 0 || bulkArea === ""} onClick={applyBulkArea}>✓</button>
+          </div>
         </div>}
         {visible.length === 0 ? <p className="list-empty">{t(needle ? "noMatchingTasks" : filter === "archived" ? "emptyArchived" : "emptyTasks")}</p> : (
           <div className="task-rows">

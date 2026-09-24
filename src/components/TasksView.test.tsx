@@ -12,6 +12,9 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const pause = async () => { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); }); };
 const button = (label: string) => [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === label) as HTMLButtonElement | undefined;
+// The bulk selection bar's Select All / Clear All / Apply / Cancel controls are icon-only in the narrow
+// pane (Issue #16 overflow fix); they're findable by their required aria-label, not by glyph text.
+const iconButton = (label: string) => document.querySelector(`.bulk-actions button[aria-label="${label}"]`) as HTMLButtonElement | undefined;
 const click = async (element?: HTMLElement) => { expect(element).toBeTruthy(); await act(async () => { element!.click(); }); await pause(); };
 const change = async (element: HTMLSelectElement, value: string) => {
   await act(async () => {
@@ -137,9 +140,9 @@ describe("TasksView bulk selection (Issue #16)", () => {
     await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(search, "Alpha"); search.dispatchEvent(new Event("input", { bubbles: true })); });
     await pause();
     expect(rowCheckboxes()).toHaveLength(1);
-    await click(button("Select All"));
+    await click(iconButton("Select All"));
     expect(rowCheckboxes().every((box) => box.checked)).toBe(true);
-    await click(button("Clear All"));
+    await click(iconButton("Clear All"));
     expect(rowCheckboxes().every((box) => !box.checked)).toBe(true);
   });
 
@@ -150,7 +153,7 @@ describe("TasksView bulk selection (Issue #16)", () => {
     await click(rowCheckboxes()[1]);
     const areaSelect = document.querySelector(".bulk-actions select") as HTMLSelectElement;
     await change(areaSelect, area1);
-    await click(button("Apply"));
+    await click(iconButton("Apply"));
     const tasks = await db.tasks.toArray();
     const moved = tasks.filter((task) => task.areaId === area1);
     expect(moved.map((task) => task.id).sort()).toEqual(["s1", "s2"]);
@@ -161,8 +164,8 @@ describe("TasksView bulk selection (Issue #16)", () => {
     root = await render();
     await click(button("Select"));
     await click(rowCheckboxes()[0]);
-    expect(button("Apply")?.disabled).toBe(true);
-    await click(button("Apply"));
+    expect(iconButton("Apply")?.disabled).toBe(true);
+    await click(iconButton("Apply"));
     expect((await db.tasks.get("s1"))?.areaId).toBeUndefined();
   });
 
@@ -178,8 +181,8 @@ describe("TasksView bulk selection (Issue #16)", () => {
     await click(rowCheckboxes()[0]);
     const noAreaOption = [...areaSelect.options].find((option) => option.textContent === "No Area")!;
     await change(areaSelect, noAreaOption.value);
-    expect(button("Apply")?.disabled).toBe(false);
-    await click(button("Apply"));
+    expect(iconButton("Apply")?.disabled).toBe(false);
+    await click(iconButton("Apply"));
     expect((await db.tasks.get("s1"))?.areaId).toBeUndefined();
   });
 
@@ -195,9 +198,22 @@ describe("TasksView bulk selection (Issue #16)", () => {
     expect(rowCheckboxes()).toHaveLength(1);
     const areaSelect = document.querySelector(".bulk-actions select") as HTMLSelectElement;
     await change(areaSelect, area1);
-    await click(button("Apply"));
+    await click(iconButton("Apply"));
     const tasks = await db.tasks.toArray();
     expect(tasks.find((task) => task.id === "s1")?.areaId).toBe(area1);
     expect(tasks.find((task) => task.id === "s2")?.areaId).toBeUndefined();
+  });
+
+  it("the icon-only Select All/Clear All/Apply/Cancel controls carry a title tooltip and a matching aria-label, and stay plain keyboard-reachable buttons", async () => {
+    root = await render();
+    await click(button("Select"));
+    for (const label of ["Select All", "Clear All", "Apply", "Cancel Selection"]) {
+      const control = iconButton(label);
+      expect(control, `${label} control should exist`).toBeTruthy();
+      expect(control!.tagName).toBe("BUTTON");
+      expect(control!.getAttribute("type")).toBe("button");
+      expect(control!.getAttribute("title")).toBe(label);
+      expect(control!.getAttribute("aria-label")).toBe(label);
+    }
   });
 });

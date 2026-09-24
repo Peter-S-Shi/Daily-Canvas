@@ -491,6 +491,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ---------- Meditations ---------- */
 .selection-bar { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); box-shadow: var(--shadow-soft); }
 .selection-bar strong { margin-right: auto; }
+/* Issue #16 narrow-pane fix: the Tasks bulk-action bar (330px pane) can't fit five text buttons plus a
+   select on one row without clipping. Stack into two compact rows of icon-only controls instead. */
+.bulk-actions-compact { flex-direction: column; align-items: stretch; gap: 8px; }
+.bulk-actions-row { display: flex; align-items: center; gap: 6px; }
+.bulk-area-field { flex: 1; min-width: 0; margin: 0; }
+.bulk-area-field select { width: 100%; }
+.icon-button.primary { background: var(--accent-fill); color: #fff; border-color: transparent; }
+.icon-button.primary:hover:not(:disabled) { background: var(--accent-fill-hover); }
 .meditation-list { display: grid; gap: 10px; }
 .meditation-card { display: flex; align-items: flex-start; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .meditation-copy { flex: 1; min-width: 0; }
