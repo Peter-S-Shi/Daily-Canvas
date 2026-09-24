@@ -706,12 +706,35 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
   @page { margin: 0; }
   /* The desktop shell is a fixed-height, non-scrolling frame; release it so a multi-page document is not clipped. */
   html, body, #root, .desktop-shell, .shell-main, .workspace-surface, .workspace-content, .dialog-backdrop, .dialog { height: auto !important; max-height: none !important; overflow: visible !important; }
+  /*
+   * Root cause of the M14-B print-pagination blocker: .dialog-backdrop is `position: fixed`, and
+   * .meditation-print-document is absolutely positioned relative to it. Chromium/WebView2 confine a
+   * `position: fixed` (or anything positioned against it) to the first printed page and never
+   * paginate it further, so the cover printed but every body page after it was silently dropped.
+   * Releasing the backdrop to `static` lets the print document's containing block become the page
+   * box itself, so it participates in normal multi-page flow like any other in-document content.
+   */
+  .dialog-backdrop { position: static !important; }
+  /* .no-print marks the export sidebar/header in the JSX but had no matching rule; visibility:hidden
+     alone still leaves its layout box (and flow height) in place, which could push extra blank pages
+     after the real content. Removing it from flow entirely avoids that. */
+  .no-print { display: none !important; }
   body * { visibility: hidden !important; }
   .meditation-print-document, .meditation-print-document * { visibility: visible !important; }
   .meditation-print-document { position: absolute; inset: 0 auto auto 0; width: 100%; min-height: 100%; box-shadow: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .meditation-print-document.size-a4 { width: 210mm; }
   .meditation-print-document.size-letter { width: 8.5in; }
-  .meditation-cover { min-height: calc(100vh - 1px); }
+  /*
+   * Root cause of the M14-B extra-blank-page-after-cover blocker: `100vh` here resolved against the
+   * live browser viewport at print time (confirmed empirically: an 800x600-class window made the cover
+   * ~488px tall instead of one true page), not the physical page height. When the cover's box didn't
+   * correspond to a clean page-height multiple, Chromium's pagination inserted an extra fragment to
+   * absorb the mismatch before `break-after: page` moved on to the body -- a blank, background-filled
+   * page between the cover and the real content. Using the exact physical page height per paper size
+   * (matching the width rules just above) removes the ambiguity entirely.
+   */
+  .meditation-print-document.size-a4 .meditation-cover { min-height: calc(297mm - 1px); }
+  .meditation-print-document.size-letter .meditation-cover { min-height: calc(11in - 1px); }
   .meditation-pages { padding: 20mm; }
   .meditation-pages article { break-inside: avoid; }
 }
