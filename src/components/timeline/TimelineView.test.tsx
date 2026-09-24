@@ -69,6 +69,51 @@ describe("TimelineView Available Work has-a-block indicator (Issue #20)", () => 
   });
 });
 
+describe("TimelineView Day view overlap-group chip (Timeline occlusion fix)", () => {
+  let root: Root;
+  const date = "2026-03-02";
+  beforeEach(async () => { await db.delete(); await db.open(); await initializeDb(); });
+  afterEach(async () => { await act(() => root.unmount()); await db.delete(); });
+
+  it("renders a single overlap-group chip for simultaneously-active blocks, and opening it lists each Task and jumps to it via onOpenTask", async () => {
+    const anchorTask = await saveTask({ title: "Anchor", kind: "task", starred: false, archived: false, startDate: date, schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
+    const otherTask = await saveTask({ title: "Other", kind: "task", starred: false, archived: false, startDate: date, schedule: { mode: "fixed", recurrence: { type: "once" } }, stopReminderAtTarget: false });
+    await createTimeBlock({ taskId: anchorTask.id, date, startMinutes: 9 * 60, durationMinutes: 60 });
+    await createTimeBlock({ taskId: otherTask.id, date, startMinutes: 9 * 60 + 30, durationMinutes: 30 }, { allowOverlap: true });
+
+    let openedTaskId = "";
+    document.body.innerHTML = '<div id="root"></div>';
+    await act(async () => {
+      root = createRoot(document.getElementById("root")!);
+      root.render(<TimelineView weekStartsOn={1} initialDate={date} onOpenTask={(id) => { openedTaskId = id; }}/>);
+    });
+    await pause(); await pause();
+
+    // Two overlapping blocks must never render as two individually-occluding chips.
+    expect(document.querySelectorAll(".time-block-chip").length).toBeGreaterThan(0);
+    const groupChip = [...document.querySelectorAll<HTMLButtonElement>(".time-block-chip.overlap-group")];
+    expect(groupChip).toHaveLength(1);
+    expect(groupChip[0].textContent).toContain("2");
+
+    await act(async () => { groupChip[0].click(); });
+    await pause();
+
+    const listedTasks = document.querySelectorAll("[data-testid='overlap-group-task']");
+    expect(listedTasks).toHaveLength(2);
+    expect(document.body.textContent).toContain("Anchor");
+    expect(document.body.textContent).toContain("Other");
+    expect(document.body.textContent).toContain("09:00");
+    expect(document.body.textContent).toContain("10:00");
+    expect(document.body.textContent).toContain("09:30");
+    expect(document.body.textContent).toContain("10:00");
+
+    const otherRow = [...listedTasks].find((item) => item.textContent?.includes("Other")) as HTMLElement;
+    await act(async () => { otherRow.click(); });
+    await pause();
+    expect(openedTaskId).toBe(otherTask.id);
+  });
+});
+
 describe("TimelineView drag overlap confirmation (Issue #21)", () => {
   let root: Root;
   const date = "2026-02-10";

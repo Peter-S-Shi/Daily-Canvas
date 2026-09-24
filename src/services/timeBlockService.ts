@@ -11,21 +11,65 @@ export const DEFAULT_DURATION_MINUTES = 30;
 export const MINUTES_PER_DAY = 24 * 60;
 
 export const isEligibleForTimeBlock = (task: Task) => task.kind !== "avoidance";
-/** Duration takes the Task's estimate verbatim (any positive whole minute), preserving estimate intent exactly; only start placement is grid-snapped. */
+/** Duration takes the Task's estimate verbatim (any positive whole minute), preserving estimate intent exactly. */
 export const defaultDurationFor = (task: Task) => task.estimatedMinutes || DEFAULT_DURATION_MINUTES;
-const onGrid = (value: number) => Number.isInteger(value) && value % MINUTE_STEP === 0;
 
 export interface TimeBlockInput { startMinutes: number; durationMinutes: number }
 
-/** Start placement snaps to the 15-minute grid; duration is any positive whole number of minutes (M14-B blocker fix). */
+/**
+ * Both start placement and duration accept any positive whole number of minutes -- no grid
+ * snapping. Start time used to be forced onto the MINUTE_STEP grid (M14-B blocker fix kept that
+ * restriction while freeing duration); live user acceptance testing found that rounding away a
+ * typed start-time minute is an input/output-infidelity bug, so the grid requirement was removed
+ * from validation entirely (corrective pass). MINUTE_STEP remains exported only as a convenience
+ * default granularity (e.g. for a new block's suggested start time); it is no longer enforced here.
+ */
 export function validateTimeBlockInput({ startMinutes, durationMinutes }: TimeBlockInput): void {
-  if (!onGrid(startMinutes) || startMinutes < 0 || startMinutes >= MINUTES_PER_DAY) throw new Error("Time Blocks must start on a 15-minute grid line.");
+  if (!Number.isInteger(startMinutes) || startMinutes < 0 || startMinutes >= MINUTES_PER_DAY) throw new Error("Time Block start time must be a whole minute within the day.");
   if (!Number.isInteger(durationMinutes) || durationMinutes < 1) throw new Error("Time Block duration must be a positive whole number of minutes.");
   if (startMinutes + durationMinutes > MINUTES_PER_DAY) throw new Error("A Time Block cannot extend past the end of its day.");
 }
 
 function overlaps(a: TimeBlockInput, b: TimeBlockInput): boolean {
   return a.startMinutes < b.startMinutes + b.durationMinutes && b.startMinutes < a.startMinutes + a.durationMinutes;
+}
+
+export interface DaySegment { startMinutes: number; endMinutes: number; blockIds: string[] }
+export interface DaySegmentInput { id: string; startMinutes: number; durationMinutes: number }
+
+const sameIds = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort(); const sortedB = [...b].sort();
+  return sortedA.every((id, index) => id === sortedB[index]);
+};
+
+/**
+ * Partitions a day's Time Blocks into contiguous sub-intervals, each tagged with the ids of
+ * every block active during it (Fix for the Day view's occlusion problem: two saved, legitimately
+ * overlapping blocks used to render on top of each other with no indication anything was hidden).
+ * A classic interval sweep: every block's start and end is a breakpoint; within any gap between
+ * consecutive breakpoints the active set is constant. A segment with zero active blocks (a true
+ * gap in the day) is omitted. Adjacent segments with the exact same active set are merged, so a
+ * block that is fully contained inside another's window (and so never solo) doesn't fragment the
+ * containing block's own solo segments any more than necessary.
+ */
+export function computeDaySegments(blocks: DaySegmentInput[]): DaySegment[] {
+  if (blocks.length === 0) return [];
+  const breakpoints = Array.from(new Set(blocks.flatMap((block) => [block.startMinutes, block.startMinutes + block.durationMinutes]))).sort((a, b) => a - b);
+  const raw: DaySegment[] = [];
+  for (let i = 0; i < breakpoints.length - 1; i += 1) {
+    const startMinutes = breakpoints[i]; const endMinutes = breakpoints[i + 1];
+    if (startMinutes >= endMinutes) continue;
+    const blockIds = blocks.filter((block) => block.startMinutes <= startMinutes && block.startMinutes + block.durationMinutes >= endMinutes).map((block) => block.id);
+    if (blockIds.length > 0) raw.push({ startMinutes, endMinutes, blockIds });
+  }
+  const merged: DaySegment[] = [];
+  for (const segment of raw) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.endMinutes === segment.startMinutes && sameIds(prev.blockIds, segment.blockIds)) prev.endMinutes = segment.endMinutes;
+    else merged.push({ ...segment });
+  }
+  return merged;
 }
 
 /** Zero-padded HH:MM rendering shared by the Timeline grid and overlap-conflict detail UI (Issue #21 follow-up), so there is one time formatter, not several. */

@@ -659,6 +659,15 @@ body:has(.onboarding-screen), body:has(.recovery-screen) { overflow: auto; }
 .time-block-chip strong { font-size: 12px; line-height: 1.2; }
 .time-block-chip span { color: var(--muted); font-size: 11px; }
 .time-block-chip.needs-review { outline: 2px solid var(--warning-line); }
+/* Overlap-group chip (Timeline occlusion fix): two or more saved Time Blocks are simultaneously
+   active during this segment, so they render as one distinctly-styled group instead of stacking
+   on top of each other. A hatched stripe, not a new color, keeps it visually part of the same system. */
+.time-block-chip.overlap-group { border-left-color: var(--warning-line); background: repeating-linear-gradient(135deg, var(--selected), var(--selected) 6px, var(--warning-soft) 6px, var(--warning-soft) 12px); }
+.time-block-chip.overlap-group strong { color: var(--warning-ink); }
+.overlap-group-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.overlap-group-list li { border: 1px solid var(--line); border-radius: 8px; }
+.overlap-group-list .task-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; }
+.overlap-group-list .task-link span { color: var(--muted); font-size: 12px; }
 .available-work-panel .item-copy { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; border-left: 3px solid var(--task-color, var(--line)); background: var(--surface); }
 .timeline-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
 .timeline-week-day { min-height: 160px; min-width: 0; }

@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, initializeDb } from "../db";
 import { saveTask } from "./taskService";
-import { createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, formatMinutesAsTime, intersectionOf, MINUTE_STEP, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
+import { computeDaySegments, createTimeBlock, deleteTimeBlock, flagBlocksNeedingReview, formatMinutesAsTime, intersectionOf, MINUTES_PER_DAY, TimeBlockOverlapError, updateTimeBlock, validateTimeBlockInput } from "./timeBlockService";
 import type { Task } from "../types";
 
 const fixedTask = (overrides: Partial<Task> = {}): Omit<Task, "id" | "createdAt" | "updatedAt"> => ({
@@ -35,11 +35,20 @@ describe("timeBlockService", () => {
     expect(c.durationMinutes).toBe(41);
   });
 
-  it("rejects placement off the 15-minute grid, while allowing an on-grid start with a non-15-multiple duration", async () => {
+  it("accepts a start time on any whole minute, not just the 15-minute grid (corrective pass: start-time free-minute fidelity)", async () => {
     const task = await saveTask(fixedTask());
-    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 })).rejects.toThrow(/15-minute/);
-    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60, durationMinutes: 20 });
-    expect(block.durationMinutes).toBe(20);
+    const block = await createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 7, durationMinutes: 30 });
+    expect(block.startMinutes).toBe(9 * 60 + 7);
+    const onGrid = await saveTask(fixedTask({ title: "OnGrid" }));
+    const gridBlock = await createTimeBlock({ taskId: onGrid.id, date: "2026-01-05", startMinutes: 11 * 60, durationMinutes: 20 });
+    expect(gridBlock.durationMinutes).toBe(20);
+  });
+
+  it("rejects a non-integer or out-of-range start time", async () => {
+    const task = await saveTask(fixedTask());
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: 9 * 60 + 0.5, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: -1, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
+    await expect(createTimeBlock({ taskId: task.id, date: "2026-01-05", startMinutes: MINUTES_PER_DAY, durationMinutes: 30 })).rejects.toThrow(/whole minute/);
   });
 
   it("accepts any positive whole-minute duration, including 1 minute, and rejects zero/negative/fractional durations", async () => {
@@ -157,10 +166,69 @@ describe("timeBlockService", () => {
     expect(await db.tasks.get(task.id)).toBeDefined();
   });
 
-  it("MINUTE_STEP is 15 and validateTimeBlockInput surfaces the same start-grid rule used by createTimeBlock, independent of duration", () => {
-    expect(MINUTE_STEP).toBe(15);
-    expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).toThrow(/15-minute/);
+  it("validateTimeBlockInput accepts any non-15-multiple whole-minute start time (corrective pass), e.g. 10:07 (607)", () => {
+    expect(() => validateTimeBlockInput({ startMinutes: 607, durationMinutes: 30 })).not.toThrow();
+    expect(() => validateTimeBlockInput({ startMinutes: 5, durationMinutes: 30 })).not.toThrow();
     expect(() => validateTimeBlockInput({ startMinutes: 0, durationMinutes: 20 })).not.toThrow();
+    expect(() => validateTimeBlockInput({ startMinutes: 9.5, durationMinutes: 30 })).toThrow(/whole minute/);
+    expect(() => validateTimeBlockInput({ startMinutes: -1, durationMinutes: 30 })).toThrow(/whole minute/);
+    expect(() => validateTimeBlockInput({ startMinutes: MINUTES_PER_DAY, durationMinutes: 30 })).toThrow(/whole minute/);
+  });
+
+  describe("computeDaySegments (Issue #20/#21 follow-up: Day view overlap display)", () => {
+    it("two fully disjoint blocks produce two solo segments", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "b", startMinutes: 11 * 60, durationMinutes: 30 },
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a"] },
+        { startMinutes: 11 * 60, endMinutes: 11 * 60 + 30, blockIds: ["b"] },
+      ]);
+    });
+
+    it("two partially overlapping blocks produce a solo/group/solo pattern", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 60 }, // 9:00-10:00
+        { id: "b", startMinutes: 9 * 60 + 30, durationMinutes: 60 }, // 9:30-10:30
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a"] },
+        { startMinutes: 9 * 60 + 30, endMinutes: 10 * 60, blockIds: ["a", "b"] },
+        { startMinutes: 10 * 60, endMinutes: 10 * 60 + 30, blockIds: ["b"] },
+      ]);
+    });
+
+    it("a block fully contained inside another never gets its own solo segment", () => {
+      const blocks = [
+        { id: "outer", startMinutes: 9 * 60, durationMinutes: 120 }, // 9:00-11:00
+        { id: "inner", startMinutes: 9 * 60 + 30, durationMinutes: 30 }, // 9:30-10:00, fully inside outer
+      ];
+      const segments = computeDaySegments(blocks);
+      expect(segments).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["outer"] },
+        { startMinutes: 9 * 60 + 30, endMinutes: 10 * 60, blockIds: ["outer", "inner"] },
+        { startMinutes: 10 * 60, endMinutes: 11 * 60, blockIds: ["outer"] },
+      ]);
+      // "inner" only ever appears alongside "outer" -- never alone.
+      expect(segments.filter((segment) => segment.blockIds.includes("inner"))).toHaveLength(1);
+      expect(segments.every((segment) => !segment.blockIds.includes("inner") || segment.blockIds.length > 1)).toBe(true);
+    });
+
+    it("three or more simultaneous blocks produce one group segment listing all of them", () => {
+      const blocks = [
+        { id: "a", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "b", startMinutes: 9 * 60, durationMinutes: 30 },
+        { id: "c", startMinutes: 9 * 60, durationMinutes: 30 },
+      ];
+      expect(computeDaySegments(blocks)).toEqual([
+        { startMinutes: 9 * 60, endMinutes: 9 * 60 + 30, blockIds: ["a", "b", "c"] },
+      ]);
+    });
+
+    it("returns no segments for an empty day", () => {
+      expect(computeDaySegments([])).toEqual([]);
+    });
   });
 
   it("intersectionOf computes the actual overlapping interval between a proposed and an existing block (Issue #21 detail)", () => {

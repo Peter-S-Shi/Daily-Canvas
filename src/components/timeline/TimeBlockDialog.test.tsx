@@ -112,6 +112,35 @@ describe("TimeBlockDialog overlap warning flow (Issue #21)", () => {
   });
 });
 
+describe("TimeBlockDialog Start Time free-minute fidelity (corrective pass)", () => {
+  let root: Root;
+  let task: Task;
+
+  beforeEach(async () => {
+    await db.delete(); await db.open(); await initializeDb();
+    task = await saveTask(fixedTask());
+  });
+  afterEach(async () => { await act(() => root.unmount()); await db.delete(); });
+
+  it("preserves an exact non-15-multiple typed Start Time on save instead of silently rounding it", async () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    let saved = 0;
+    await act(async () => {
+      root = createRoot(document.getElementById("root")!);
+      root.render(<TimeBlockDialog task={task} defaultDate="2026-01-05" onClose={() => {}} onSaved={() => { saved += 1; }}/>);
+    });
+    await pause();
+
+    await setTime("10:07");
+    await click(button("Save"));
+
+    expect(saved).toBe(1);
+    const created = (await db.timeBlocks.where("taskId").equals(task.id).toArray())[0];
+    // 10:07 = 607 minutes since midnight -- must be saved exactly, not rounded to 10:00 (600) or 10:15 (615).
+    expect(created.startMinutes).toBe(607);
+  });
+});
+
 describe("TimeBlockDialog overlap warning flow with multiple simultaneous conflicts (Issue #21)", () => {
   let root: Root;
   let task: Task;
