@@ -2,19 +2,19 @@
 
 Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、习惯管理、反思、回顾与长期个人记录工具。
 
-`main` 分支当前版本为 **v0.7.0**，基于 React/Vite、Dexie/IndexedDB 构建。Milestone 1–14 均已完成，包括 Tauri 2 Windows 桌面基础、冻结的桌面 UI 蓝图、桌面 UI 迁移、首批 v1.0 捕获与任务增强能力、Day/Week Timeline、Time Block 与本地提醒、Reflection Templates、On This Day、本地导出、自动备份与 GitHub Release 更新提示、一轮覆盖 migration/backup、可访问性、性能与 CI 验证覆盖率的发布加固（Milestone 14-A），以及一次 Human Using Experience Review 驱动的问题修复与加固收尾（Milestone 14-B：Time Block 精度修复、感悟功能问题修复、Daily Work 体验加固与最终 v1 加固）。应用既能以浏览器方式运行，也已打包为 Windows 桌面应用。v1.0 Feature Complete Gate 已被接受，Feature Freeze 已生效。**Milestone 15 正在进行：`1.0.0` Release Candidate 已在一个尚未合并的 PR 上准备就绪** —— 它提供的能力与当前的已知限制见下文。
+**Daily Canvas v1.0.0 已正式发布。** `main` 分支当前版本为 **v1.0.0**，基于 React/Vite、Dexie/IndexedDB 构建，并已打包为 Windows 桌面应用（Tauri 2）。Milestone 1–15 均已完成：完整的 v1.0 功能范围（规划与执行、习惯生命周期、反思与回顾、长期保存、桌面可靠性）、一轮发布加固（Milestone 14，包含 Human Using Experience Review 与问题修复/加固收尾 Milestone 14-B），以及 Milestone 15 的 Release Candidate 验证与交付。请前往 [v1.0.0 GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) 下载安装包 —— 它提供的能力与已知限制见下文。
 
 ## 当前开发状态
 
 此前等待执行的 v0.7 Feature Complete Gate 从未被正式接受。项目在 Feature Freeze 之前主动重新打开范围，重新规划了更完整的 v1.0 桌面版，并已完成 Milestone 8 桌面基础：选定 Tauri 2 作为桌面壳、冻结桌面标识符与来源、保留 Dexie/IndexedDB 不变、为原生能力建立窄接口的桌面适配层、以 Windows/MSVC 作为权威构建环境、并建立按风险分层的 GitHub Actions CI。验证证据见 `desktop-spike/M8A-EVIDENCE.md` 与 `desktop-verify/M8B-EVIDENCE.md`。
 
-已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）已全部完成，**Milestone 14：产品加固与全量回归**在不新增功能的前提下，把整个系统收敛到发布级的正确性、韧性、可访问性、性能与验证证据（PR #10）。随后的 **Human Using Experience Review** 以真实用户视角实际使用了打包后的应用，并驱动了一轮合并进 `main` 的收尾工作：PR #11 修复了 Time Block 时长精度的阻塞问题，PR #26 修复了感悟的全选/清除全部与打印分页阻塞问题，PR #27（"H1"）加固了 Daily Work 体验（Tasks 批量整理、Areas 下钻、按类型区分的状态措辞、本地 Notes/Checklist 编辑、Today↔Floating 可发现性），PR #28（"H2"）完成了最终 v1 加固（Quota Review 回溯正确性、GitHub Release 404 与网络故障的区分、包含整分钟 Start 精度与 Day 视图重叠分组的 Timeline 体验、把重叠从拒绝改为警告、浅色主题侧边栏，以及语言无关的感悟导出）。当前无已知 release blocker。下一步为 Milestone 15（Release Candidate）。
+已经完成的工作不会作废。Milestone 9 冻结了桌面信息架构与 UI 蓝图（`docs/m9-desktop-ui-blueprint/`），Milestone 10 完成桌面 UI 迁移。**Milestone 11：捕获与任务增强**已加入 Inbox / Quick Capture、本地 Global Search、Task Notes、单层 Checklist、预计时长、更丰富的习惯循环，以及只面向未来的 Replan。**Milestone 12：Timeline 与桌面执行**已加入 Day/Week Timeline、Available Work、带强制键盘可达编辑器的 Time Block、Replan 驱动的 `needsReview` 标记、本地提醒，以及冻结的桌面快捷键集合。**Milestone 13：反思、长期保存与桌面配套能力**已加入轻量 Reflection Templates、On This Day、本地 Reflection / Review Markdown 导出、自动轮换本地备份，以及 GitHub Release 更新提示。已批准的 v1.0 功能范围（Milestone 8–13）已全部完成，**Milestone 14：产品加固与全量回归**在不新增功能的前提下，把整个系统收敛到发布级的正确性、韧性、可访问性、性能与验证证据（PR #10）。随后的 **Human Using Experience Review** 以真实用户视角实际使用了打包后的应用，并驱动了一轮合并进 `main` 的收尾工作：PR #11 修复了 Time Block 时长精度的阻塞问题，PR #26 修复了感悟的全选/清除全部与打印分页阻塞问题，PR #27（"H1"）加固了 Daily Work 体验（Tasks 批量整理、Areas 下钻、按类型区分的状态措辞、本地 Notes/Checklist 编辑、Today↔Floating 可发现性），PR #28（"H2"）完成了最终 v1 加固（Quota Review 回溯正确性、GitHub Release 404 与网络故障的区分、包含整分钟 Start 精度与 Day 视图重叠分组的 Timeline 体验、把重叠从拒绝改为警告、浅色主题侧边栏，以及语言无关的感悟导出）。**Milestone 15：Daily Canvas v1.0.0 Release Candidate and Delivery**（PR #31）把版本号推进到 `1.0.0`、补齐了剩余的发布验证缺口、并准备好了发布文档；该候选版本已被接受并合并进 `main`，真正的 `v1.0.0` GitHub Release 已发布，并附带经过验证的 Windows 安装包。当前无已知 release blocker。
 
 新的里程碑顺序见 [ROADMAP.md](ROADMAP.md)，当前权威状态见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，架构边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
-## Daily Canvas v1.0.0 —— Release Candidate
+## Daily Canvas v1.0.0
 
-**这是一个 Release Candidate（发布候选版本），尚未正式发布。** `1.0.0` 是 Milestone 15 进行中的分支/PR 所携带的候选版本号；目前尚未发布任何 GitHub Release 或 tag，`main` 分支本身仍停留在 `0.7.0`，直到该 PR 被接受并合并为止。以下内容并不代表"现在就能下载"，而是描述 v1.0.0 发布后将会是什么样子、提供什么能力。
+**Daily Canvas v1.0.0 已正式发布。** `v1.0.0` tag 与 [GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) 指向的是 PR #31 合并进 `main` 后的同一个被接受的提交；附带的 Windows 安装包由 CI 针对该确切提交构建并验证，发布后未做任何重新构建或替换。
 
 **v1.0.0 汇集的能力**，除下方提到的一项按需检查外，其余全部完全离线运行：
 
@@ -27,15 +27,14 @@ Daily Canvas 是一款**免费、无需账号、本地优先**的个人规划、
 - 自动轮换本地备份、带版本管理的 JSON 导出/导入，以及按需的 GitHub Release 更新提示 —— 仅元数据，绝不静默下载或安装。
 - 中英双语界面、浅色/深色/系统主题，以及全面的键盘可访问性。
 
-**此 Release Candidate 的已知限制：**
+**已知限制：**
 
 - 仅支持 Windows，目前只在 CI 中的一种 Windows 配置上验证过；其他 Windows 版本与非英文 Windows 语言环境尚未单独验证。
 - 安装包尚未进行代码签名，因此首次运行时 Windows SmartScreen 会提示"未识别的发布者"警告。
 - 卸载时默认不会提示删除本地数据（Windows NSIS 安装包的默认行为）——除非你自己手动删除，否则数据会一直留在磁盘上。
 - 目前只提供按用户安装的安装包，没有面向整台机器的 MSI 安装选项。
-- 目前还没有公开可下载的版本 —— 该候选版本仍在发布工程验证阶段。
 
-**如何安装与使用 Daily Canvas：** 在 v1.0.0 的 GitHub Release 正式发布之前，运行 Daily Canvas 的唯一方式是从源码自行构建（见下文[当前开发命令](#当前开发命令)）。正式发布后，使用方式将是：从项目的 GitHub Releases 页面下载 Windows 安装包，运行它（按用户安装，无需管理员权限），然后从开始菜单启动 Daily Canvas。所有产品数据都保存在你的 Windows 用户账户本地 —— 具体哪些内容会、哪些内容绝不会离开你的电脑，见下文[隐私模式](#隐私模式)。设置 → 数据与备份会准确显示你的数据与自动备份所在位置，并可随时导出或恢复备份。
+**如何安装与使用 Daily Canvas：** 从 [v1.0.0 GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) 下载 `Daily Canvas_1.0.0_x64-setup.exe` 并运行（按用户安装，无需管理员权限），然后从开始菜单启动 Daily Canvas。所有产品数据都保存在你的 Windows 用户账户本地 —— 具体哪些内容会、哪些内容绝不会离开你的电脑，见下文[隐私模式](#隐私模式)。设置 → 数据与备份会准确显示你的数据与自动备份所在位置，并可随时导出或恢复备份。
 
 ## Daily Canvas 当前已有能力
 
@@ -171,7 +170,7 @@ HTML 视觉/交互蓝本
 
 ## 当前开发命令
 
-当前 v0.7 需要 Node.js 20.19 或更高版本，以及 pnpm。
+从源码构建需要 Node.js 20.19 或更高版本，以及 pnpm。
 
 ```bash
 pnpm install
