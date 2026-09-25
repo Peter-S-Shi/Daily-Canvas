@@ -117,6 +117,12 @@ await app.cdp.evaluate(`(()=>{document.activeElement.dispatchEvent(new KeyboardE
 check("Escape closes the transient Quick Capture dialog", await app.cdp.evaluate(`document.getElementById('quick-capture-title')===null`));
 await dispatchShortcut("1"); await sleep(400);
 check("Ctrl+1 navigates to Today", await app.cdp.evaluate(`document.querySelector('.nav-button[data-workspace="today"].active')!==null`));
+// M15 RC gap closure: Ctrl+K (no Shift) opens Search, distinct from Ctrl+Shift+K's Quick Capture above.
+// The frozen shortcut set (App.tsx, ROADMAP M12) was previously only exercised for Quick Capture/Today/Escape here.
+await dispatchShortcut("k", false); await sleep(400);
+check("Ctrl+K (no Shift) opens Search", await app.cdp.evaluate(`document.getElementById('search-title')!==null`));
+await app.cdp.evaluate(`(()=>{document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));return true})()`); await sleep(300);
+check("Escape closes the Search overlay", await app.cdp.evaluate(`document.getElementById('search-title')===null`));
 
 // ---------- Notification boundary (local, in-app reminders only) ----------
 console.log("== Notification boundary");

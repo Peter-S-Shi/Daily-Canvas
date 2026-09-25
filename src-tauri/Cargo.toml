@@ -1,6 +1,6 @@
 [package]
 name = "daily-canvas-desktop"
-version = "0.7.0"
+version = "1.0.0"
 description = "Daily Canvas desktop shell (M8 feasibility spike)"
 edition = "2021"
 publish = false
