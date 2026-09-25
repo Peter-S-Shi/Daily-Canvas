@@ -1,134 +1,166 @@
 # Daily Canvas
 
-Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
+![Daily Canvas banner](assets/readme/daily-canvas-banner.png)
 
-**Daily Canvas v1.0.0 is released.** `main` is at **v1.0.0**, a React/Vite application backed by Dexie/IndexedDB, packaged as a Windows desktop app with Tauri 2. Milestones 1–15 are complete: the full v1.0 feature set (planning and execution, habit lifecycle, reflection and review, personal preservation, desktop reliability), a release-hardening pass (Milestone 14) including a Human Using Experience Review and blocker-repair/hardening closeout (Milestone 14-B), and Milestone 15's release-candidate verification and delivery. Download the installer from the [v1.0.0 GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) — see below for what it offers and its known limitations.
+**Daily Canvas is an account-free, local-first Windows desktop system for planning, habits, reflection, review, and personal preservation.**
 
-中文说明见 [README.zh-CN.md](README.zh-CN.md).
+It is designed for people who want structure without turning every part of life into a rigid project-management system. Daily Canvas connects what you plan, what you actually do, what you notice, and what you want to preserve — while keeping the history and data on your own device.
 
-## Current development state
+**Windows · Local-first · React + TypeScript · Tauri 2 · v1.0.0**
 
-The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze, the project deliberately reopened scope, approved a larger v1.0 desktop program, and completed Milestone 8, its desktop foundation: Tauri 2 as the desktop shell, a frozen desktop identifier/origin, Dexie/IndexedDB retained unchanged, narrow desktop adapters for native concerns, a Windows/MSVC-authoritative build, and risk-scaled GitHub Actions CI. See `desktop-spike/M8A-EVIDENCE.md` and `desktop-verify/M8B-EVIDENCE.md` for the verification evidence.
+[Download v1.0.0](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) · [Architecture](ARCHITECTURE.md) · [Release evidence](PROJECT_STATUS.md) · [中文说明](README.zh-CN.md)
 
-Completed work remains valid and is not being discarded. Milestone 9 froze the desktop information architecture and UI blueprint (`docs/m9-desktop-ui-blueprint/`), and Milestone 10 migrated the existing product onto it. **Milestone 11: Capture and Task Enrichment** adds Inbox/Quick Capture, local Global Search, Task Notes, one-level Checklist items, duration estimates, richer Habit/Avoidance recurrence, and forward-only Replan. **Milestone 12: Timeline and Desktop Execution** adds Day/Week Timeline, Available Work, Time Blocks with a mandatory keyboard-accessible editor, Replan-aware `needsReview` flagging, local reminders, and the frozen desktop shortcut set. **Milestone 13: Reflection, Preservation, and Desktop Utilities** adds lightweight Reflection Templates, On This Day, local Reflection/Review Markdown export, automatic rotating local backup, and GitHub Release update awareness. The approved v1.0 feature scope (Milestones 8–13) is fully implemented, and **Milestone 14: Product Hardening and Full Regression** converged the complete system on release-level correctness, resilience, accessibility, performance, and verification evidence without adding new features (PR #10). A subsequent **Human Using Experience Review** exercised the packaged app as a real user and drove a closeout sequence merged into `main`: PR #11 fixed a Time Block duration-precision blocker, PR #26 repaired a Meditation Select All/Clear All and print-pagination blocker, PR #27 ("H1") hardened Daily Work UX (Tasks bulk organization, Areas drill-down, type-aware state grammar, local Notes/Checklist editing, Today↔Floating discoverability), and PR #28 ("H2") delivered final v1 hardening (Quota Review retrospective correctness, GitHub Release 404-vs-network-failure distinction, Timeline UX including whole-minute Start precision and Day-view overlap grouping, overlap-as-warning rather than rejection, Light Theme sidebar, and language-agnostic Meditation export). **Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery** (PR #31) advanced the package version to `1.0.0`, closed the remaining release-verification gaps, and prepared release documentation; the candidate was accepted and merged into `main`, and the real `v1.0.0` GitHub Release is published with the verified Windows installer attached. No known release blocker remains.
+---
 
-See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
+## See the real product
 
-## Daily Canvas v1.0.0
+The screens below come from the released **v1.0.0** Windows build using synthetic portfolio data.
 
-**Daily Canvas v1.0.0 is released.** Tag `v1.0.0` and the [GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) point to the same accepted commit on `main` that PR #31 merged; the attached Windows installer was built and verified by CI against that exact commit, not rebuilt or substituted afterward.
+![Daily Canvas product proof](assets/readme/daily-canvas-product-proof.png)
 
-**What v1.0.0 brings together**, all of it running fully offline except one narrow, on-demand check:
+Daily Canvas is intentionally broader than a to-do list. It connects daily execution with longer-term evidence instead of treating tasks, habits, reflection, and review as separate tools.
 
-- A full planning model — ordinary tasks, positive and avoidance habits, fixed schedules, Floating Tasks, and weekly/monthly Quota Goals, organized under an optional Area.
-- Quick Capture/Inbox, local Global Search, Task Notes, one-level Checklists, richer recurrence, and forward-only Replan that never rewrites history.
-- An optional Day/Week Timeline with a fully keyboard-accessible Time Block editor (whole-minute Start/Duration precision, and an overlap is an explicit, informed warning rather than a silent rejection), plus local reminders.
-- Full habit lifecycle tracking, from starting through milestones, pauses, and archiving, without losing cumulative history.
-- Daily Reflection with optional lightweight templates, deterministic local Review statistics, and On This Day historical resurfacing.
-- A standalone Meditations / 感悟 collection with local print/PDF and Word export.
-- Automatic rotating local backup, versioned JSON export/import, and on-demand GitHub Release update awareness — metadata only, never a silent download or install.
-- A bilingual (English/Chinese) UI, light/dark/system themes, and keyboard accessibility throughout.
+---
 
-**Known limitations:**
+## Why Daily Canvas
 
-- Windows only, currently verified against one Windows configuration in CI; other Windows versions and non-English Windows locales are not yet separately verified.
-- The installer is not code-signed yet, so Windows SmartScreen will show an "unrecognized publisher" warning the first time you run it.
-- Uninstalling does not currently offer to delete your local data (the Windows NSIS installer default) — your data stays on disk until you remove it yourself.
-- Only a per-user installer is provided today; there is no machine-wide or MSI install option.
+| Flexible, not rigid | History stays honest | Your data stays yours |
+| --- | --- | --- |
+| Fixed schedules, Floating Tasks, Quota Goals, Inbox capture, and an optional Timeline can coexist. You do not have to force every task into a clock. | Missing is not silently treated as success. Replan moves unfinished work forward without rewriting the past, and habit pauses, milestones, and recovery remain part of the record. | Core data stays on-device. Daily Canvas requires no account, no cloud database, no analytics service, and no remote AI dependency. |
 
-**Installing and using Daily Canvas:** download `Daily Canvas_1.0.0_x64-setup.exe` from the [v1.0.0 GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) and run it — a per-user install, no administrator rights required — then launch Daily Canvas from the Start Menu. All product data lives locally under your Windows user profile — see [Privacy model](#privacy-model) below for exactly what does and does not leave your machine. Settings → Data & Backup shows exactly where your data and automatic backups live, and lets you export or restore a backup at any time.
+---
 
-## What Daily Canvas already does
+## One system, five connected layers
 
-### Planning and task semantics
+### Plan
 
-- Create, edit, archive, restore, star, organize, and delete tasks.
-- Track ordinary tasks, positive habits, and habits to avoid with distinct completion semantics.
-- Use fixed schedules, undated Floating Tasks, and weekly/monthly Quota Goals.
-- Organize work under one optional Area / Mainline.
-- Reorder Today's work without changing schedule semantics.
-- Distinguish completed, safe, lapsed, skipped, and unrecorded days.
-- Preserve the rule that missing data is never silently treated as success.
-- Capture unresolved thoughts into a distinct Inbox and explicitly triage them into real Task semantics.
-- Search Task titles/notes, Daily Reflections, Meditations, and Areas locally.
-- Add Task Notes, one-level Checklist items, and duration estimates without creating recursive subtasks or time tracking.
-- Use richer Habit/Avoidance recurrence and forward-looking Replan without rewriting history.
+Use ordinary tasks, positive habits, avoidance habits, fixed schedules, Floating Tasks, weekly or monthly Quota Goals, Inbox capture, and optional Time Blocking.
 
-### Timeline and execution
+### Act / Track
 
-- Place real Tasks into an optional Day or Week Timeline, on a 15-minute visual planning grid, with a mandatory keyboard-accessible Date/Start/Duration/Reminder editor that stores Start and Duration at whole-minute precision with no snapping (drag is an optional convenience, never the only way in).
-- See Available Work for a date, derived from existing Fixed/Floating/Quota Tasks, never a second task database.
-- Keep Time Blocks separate from schedule/recurrence/quota semantics: deleting a block never deletes its Task, and a block ending never auto-completes it.
-- Save a Time Block that overlaps another as an explicit, informed choice: a detailed warning names the conflicting Task, its own time range, the proposed time, and the exact overlap interval (supporting multiple simultaneous conflicts), with `Adjust time` / `Save anyway` choices -- `Save anyway` never mutates the other block. The Day view groups genuinely-overlapping saved blocks into a clickable "N tasks overlapping" chip instead of rendering them stacked and hidden.
-- See a lightweight, optional "Today's Plan" summary on Today whenever blocks exist for the day.
-- Get local, in-app reminders on a fixed grammar (Off, At start, 5/10/15/30/60 minutes before), with a restrained catch-up for reminders missed while the app was closed.
-- Use the fixed desktop shortcut set (Search, Quick Capture, Today, Escape) and a read-only Shortcuts reference in Settings.
+Check work in, record safe or lapse outcomes for avoidance habits, replan unfinished work, place tasks into Time Blocks, and use restrained local reminders.
 
-### Habit lifecycle
+### Reflect
 
-- Track starting, building, milestone reached, maintenance, paused, completed, and archived lifecycle states.
-- Continue, extend, maintain, complete, or archive after a milestone.
-- Record planned breaks, vacations, retroactive pauses, and manual resume without deleting history.
-- Preserve cumulative completion facts, personal bests, pause evidence, and milestone events.
+Write a Daily Reflection, optionally use lightweight reflection templates, attach subjective Experience Logs to completed work, and record emotions without turning them into diagnoses.
 
-### Reflection and review
+### Review
 
-- Write one editable Daily Reflection per date with optional emotions, intensity, prompts, and free-form text.
-- Add optional Experience Logs after check-ins without mixing subjective experience with completion truth.
-- Review inclusive weekly, monthly, and custom ranges through deterministic local statistics and plain-language bilingual summaries.
-- Inspect Calendar evidence behind review statements.
-- Avoid diagnostic, causal, or predictive claims.
+Inspect deterministic weekly, monthly, or custom-range summaries backed by traceable task and habit evidence. Review describes what was recorded; it does not infer personality, causes, or mental state.
 
-### Personal preservation
+### Preserve
 
-- Keep an independent ordered Meditations / 感悟 collection.
-- Export selected or all Meditations using the persisted manual order.
-- Print / Save as PDF locally and generate an editable local `.docx`.
-- Keep personal writing local.
+Keep Meditations, revisit earlier reflections through On This Day, export locally, and preserve the full product state through versioned backups and automatic rotating local backup.
 
-### Reflection templates, historical resurfacing, and export
+---
 
-- Choose Free Write (default), Daily Check-in, or Gratitude & Perspective when writing a Daily Reflection; every prompt is skippable and prompt text is never written into the saved entry.
-- Browse On This Day inside Reflect: Daily Reflections and Meditations from the exact same month and day in earlier years, grouped by year, with one-click navigation back to the original record.
-- Export the current Daily Reflection or the current Review selection as a local Markdown (`.md`) file.
+## Long-term memory, not just today's tasks
 
-### Desktop reliability and awareness
+Daily Canvas is built around continuity over time. **On This Day** resurfaces Daily Reflections and Meditations from the same month and day in earlier years, so past records can become useful again instead of disappearing into an archive.
 
-- Automatic rotating local backup, enabled by default: at most one per calendar day, retaining the most recent 7, shown with their location and history in Settings, restorable through the same pipeline as manual import.
-- Check installed-version-vs-latest-GitHub-Release status on demand from Settings -> About & Updates, with a manual "View Release" handoff -- never a silent download or self-install. The check distinguishes Up to date, Update available, no published Release yet ("No published release is available yet"), a genuine network/timeout/DNS failure, and any other check failure, so a repository with no published Release is never mistaken for a network problem.
+![On This Day in Daily Canvas](assets/readme/daily-canvas-on-this-day.png)
 
-### Data ownership and personalization
+---
 
-- Store product data locally in Dexie/IndexedDB.
-- Export and restore versioned JSON backups with migration and validation.
-- Preserve backup compatibility through format v9, including migration of supported v1-v8 backups.
-- Keep local appearance assets on-device.
-- Switch between English and Chinese, light/dark/system themes, week-start preferences, and reduced motion.
+## Engineering depth
 
-## Approved v1.0 direction
+Daily Canvas is a portfolio project because of the engineering decisions behind the product, not because of its dependency list.
 
-v1.0 keeps the existing product philosophy and expands the missing bridge between planning and execution. All approved v1.0 capabilities are now delivered (Milestones 8–13):
+### Local-first architecture
 
-- Quick Capture / Inbox, Global Search, Task Notes, one-level Checklist items, richer recurrence rules, Task duration estimates, explicit replanning of unfinished work (Milestone 11).
-- Optional Day / Week Timeline with Time Blocking, basic local reminders, and the desktop keyboard shortcut set (Milestone 12).
-- Lightweight Reflection Templates, On This Day, local Reflection/Review export, automatic rotating local backup, and GitHub Release update awareness (Milestone 13).
+Core personal data remains local and the product stays fully usable without an account, cloud backend, telemetry system, or remote AI service. The only network exception in v1.0 is a narrow, on-demand GitHub Release metadata check for update awareness.
 
-The Timeline and Time Blocking layer is optional. Users who prefer flexible planning can continue using Today, Floating Tasks, Quota Goals, and Calendar without scheduling every task to a clock time.
+### Explicit domain semantics
 
-## v1.0 product boundaries
+Scheduling, quota evaluation, habit lifecycle, pause/resume behavior, review generation, backup, migration, reminders, and desktop-native concerns live behind reusable service boundaries rather than being hidden inside React components.
 
-Daily Canvas does **not** aim to become:
+### Versioned data evolution
+
+Dexie schema changes and backup formats evolve through explicit versions and migration logic. Restore validates incoming data first, creates a safety backup before destructive replacement, and rejects unsupported newer formats safely.
+
+### Risk-scaled verification
+
+CI depth follows change risk: documentation-only changes take the cheap path; ordinary application changes run typecheck/tests/build; migration and backup changes add targeted regressions; desktop or packaging changes add Windows/MSVC build, packaged-app smoke, and installer/upgrade verification.
+
+### Desktop release discipline
+
+The v1.0.0 release was delivered through a verified Windows NSIS candidate, clean-install and restart evidence, upgrade/uninstall/reinstall checks, backup/restore verification, and a final provenance chain connecting the accepted commit, tag, GitHub Release, and distributed installer artifact.
+
+For the full verification record, see [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
+---
+
+## Engineering journey
+
+Daily Canvas evolved through a complete product lifecycle rather than a single implementation pass.
+
+![Daily Canvas engineering journey](assets/readme/daily-canvas-engineering-journey.png)
+
+The detailed milestone history remains available in [ROADMAP.md](ROADMAP.md) and [DEVLOG.md](DEVLOG.md); it is intentionally kept out of the main product story here.
+
+---
+
+## Task and habit depth
+
+The product model keeps long-term task and habit state explicit: recurrence, lifecycle state, completion history, personal bests, streaks, checklist items, notes, and scheduling semantics remain inspectable rather than being collapsed into a single “done” flag.
+
+![Task detail and habit lifecycle evidence](assets/readme/daily-canvas-task-detail.png)
+
+---
+
+## Local-first and data ownership
+
+```text
+Tasks · habits · reflections · meditations · settings · backups
+                              │
+                              ▼
+                        Your device
+
+Only network exception in v1.0:
+an on-demand GitHub Release metadata check for update awareness
+```
+
+Daily Canvas does **not** upload your tasks, habits, reflections, Meditations, usage analytics, or other personal content. Update awareness reads only stable-release metadata when you open **Settings → About & Updates** or explicitly request a check.
+
+Manual JSON export/import remains available alongside automatic rotating local backups.
+
+---
+
+## Try Daily Canvas
+
+### Windows v1.0.0
+
+1. Open the [v1.0.0 GitHub Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0).
+2. Download `Daily.Canvas_1.0.0_x64-setup.exe`.
+3. Run the per-user installer.
+4. Launch **Daily Canvas** from the Start Menu.
+
+No administrator rights are required for the normal per-user installation.
+
+### Current limitations
+
+- **Windows only.** The v1.0 release is verified on the Windows/MSVC path used by CI; other Windows versions and non-English Windows locales are not separately certified.
+- **Unsigned installer.** Windows SmartScreen may show an “unrecognized publisher” warning.
+- **Per-user installer only.** There is no MSI or machine-wide installation option in v1.0.
+- **Uninstall preserves local data.** The current NSIS uninstall behavior removes the application but does not offer an in-flow “delete my data” option.
+- **No automatic self-update.** Daily Canvas can tell you that a newer GitHub Release exists, but it never silently downloads or installs one.
+
+---
+
+## Intentional boundaries
+
+Daily Canvas deliberately does **not** aim to become:
 
 - an account-driven SaaS product;
 - a team or collaboration platform;
-- a recursive project-management system;
-- a social network or competitive habit leaderboard;
+- a recursive project-management tree;
+- a social habit leaderboard;
+- a mandatory cloud-sync application;
+- a remote-AI-dependent experience;
 - a clinical mental-health tool or AI therapist;
-- a mandatory cloud-sync product;
-- a PWA-first release;
-- a remote-AI-dependent application.
+- a silent automatic updater.
 
-The intended structural hierarchy remains deliberately shallow:
+The core hierarchy stays deliberately shallow:
 
 ```text
 Area
@@ -136,53 +168,37 @@ Area
        └── optional one-level Checklist items
 ```
 
-If a checklist item needs its own schedule, lifecycle, Area, quota, reward, or history, it should become a real Task rather than another recursive level.
+If a checklist item needs its own schedule, lifecycle, quota, reward, or history, it should become a real Task rather than another recursive level.
 
-## Desktop transition principles — resolved by Milestone 8
+---
 
-The desktop program started with a thin foundation rather than a rewrite. Milestone 8 answered each question below with evidence rather than assumption:
+## Technology
 
-- React, TypeScript, Vite, services, and existing domain semantics are preserved unchanged.
-- Dexie/IndexedDB is preserved; the feasibility spike found no evidence to justify a rewrite to SQLite.
-- **Tauri 2** was evaluated and accepted as the desktop shell. Desktop identifier `io.github.peter-s-shi.dailycanvas` and packaged origin `https://tauri.localhost` are now frozen.
-- Persistence (including forced process kill), backup/restore, local document export, and installer upgrade safety were proven on Windows/MSVC before any feature expansion begins.
-- Desktop-native adapters (local files, print, local notifications, automatic-backup file operations, GitHub Release metadata, opening the release page) are separated from domain services behind `src/desktop/desktopAdapter.ts`; the web layer is granted only the minimal `notification:default`, `opener:default`, and a single-endpoint-scoped `http:default` permissions -- no filesystem or general shell/network capability.
+**Frontend:** React 19 · TypeScript · Vite  
+**Desktop:** Tauri 2 · Rust · Windows/MSVC · NSIS  
+**Local data:** Dexie · IndexedDB  
+**Testing:** Vitest · packaged-app smoke · installer/upgrade smoke  
+**Delivery:** GitHub Actions · GitHub Releases
 
-## UI transition principles — resolved by Milestone 9
+Technology choices support the product architecture; they are not the product story by themselves.
 
-The v1.0 desktop UI was designed before broad implementation through an explicit blueprint process; the frozen result lives in `docs/m9-desktop-ui-blueprint/` and Milestone 10 implemented it:
+---
 
-```text
-Product semantics
-    ↓
-Information architecture
-    ↓
-Wireframes
-    ↓
-Behavior specification (Markdown)
-    ↓
-Interactive / visual HTML blueprint
-    ↓
-Frozen PDF design snapshot
-    ↓
-Engineering implementation
-```
+## Build from source
 
-Visual design tools may be used to explore alternatives, but they do not replace the approved information architecture or product semantics.
+Requirements:
 
-## Development
-
-Requirements to build from source:
-
-- Node.js 20.19 or newer
+- Node.js 20.19+
 - pnpm
+- Rust toolchain for Tauri desktop work
+- Windows/MSVC for the authoritative desktop build path
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Current quality commands:
+Quality checks:
 
 ```bash
 pnpm typecheck
@@ -190,24 +206,29 @@ pnpm test
 pnpm build
 ```
 
-Desktop shell (Tauri 2, Windows; MSVC is the authoritative build environment, in CI):
+Desktop:
 
 ```bash
-pnpm desktop:dev       # development window (Vite + Tauri)
-pnpm desktop:build     # release build without an installer
-pnpm desktop:bundle    # per-user NSIS installer (test-only versions are supplied by CI)
+pnpm desktop:dev
+pnpm desktop:build
+pnpm desktop:bundle
 ```
 
-On Windows, double-click `OPEN_DAILY_CANVAS_DEV.cmd` to start the development window. It loads the Visual Studio Build Tools x64 environment, uses the `stable-x86_64-pc-windows-msvc` Rust toolchain, and explains what is missing if the local toolchain is incomplete.
+On Windows, `OPEN_DAILY_CANVAS_DEV.cmd` can prepare and explain the expected Visual Studio Build Tools / MSVC environment.
 
-Packaged-app verification lives in `desktop-verify/` (see `desktop-verify/M8B-EVIDENCE.md`). It uses synthetic data only and refuses to wipe an existing user data folder it did not create.
+---
 
-Continuous integration is risk-scaled (`.github/workflows/ci.yml`): documentation-only changes install no toolchains, app changes run typecheck/tests/build, data and backup changes add targeted regression, and shell or CI changes add the Windows/MSVC desktop build and smoke checks. A stable `PR Gate` job summarizes the result. See [ROADMAP.md](ROADMAP.md).
+## Deeper technical documentation
 
-## Privacy model
+- [ARCHITECTURE.md](ARCHITECTURE.md) — architecture, persistence, domain boundaries, desktop/native boundaries, testing and CI model
+- [PROJECT_STATUS.md](PROJECT_STATUS.md) — authoritative release state and verification evidence
+- [ROADMAP.md](ROADMAP.md) — product and engineering milestone history
+- [DEVLOG.md](DEVLOG.md) — implementation history and hardening notes
+- [`desktop-verify/`](desktop-verify/) — packaged desktop verification infrastructure and evidence
+- [v1.0.0 Release](https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0) — stable installer and release notes
 
-Core personal data remains local and the application must remain fully usable without an account or cloud service.
+---
 
-The update-awareness feature makes a narrow, non-personal request to GitHub Releases to compare application versions, on demand only (page open or an explicit "Check for updates" click, never on a timer or at startup). It reads only the tag name and release URL, never uploads tasks, habits, reflections, Meditations, usage analytics, or other personal content, and never silently downloads or installs anything.
+## License
 
-Any future remote, sync, or AI capability would require separate explicit planning and must not silently remove local-only use.
+No open-source license has been declared for this repository yet. Until that changes, the source remains publicly viewable but should not be treated as granting reuse rights by default.
