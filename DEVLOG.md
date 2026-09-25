@@ -2,6 +2,14 @@
 
 ## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery
 
+### 2026-09-25 — RC batch 2: release documentation and closeout preparation
+
+- Resolved the one standing human decision from RC batch 1 (GitHub Release update-awareness verification): no draft/prerelease will be published solely to exercise the live "update-available" path; existing unit/mock coverage (`updateCheckService.test.ts`) plus the real non-mocked network behavior already exercised by the packaged-app smoke is accepted as sufficient for RC sign-off. The live path will be exercised naturally once the real v1.0.0 GitHub Release is eventually published.
+- Added a new "Daily Canvas v1.0.0 — Release Candidate" section to `README.md` and `README.zh-CN.md` (kept in substance-parity between languages): concise release notes, known limitations, and installation/use guidance for end users, explicitly distinguishing "Release Candidate prepared on an open PR" from "final Release/tag published" (neither exists yet). The existing "Privacy model" section was reviewed and found already accurate; left unchanged.
+- Reconciled both READMEs' opening summary paragraphs so they no longer imply `1.0.0` is already the repository's shipped state — `main` remains `0.7.0` until PR #31 merges.
+- Fixed a staleness gap in `PROJECT_STATUS.md`'s RC Evidence Record: RC batch 1's own docs-only follow-up commit (`d5866ff`) had moved PR #31's HEAD and re-run CI without that being reflected in the record; added an addendum documenting the real, independently-verified green run on that commit.
+- No product code, schema/versioning, or CI configuration changes. `ROADMAP.md` and `ARCHITECTURE.md` were reviewed and left unchanged (both already accurate for this batch's scope).
+
 ### 2026-09-24 — First RC batch: version identity, keyboard-shortcut smoke gap, real NSIS candidate evidence
 
 - Package version (`package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`) advanced `0.7.0` → `1.0.0` for the v1.0.0 candidate identity. Schema/backup version is unchanged at v9 (a data-shape concept, not a release-version one).

@@ -2,7 +2,7 @@
 
 Daily Canvas is a free, account-free, local-first personal planning, habit, reflection, review, and personal-preservation application.
 
-The current codebase is **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–14 are complete, including the Tauri 2 Windows desktop foundation, frozen desktop UI blueprint, desktop UI migration, the first v1.0 capture/task-enrichment capabilities, Day/Week Timeline with Time Blocks and local reminders, Reflection Templates, On This Day, local export, automatic backup, and GitHub Release update awareness, a release-hardening pass across migration/backup, accessibility, performance, and CI verification coverage (Milestone 14-A), and a Human Using Experience Review that drove a further blocker-repair and hardening closeout (Milestone 14-B: Time Block minute-precision fix, Meditation blocker repair, Daily Work UX hardening, and final v1 hardening). The application runs both browser-served and as a packaged Windows desktop app. The v1.0 Feature Complete Gate is accepted and Feature Freeze is active; Milestone 15 (Release Candidate) is next.
+`main` is currently at **v0.7.0**, a React/Vite application backed by Dexie/IndexedDB. Milestones 1–14 are complete, including the Tauri 2 Windows desktop foundation, frozen desktop UI blueprint, desktop UI migration, the first v1.0 capture/task-enrichment capabilities, Day/Week Timeline with Time Blocks and local reminders, Reflection Templates, On This Day, local export, automatic backup, and GitHub Release update awareness, a release-hardening pass across migration/backup, accessibility, performance, and CI verification coverage (Milestone 14-A), and a Human Using Experience Review that drove a further blocker-repair and hardening closeout (Milestone 14-B: Time Block minute-precision fix, Meditation blocker repair, Daily Work UX hardening, and final v1 hardening). The application runs both browser-served and as a packaged Windows desktop app. The v1.0 Feature Complete Gate is accepted and Feature Freeze is active. **Milestone 15 is in progress: a `1.0.0` Release Candidate is prepared on an open, unmerged PR** — see below for what it offers and its current limitations.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
@@ -13,6 +13,31 @@ The former v0.7 Feature Complete Gate was never accepted. Before Feature Freeze,
 Completed work remains valid and is not being discarded. Milestone 9 froze the desktop information architecture and UI blueprint (`docs/m9-desktop-ui-blueprint/`), and Milestone 10 migrated the existing product onto it. **Milestone 11: Capture and Task Enrichment** adds Inbox/Quick Capture, local Global Search, Task Notes, one-level Checklist items, duration estimates, richer Habit/Avoidance recurrence, and forward-only Replan. **Milestone 12: Timeline and Desktop Execution** adds Day/Week Timeline, Available Work, Time Blocks with a mandatory keyboard-accessible editor, Replan-aware `needsReview` flagging, local reminders, and the frozen desktop shortcut set. **Milestone 13: Reflection, Preservation, and Desktop Utilities** adds lightweight Reflection Templates, On This Day, local Reflection/Review Markdown export, automatic rotating local backup, and GitHub Release update awareness. The approved v1.0 feature scope (Milestones 8–13) is fully implemented, and **Milestone 14: Product Hardening and Full Regression** converged the complete system on release-level correctness, resilience, accessibility, performance, and verification evidence without adding new features (PR #10). A subsequent **Human Using Experience Review** exercised the packaged app as a real user and drove a closeout sequence merged into `main`: PR #11 fixed a Time Block duration-precision blocker, PR #26 repaired a Meditation Select All/Clear All and print-pagination blocker, PR #27 ("H1") hardened Daily Work UX (Tasks bulk organization, Areas drill-down, type-aware state grammar, local Notes/Checklist editing, Today↔Floating discoverability), and PR #28 ("H2") delivered final v1 hardening (Quota Review retrospective correctness, GitHub Release 404-vs-network-failure distinction, Timeline UX including whole-minute Start precision and Day-view overlap grouping, overlap-as-warning rather than rejection, Light Theme sidebar, and language-agnostic Meditation export). No known release blocker remains. Milestone 15 (Release Candidate) is next.
 
 See [ROADMAP.md](ROADMAP.md) for the new milestone sequence, [PROJECT_STATUS.md](PROJECT_STATUS.md) for the authoritative current state, and [ARCHITECTURE.md](ARCHITECTURE.md) for preserved and planned boundaries.
+
+## Daily Canvas v1.0.0 — Release Candidate
+
+**This is a Release Candidate, not yet a published release.** The `1.0.0` version is the candidate identity carried on the in-progress Milestone 15 branch/PR; no GitHub Release or tag has been published yet, and `main` itself remains at `0.7.0` until that PR is accepted and merged. Nothing below should be read as "you can download this today" — it describes what v1.0.0 is and will offer once released.
+
+**What v1.0.0 brings together**, all of it running fully offline except one narrow, on-demand check:
+
+- A full planning model — ordinary tasks, positive and avoidance habits, fixed schedules, Floating Tasks, and weekly/monthly Quota Goals, organized under an optional Area.
+- Quick Capture/Inbox, local Global Search, Task Notes, one-level Checklists, richer recurrence, and forward-only Replan that never rewrites history.
+- An optional Day/Week Timeline with a fully keyboard-accessible Time Block editor (whole-minute Start/Duration precision, and an overlap is an explicit, informed warning rather than a silent rejection), plus local reminders.
+- Full habit lifecycle tracking, from starting through milestones, pauses, and archiving, without losing cumulative history.
+- Daily Reflection with optional lightweight templates, deterministic local Review statistics, and On This Day historical resurfacing.
+- A standalone Meditations / 感悟 collection with local print/PDF and Word export.
+- Automatic rotating local backup, versioned JSON export/import, and on-demand GitHub Release update awareness — metadata only, never a silent download or install.
+- A bilingual (English/Chinese) UI, light/dark/system themes, and keyboard accessibility throughout.
+
+**Known limitations in this Release Candidate:**
+
+- Windows only, currently verified against one Windows configuration in CI; other Windows versions and non-English Windows locales are not yet separately verified.
+- The installer is not code-signed yet, so Windows SmartScreen will show an "unrecognized publisher" warning the first time you run it.
+- Uninstalling does not currently offer to delete your local data (the Windows NSIS installer default) — your data stays on disk until you remove it yourself.
+- Only a per-user installer is provided today; there is no machine-wide or MSI install option.
+- No public download exists yet — this candidate is still under release-engineering verification.
+
+**Installing and using Daily Canvas:** until the v1.0.0 GitHub Release is published, the only way to run Daily Canvas is to build it from source (see [Development](#development) below). Once released, using it will look like this: download the Windows installer from the project's GitHub Releases page, run it (a per-user install, no administrator rights required), and launch Daily Canvas from the Start Menu. All product data lives locally under your Windows user profile — see [Privacy model](#privacy-model) below for exactly what does and does not leave your machine. Settings → Data & Backup shows exactly where your data and automatic backups live, and lets you export or restore a backup at any time.
 
 ## What Daily Canvas already does
 
