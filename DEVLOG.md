@@ -2,6 +2,14 @@
 
 ## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery
 
+### 2026-09-25 — v1.0.0 released
+
+- A two-axis `code-review` gate (Standards: Fowler smell baseline, no repo standards doc exists; Spec: `ROADMAP.md`'s Milestone 15 section) ran against PR #31's final HEAD (`d76d9ed`) before any irreversible action, confirming `git diff origin/main...HEAD -- src/ src-tauri/src/` was completely empty (no product code in an "RC-only" PR) and the version-surface diffs were number-only. Zero findings on either axis.
+- PR #31 was merged by the repository owner into `main` as commit `b8cf4d976608ca1e899ab9f4192d1c5abfa39280`. The automatic post-merge CI run on that exact commit passed all four tiers (Classify, Core, Desktop Windows/MSVC, PR Gate).
+- The `v1.0.0` tag was created at that merge commit, and the stable (non-draft, non-prerelease) GitHub Release was published at <https://github.com/Peter-S-Shi/Daily-Canvas/releases/tag/v1.0.0> with `Daily Canvas_1.0.0_x64-setup.exe` attached. The attached installer was **not rebuilt** after merge — it was the exact file already produced and verified by CI run `36083187579` against PR #31's final (pre-merge) HEAD, whose source is byte-identical to the merge commit; its SHA256 (`6f3b4ef2b95f71a17e9f6fd91e91bcfaf47c2c1ab16bdf03c90b8a4b3ba542c1`) was independently re-confirmed against the digest GitHub reports on the published asset.
+- A small, docs-only follow-up PR updated `README.md`/`README.zh-CN.md`/`PROJECT_STATUS.md`/this file from "Release Candidate, not yet published" wording to the actual released state, branched fresh from the post-merge `main` tip so it routes through the fast `docs_only` CI path rather than re-running the Desktop tier for a documentation-only change.
+- All nine `ROADMAP.md` Milestone 15 "Planned scope" items and all four "Exit criteria" are now closed. See `PROJECT_STATUS.md`'s Final Release Record for the complete, independently-verified evidence chain.
+
 ### 2026-09-25 — RC batch 2: release documentation and closeout preparation
 
 - Resolved the one standing human decision from RC batch 1 (GitHub Release update-awareness verification): no draft/prerelease will be published solely to exercise the live "update-available" path; existing unit/mock coverage (`updateCheckService.test.ts`) plus the real non-mocked network behavior already exercised by the packaged-app smoke is accepted as sufficient for RC sign-off. The live path will be exercised naturally once the real v1.0.0 GitHub Release is eventually published.

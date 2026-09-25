@@ -501,7 +501,7 @@ A Human Using Experience Review exercised the packaged desktop application as a 
 
 ---
 
-## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery
+## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery — Completed
 
 **Goal:** Produce, verify, and release the first accepted desktop v1.0.0 candidate.
 
@@ -525,6 +525,13 @@ A Human Using Experience Review exercised the packaged desktop application as a 
 - Release documentation and repository state identify the same accepted candidate.
 
 Any release-blocking finding returns the project to Milestone 14 hardening. A new candidate must be produced after the fix.
+
+### Completion evidence
+
+- Two RC batches on PR #31 established the `1.0.0` candidate identity (package/Tauri/Cargo version, schema/backup version v9 unchanged), audited existing `desktop-verify/` infrastructure against every "Planned scope" bullet above (finding nearly all of it already covered, closing the two genuine gaps found: real-versioned NSIS installer retention in CI, and a `Ctrl+K`/Search shortcut smoke check), and produced release notes, known limitations, and installation/use guidance. The one open human decision (whether to publish a draft/prerelease solely to exercise live GitHub Release update-check metadata) was resolved: no — existing unit/mock coverage plus real non-mocked network behavior was accepted as sufficient, since the live path is exercised naturally once a real Release exists.
+- Before merge, a two-axis `code-review` (Standards: Fowler smell baseline, no repo standards doc exists; Spec: this section) confirmed the PR contained no product-code changes (`src/`, `src-tauri/src/` diffs empty), number-only version bumps, and correctly-hedged pre-release documentation wording. Zero findings.
+- PR #31 was merged into `main` (commit `b8cf4d976608ca1e899ab9f4192d1c5abfa39280`), with independently-verified green post-merge CI on that exact commit. The `v1.0.0` tag was created at that commit, and the real, stable (non-draft, non-prerelease) GitHub Release was published with the exact CI-verified installer attached (`Daily Canvas_1.0.0_x64-setup.exe`, SHA256 `6f3b4ef2b95f71a17e9f6fd91e91bcfaf47c2c1ab16bdf03c90b8a4b3ba542c1`) — not rebuilt or substituted after merge. See `PROJECT_STATUS.md`'s Final Release Record for the complete, independently-verified identity chain (commit ↔ tag ↔ Release ↔ artifact hash).
+- All exit criteria above are met. No release blocker was found at any point in Milestone 15.
 
 ---
 
