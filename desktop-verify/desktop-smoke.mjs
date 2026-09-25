@@ -138,11 +138,21 @@ check("round-trip identical: 2 large appearance assets", exported.appearanceAsse
 // ---------- Milestone 13: Reflection Templates ----------
 console.log("== Reflection Templates");
 await nav(app.cdp, "reflect", "dailyReflection"); await sleep(500);
+// Capture the date the reflection is actually being saved against BEFORE editing/saving, straight from the
+// displayed `.date-jump input` value (same authoritative-date pattern used below for "On This Day" seeding).
+// ReflectionView keeps its `date` in React state set once at mount/navigation and saves against that state
+// value (see saveReflection's `input.date`), never against a freshly-read wall clock. But this save can
+// straddle a real UTC midnight during a long-running CI job, so recomputing `new Date().toISOString().slice(0,10)`
+// AFTER the save (as this check used to do) can silently look up the wrong day and read back `undefined` --
+// a harness bug, not a product defect. Capturing the date up front and reusing it as the query key keeps the
+// check deterministic regardless of when wall-clock midnight falls relative to the save.
+const reflectionDate = await app.cdp.evaluate(`document.querySelector('.date-jump input')?.value`);
+check("captured a well-formed reflection date before saving", typeof reflectionDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(reflectionDate), String(reflectionDate));
 check("pick the Daily Check-in template", await clickText(app.cdp, "Daily Check-in"));
 await app.cdp.evaluate(`(()=>{const ta=document.getElementById('daily-journal');const set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,'Smoke-test reflection using the Daily Check-in template.');ta.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
 check("save the templated reflection", await clickText(app.cdp, "Save daily reflection"));
 await app.cdp.waitFor(`document.querySelector('[role=status]') && document.querySelector('[role=status]').textContent.includes('Reflection saved')`, 10000, "reflection saved status");
-const templateRoundTrip = await app.cdp.evaluate(`new Promise((res)=>{const today=new Date().toISOString().slice(0,10);const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const q=r.result.transaction("dailyReflections").objectStore("dailyReflections").get(today);q.onsuccess=()=>{r.result.close();res(q.result&&q.result.templateId)}}})`);
+const templateRoundTrip = await app.cdp.evaluate(`new Promise((res)=>{const r=indexedDB.open("DailyCanvas");r.onsuccess=()=>{const q=r.result.transaction("dailyReflections").objectStore("dailyReflections").get(${JSON.stringify(reflectionDate)});q.onsuccess=()=>{r.result.close();res(q.result&&q.result.templateId)}}})`);
 check("templateId round-trips into the saved Daily Reflection", templateRoundTrip === "daily-checkin", String(templateRoundTrip));
 const reflectionMdPath = join(outDir, "reflection-export.md");
 const reflectionMd = await saveVia(app, `(()=>{const b=[...document.querySelectorAll('.journal-actions button')].find(b=>b.textContent.includes('Export as Markdown'));if(!b)return false;b.click();return true})()`, reflectionMdPath);
