@@ -1,5 +1,14 @@
 # Development log
 
+## Milestone 15: Daily Canvas v1.0.0 Release Candidate and Delivery
+
+### 2026-09-24 — First RC batch: version identity, keyboard-shortcut smoke gap, real NSIS candidate evidence
+
+- Package version (`package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`) advanced `0.7.0` → `1.0.0` for the v1.0.0 candidate identity. Schema/backup version is unchanged at v9 (a data-shape concept, not a release-version one).
+- `desktop-verify/desktop-smoke.mjs` gained a check for `Ctrl+K` (no Shift) opening Search and `Escape` closing it — the frozen shortcut set's Search binding was not previously exercised at the packaged-app level (Quick Capture, Today, and Escape already were).
+- `.github/workflows/ci.yml`'s desktop job now also builds the real, publicly-versioned NSIS installer (no test-only `--config` version override) and retains it as CI evidence, distinct from the two synthetic-version installers already built for upgrade-mechanics testing.
+- See `PROJECT_STATUS.md`'s RC evidence record for the full scope-by-scope disposition against `ROADMAP.md`'s Milestone 15 planned scope.
+
 ## Milestone 14: Product Hardening and Full Regression — Completed
 
 ### 2026-09-24 — Milestone 14-B: Human Using Experience Review closeout (PRs #11, #26, #27, #28)

@@ -145,6 +145,17 @@ jobs:
       - name: Packaged-app smoke
         run: node desktop-verify/desktop-smoke.mjs src-tauri/target/release/daily-canvas-desktop.exe "$RUNNER_TEMP/fixture" "$RUNNER_TEMP/smoke"
 
+      # M15 RC: build the real, publicly-versioned NSIS candidate (package.json/tauri.conf.json version, no
+      # config override), distinct from the synthetic-version installers built below for upgrade-mechanics
+      # testing only. This is "the supported Windows NSIS candidate" retained as durable CI evidence.
+      - name: Build the real-version NSIS candidate installer
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/candidate"
+          pnpm exec tauri build --bundles nsis
+          cp src-tauri/target/release/bundle/nsis/*setup.exe "$RUNNER_TEMP/candidate/"
+          ls -l "$RUNNER_TEMP/candidate"
+
       # Installer steps still run when the smoke above failed, so one CI run reports every desktop signal.
       - name: Build two test-only installers (same identifier, no public version)
         if: ${{ !cancelled() }}
@@ -213,6 +224,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
           path: |
+            ${{ runner.temp }}/candidate/*.exe
             ${{ runner.temp }}/installers/*.exe
             ${{ runner.temp }}/smoke/results.json
             ${{ runner.temp }}/installer-smoke/installer-results.json
